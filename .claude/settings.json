@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sudo lsblk:*)",
+      "Bash(sudo blkid:*)",
+      "Bash(sudo dmidecode:*)",
+      "Bash(sudo lspci:*)",
+      "Bash(sudo lsusb:*)",
+      "Bash(sudo dmesg:*)",
+      "Bash(sudo smartctl:*)",
+      "Bash(sudo nvidia-smi:*)",
+      "Bash(sudo cpupower frequency-info:*)",
+      "Bash(sudo ufw status:*)",
+      "Bash(sudo systemctl status:*)",
+      "Bash(sudo systemctl is-active:*)",
+      "Bash(sudo systemctl is-enabled:*)",
+      "Bash(sudo systemctl list-units:*)",
+      "Bash(sudo systemctl start ollama)",
+      "Bash(sudo systemctl stop ollama)",
+      "Bash(sudo systemctl restart ollama)",
+      "Bash(sudo systemctl start minecraft)",
+      "Bash(sudo systemctl stop minecraft)",
+      "Bash(sudo systemctl restart minecraft)",
+      "Bash(sudo systemctl start valheim)",
+      "Bash(sudo systemctl stop valheim)",
+      "Bash(sudo systemctl restart valheim)",
+      "Bash(sudo systemctl start sauvegarde-minecraft.service)",
+      "Bash(sudo systemctl start sauvegarde-valheim.service)",
+      "Bash(sudo journalctl -u:*)"
+    ]
+  }
+}

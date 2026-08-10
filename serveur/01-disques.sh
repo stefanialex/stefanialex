@@ -166,12 +166,43 @@ preparer_sur_racine() {
   attention "Surveille l'espace libre : les modèles IA occupent vite plusieurs dizaines de Gio."
 }
 
+# Vérifie que l'outillage de partitionnement est présent AVANT d'écrire quoi que
+# ce soit. Sans ce contrôle, wipefs efface la table de partition puis le script
+# meurt sur le sgdisk manquant : le disque est déjà entamé pour rien.
+verifier_outils() {
+  local -A paquet=(
+    [sgdisk]=gdisk
+    [wipefs]=util-linux
+    [partprobe]=parted
+    [blkid]=util-linux
+    [lsblk]=util-linux
+  )
+  case "$SYSTEME_FICHIERS" in
+    ext4) paquet[mkfs.ext4]=e2fsprogs ;;
+    xfs)  paquet[mkfs.xfs]=xfsprogs ;;
+  esac
+
+  local manquants=() outil
+  for outil in "${!paquet[@]}"; do
+    command -v "$outil" >/dev/null 2>&1 || manquants+=("${paquet[$outil]}")
+  done
+
+  [[ ${#manquants[@]} -eq 0 ]] && return 0
+
+  # Dédoublonne : util-linux couvre plusieurs outils à lui seul.
+  local liste
+  liste="$(printf '%s\n' "${manquants[@]}" | sort -u | tr '\n' ' ')"
+  fatal "Outils de partitionnement manquants. Installe-les puis relance :
+       apt install -y ${liste% }"
+}
+
 # ---------------------------------------------------------------------------
 
 main() {
   analyser_arguments "$@"
   exiger_root "$@"
   demarrer_journal "01-disques"
+  verifier_outils
 
   titre "Préparation des disques"
 

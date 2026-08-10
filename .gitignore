@@ -1,0 +1,4 @@
+# Réglages Claude Code propres à la machine et à la session (permissions
+# accordées à la volée). Le settings.json partagé, lui, est versionné.
+.claude/settings.local.json
+.claude/*.tmp.*
