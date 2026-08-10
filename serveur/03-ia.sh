@@ -72,6 +72,39 @@ installer_ollama() {
   configurer_service_ollama
 }
 
+# Tant qu'OLLAMA_MODELS n'est pas défini, Ollama range ses modèles dans
+# /usr/share/ollama/.ollama/models, sur le disque système. Les y laisser au
+# moment où l'on bascule vers le disque dédié aurait deux effets fâcheux : le
+# service reconfiguré ne les verrait plus (« aucun modèle installé » alors
+# qu'ils sont bien là), et plusieurs Gio resteraient à occuper la partition
+# système pour rien.
+migrer_modeles_existants() {
+  local defaut=/usr/share/ollama/.ollama/models
+  local cible="${RACINE_IA}/ollama"
+
+  [[ -d "$defaut" ]] || return 0
+  [[ "$defaut" != "$cible" ]] || return 0
+  [[ -n "$(ls -A "$defaut" 2>/dev/null)" ]] || return 0
+
+  # Des modèles des deux côtés : fusionner à l'aveugle pourrait écraser des
+  # manifestes divergents. Mieux vaut le signaler que décider à la place.
+  if [[ -n "$(ls -A "$cible" 2>/dev/null)" ]]; then
+    attention "Modèles présents à la fois dans ${defaut} et ${cible}."
+    attention "Migration ignorée : fusionne les deux à la main, puis relance."
+    return 0
+  fi
+
+  info "Déplacement des modèles déjà téléchargés vers ${cible} ($(du -sh "$defaut" 2>/dev/null | cut -f1))"
+  # À l'arrêt : déplacer les blobs sous le nez d'un service qui tourne, c'est
+  # se garantir une lecture à mi-copie.
+  faire systemctl stop ollama
+  faire cp -a "${defaut}/." "${cible}/"
+  faire rm -rf "$defaut"
+  if id ollama >/dev/null 2>&1; then
+    faire chown -R ollama:ollama "$cible"
+  fi
+}
+
 configurer_service_ollama() {
   info "Configuration du service systemd"
 
@@ -100,8 +133,17 @@ FIN
     faire chown -R ollama:ollama "${RACINE_IA}/ollama"
   fi
 
+  migrer_modeles_existants
+
   faire systemctl daemon-reload
-  faire systemctl enable --now ollama
+  # `enable --now` ne redémarre PAS un service déjà actif — or le script
+  # officiel démarre Ollama dès son installation, donc avant que l'override
+  # n'existe. Sans redémarrage explicite, le processus continue de tourner
+  # sans OLLAMA_MODELS ni OLLAMA_HOST : les modèles atterrissent sur le disque
+  # système et l'API n'écoute que sur 127.0.0.1, alors que le récapitulatif
+  # annonce l'adresse du réseau local.
+  faire systemctl enable ollama
+  faire systemctl restart ollama
 
   if (( CONFIRME )); then
     attendre_ollama || attention "Ollama ne répond pas encore, vérifie : systemctl status ollama"
