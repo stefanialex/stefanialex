@@ -319,10 +319,10 @@ FIN
   else
     attention "Aucune clé publique trouvée : l'authentification par mot de passe reste active."
     attention "Depuis ton poste habituel, installe ta clé puis relance ce script :"
-    printf '      ssh-copy-id %s@%s\n' "${SUDO_USER:-utilisateur}" "$(ip_locale)"
+    printf '      ssh-copy-id %s@%s\n' "$(utilisateur_cible)" "$(ip_locale)"
   fi
 
-  info "Adresse pour te connecter : ssh ${SUDO_USER:-utilisateur}@$(ip_locale)"
+  info "Adresse pour te connecter : ssh $(utilisateur_cible)@$(ip_locale)"
 }
 
 configurer_pare_feu() {
@@ -337,10 +337,39 @@ configurer_pare_feu() {
 
   # On n'ouvre que SSH ici. Les ports applicatifs sont ouverts par les scripts
   # qui installent les services concernés, et restreints au réseau local.
-  info "Autorisation de SSH"
-  faire ufw allow OpenSSH
+  #
+  # SSH aussi : le profil « OpenSSH » d'ufw ouvre le port 22 à tout Internet, et
+  # comme le mot de passe reste actif tant qu'aucune clé n'est installée, cela
+  # revient à offrir une invite de connexion au monde entier. IPv6 rend la chose
+  # concrète — la machine a une adresse publique routable, sans NAT pour la
+  # masquer, et une box qui laisse entrer suffit.
+  local sous_reseau
+  sous_reseau="$(sous_reseau_local)"
 
-  if ! ufw status 2>/dev/null | grep -q "Status: active"; then
+  if [[ -n "$sous_reseau" ]]; then
+    info "Autorisation de SSH depuis ${sous_reseau} uniquement"
+    faire ufw allow from "$sous_reseau" to any port 22 proto tcp
+    # Retire la règle grande ouverte si une exécution précédente l'avait posée.
+    # `ufw delete` sort en erreur quand la règle n'existe pas : sous `set -e`,
+    # cela arrêterait le script alors qu'il n'y a rien à faire.
+    # Il faut la sortie verbeuse : la forme courte affiche « OpenSSH » sans le
+    # port ni la direction, alors que la verbeuse donne « 22/tcp (OpenSSH) …
+    # ALLOW IN … Anywhere ». On ne cible que les lignes dont la provenance est
+    # « Anywhere », pour ne jamais confondre cette règle avec celle qu'on vient
+    # de poser pour le réseau local.
+    if LC_ALL=C ufw status verbose 2>/dev/null | grep -q '^22/tcp.*ALLOW IN.*Anywhere'; then
+      info "Retrait de l'ancienne règle SSH ouverte à tout Internet"
+      faire ufw delete allow OpenSSH || true
+    fi
+  else
+    attention "Sous-réseau local indéterminé : SSH est ouvert à tout Internet."
+    faire ufw allow OpenSSH
+  fi
+
+  # Le test doit forcer la locale : sur un système en français ufw répond
+  # « État : actif », que ce motif ne reconnaît pas — le script réactivait donc
+  # le pare-feu à chaque exécution en annonçant l'avoir activé.
+  if ! LC_ALL=C ufw status 2>/dev/null | grep -q "Status: active"; then
     info "Activation du pare-feu"
     faire ufw --force enable
   else

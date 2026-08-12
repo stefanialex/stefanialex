@@ -364,8 +364,172 @@ installer_webui() {
     fi
   fi
 
+  autoriser_conteneurs_vers_ollama
+  restreindre_docker_au_reseau_local
+
   succes "Interface web : http://$(ip_locale):${PORT_WEBUI}"
   info "Le premier compte créé sur cette page devient administrateur — fais-le tout de suite."
+}
+
+# ---------------------------------------------------------------------------
+# Pare-feu et conteneurs
+#
+# Docker court-circuite ufw. Ses règles de traduction d'adresse s'appliquent
+# avant que le paquet n'atteigne les chaînes d'ufw : un port publié par un
+# conteneur est donc joignable même quand « ufw status » affiche une restriction
+# dessus. La règle « 8080 depuis le réseau local seulement » posée juste au-dessus
+# ne protège en réalité que les services de l'hôte, pas Open WebUI.
+#
+# La seule chaîne que Docker et ufw respectent tous les deux est DOCKER-USER :
+# la chaîne FORWARD la consulte avant les règles de Docker, et Docker ne la vide
+# jamais, précisément pour qu'on puisse y mettre ce genre de politique.
+#
+# On l'alimente depuis after.rules, qu'ufw rejoue à chaque « ufw reload » et au
+# démarrage de la machine. Le « -F » en tête du bloc rend l'opération rejouable :
+# ufw applique ces fichiers avec iptables-restore -n, sans vidage préalable, si
+# bien que sans lui les règles s'accumuleraient en double à chaque rechargement.
+#
+# IPv6 mérite le même traitement, et plus encore : la machine a une adresse
+# publique routable, sans NAT pour la masquer.
+# ---------------------------------------------------------------------------
+
+MARQUEUR_DEBUT='# >>> serveur-ia : restriction des conteneurs (03-ia.sh) >>>'
+MARQUEUR_FIN='# <<< serveur-ia <<<'
+
+# Open WebUI joint Ollama par host.docker.internal, qui pointe sur l'adresse de
+# la passerelle du pont Docker (172.17.0.1). La destination est donc l'hôte
+# lui-même : ce trafic traverse INPUT, pas FORWARD, et se heurte à la règle qui
+# n'ouvre le port 11434 qu'au sous-réseau local. Le conteneur, lui, sort en
+# 172.17.0.x — il était donc silencieusement rejeté, et l'interface de chat
+# s'affichait sans aucun modèle disponible.
+#
+# On autorise explicitement l'entrée depuis le pont Docker. La règle est posée
+# sur l'interface plutôt que sur le sous-réseau 172.17.0.0/16 : ainsi une
+# adresse du réseau local usurpant une IP de conteneur n'en profite pas.
+autoriser_conteneurs_vers_ollama() {
+  dispo ufw || return 0
+
+  info "Autorisation du pont Docker vers le port ${PORT_OLLAMA} (Open WebUI → Ollama)"
+  faire ufw allow in on docker0 to any port "$PORT_OLLAMA" proto tcp
+}
+
+restreindre_docker_au_reseau_local() {
+  info "Restriction des conteneurs au réseau local (chaîne DOCKER-USER)"
+
+  if ! dispo ufw; then
+    attention "ufw absent : aucune restriction posée sur les conteneurs."
+    return 0
+  fi
+
+  local interface sous_reseau prefixe6
+  interface="$(interface_defaut)"
+  sous_reseau="$(sous_reseau_local)"
+  prefixe6="$(prefixe_ipv6_local)"
+
+  if [[ -z "$interface" || -z "$sous_reseau" ]]; then
+    attention "Interface ou sous-réseau indéterminés : restriction non posée."
+    attention "Le port ${PORT_WEBUI} du conteneur reste joignable au-delà du réseau local."
+    return 0
+  fi
+
+  # Ordre des règles : on laisse passer les réponses aux connexions déjà
+  # établies, puis le réseau local, puis on jette tout ce qui entre encore par
+  # l'interface physique. Le trafic sortant d'un conteneur arrive avec
+  # « -i docker0 » et n'est donc pas concerné par ce rejet.
+  local bloc4
+  bloc4="$(cat <<FIN
+${MARQUEUR_DEBUT}
+*filter
+:DOCKER-USER - [0:0]
+-F DOCKER-USER
+-A DOCKER-USER -m conntrack --ctstate RELATED,ESTABLISHED -j RETURN
+-A DOCKER-USER -s ${sous_reseau} -j RETURN
+-A DOCKER-USER -i ${interface} -j DROP
+-A DOCKER-USER -j RETURN
+COMMIT
+${MARQUEUR_FIN}
+FIN
+)"
+
+  # fe80::/10 doit rester autorisé : la découverte de voisins et l'autoconfi-
+  # guration passent par là, les bloquer casse IPv6 de façon déroutante.
+  local regle_prefixe6=''
+  if [[ -n "$prefixe6" ]]; then
+    regle_prefixe6="-A DOCKER-USER -s ${prefixe6} -j RETURN"
+  fi
+
+  local bloc6
+  bloc6="$(cat <<FIN
+${MARQUEUR_DEBUT}
+*filter
+:DOCKER-USER - [0:0]
+-F DOCKER-USER
+-A DOCKER-USER -m conntrack --ctstate RELATED,ESTABLISHED -j RETURN
+-A DOCKER-USER -s fe80::/10 -j RETURN
+${regle_prefixe6}
+-A DOCKER-USER -i ${interface} -j DROP
+-A DOCKER-USER -j RETURN
+COMMIT
+${MARQUEUR_FIN}
+FIN
+)"
+
+  # Une ligne vide dans un fichier iptables-restore est acceptée, mais autant
+  # ne pas en produire quand la machine n'a pas d'adresse IPv6 globale.
+  bloc6="$(grep -v '^$' <<<"$bloc6")"
+
+  appliquer_bloc_ufw /etc/ufw/after.rules  "$bloc4"
+  appliquer_bloc_ufw /etc/ufw/after6.rules "$bloc6"
+
+  faire ufw reload
+
+  if (( CONFIRME )); then
+    if iptables -S DOCKER-USER 2>/dev/null | grep -q -- "-i ${interface} -j DROP"; then
+      succes "Conteneurs joignables depuis ${sous_reseau} uniquement"
+      if [[ -n "$prefixe6" ]]; then
+        info "En IPv6 : depuis ${prefixe6} uniquement. Ce préfixe est délégué par la"
+        info "box et peut changer — relancer ce script si l'accès IPv6 cesse de marcher."
+      fi
+    else
+      attention "La chaîne DOCKER-USER ne contient pas la règle attendue."
+      attention "Vérifie : iptables -S DOCKER-USER"
+    fi
+  fi
+}
+
+# Remplace le bloc délimité par les marqueurs dans un fichier de règles ufw,
+# ou l'ajoute s'il n'y est pas encore. Le contenu est réécrit par redirection
+# pour conserver le propriétaire et les droits du fichier d'origine (0640 root).
+appliquer_bloc_ufw() {
+  local fichier="$1" bloc="$2"
+
+  if ! (( CONFIRME )); then
+    printf '      %s# %s recevrait :%s\n' "$C_JAUNE" "$fichier" "$C_FIN"
+    local ligne
+    while IFS= read -r ligne; do
+      printf '      %s%s%s\n' "$C_JAUNE" "$ligne" "$C_FIN"
+    done <<<"$bloc"
+    return 0
+  fi
+
+  [[ -f "$fichier" ]] || fatal "${fichier} est absent : ufw est-il bien installé ?"
+
+  local temporaire
+  temporaire="$(mktemp)"
+
+  # Comparaison de chaînes exacte plutôt qu'une expression rationnelle : les
+  # marqueurs contiennent des caractères que sed interpréterait.
+  awk -v debut="$MARQUEUR_DEBUT" -v fin="$MARQUEUR_FIN" '
+    $0 == debut { dans = 1; next }
+    $0 == fin   { dans = 0; next }
+    !dans       { print }
+  ' "$fichier" >"$temporaire"
+
+  printf '%s\n' "$bloc" >>"$temporaire"
+  cat "$temporaire" >"$fichier"
+  rm -f "$temporaire"
+
+  succes "Bloc écrit dans ${fichier}"
 }
 
 # ---------------------------------------------------------------------------
@@ -435,12 +599,103 @@ FIN
   faire update-desktop-database /usr/share/applications
 
   succes "LM Studio installé"
-  info "Configure son dossier de modèles sur ${RACINE_IA}/lmstudio pour ne pas saturer le disque système."
   faire mkdir -p "${RACINE_IA}/lmstudio"
 
-  if [[ -n "${SUDO_USER:-}" ]]; then
-    faire chown -R "${SUDO_USER}:${SUDO_USER}" "${RACINE_IA}/lmstudio"
+  local compte
+  compte="$(utilisateur_cible)"
+  if [[ -n "$compte" ]]; then
+    faire chown -R "${compte}:${compte}" "${RACINE_IA}/lmstudio"
+  else
+    attention "Compte utilisateur indéterminé : ${RACINE_IA}/lmstudio reste à root,"
+    attention "LM Studio ne pourra pas y écrire. Corrige à la main : chown -R <toi> ${RACINE_IA}/lmstudio"
   fi
+
+  configurer_reglages_lmstudio "$compte"
+}
+
+# Trois réglages que l'application ne devinera pas, et qui coûtent cher à
+# découvrir en cours de route :
+#
+#   downloadsFolder      Par défaut les modèles vont dans le dossier personnel,
+#                        sur le disque système. Un seul modèle pèse plusieurs
+#                        gibioctets : la partition se remplit vite.
+#
+#   defaultContextLength Certains modèles annoncent une fenêtre énorme — 262 000
+#                        jetons pour Qwen3.5 — que la VRAM ne peut pas suivre.
+#                        Le cache d'attention grandit avec elle, et le chargement
+#                        échoue ou déborde sur le processeur. 8192 tient partout.
+#
+#   alwaysAllowLoadAnyway  Le garde-fou en mode « high » refuse des chargements
+#                        que la VRAM permettrait pourtant. On le garde — son
+#                        avertissement est utile — mais on autorise à passer
+#                        outre, sinon un modèle chargeable reste inaccessible.
+#
+# Fusion plutôt qu'écrasement : le fichier contient aussi tout l'état de
+# l'interface, qu'on n'a aucune raison de réinitialiser.
+configurer_reglages_lmstudio() {
+  local compte="$1"
+  local maison reglages
+
+  maison="$(dossier_personnel "$compte")"
+  if [[ -z "$maison" ]]; then
+    attention "Dossier personnel introuvable : réglages de LM Studio non appliqués."
+    return 0
+  fi
+  reglages="${maison}/.lmstudio/settings.json"
+
+  # L'application réécrit ce fichier en quittant : une modification faite
+  # pendant qu'elle tourne serait perdue sans prévenir.
+  if ps -eo comm= 2>/dev/null | grep -qi 'lm.studio'; then
+    attention "LM Studio est en cours d'exécution : ferme-le puis relance ce script"
+    attention "pour appliquer le dossier de modèles, le contexte et le garde-fou."
+    return 0
+  fi
+
+  info "Réglages de LM Studio (dossier de modèles, contexte 8192, garde-fou)"
+
+  # Le fichier contient l'état complet de l'interface : on le modifie avec un
+  # outil qui comprend le JSON, jamais à coups de sed.
+  installer_paquet jq || true
+  if ! dispo jq; then
+    attention "jq indisponible : réglages de LM Studio non appliqués."
+    attention "À faire dans l'application : dossier de modèles ${RACINE_IA}/lmstudio,"
+    attention "contexte 8192, et « toujours autoriser le chargement »."
+    return 0
+  fi
+
+  if ! (( CONFIRME )); then
+    printf '      %sfusion dans %s :%s\n' "$C_JAUNE" "$reglages" "$C_FIN"
+    printf '      %sdownloadsFolder=%s/lmstudio, defaultContextLength=8192,%s\n' \
+      "$C_JAUNE" "$RACINE_IA" "$C_FIN"
+    printf '      %smodelLoadingGuardrails.alwaysAllowLoadAnyway=true%s\n' \
+      "$C_JAUNE" "$C_FIN"
+    return 0
+  fi
+
+  mkdir -p "$(dirname "$reglages")"
+  [[ -f "$reglages" ]] || printf '{}\n' >"$reglages"
+
+  local temporaire
+  temporaire="$(mktemp)"
+
+  # `// {}` protège des clés absentes : sur un fichier fraîchement créé,
+  # .modelLoadingGuardrails vaut null, et null + {} échouerait.
+  if jq --arg dossier "${RACINE_IA}/lmstudio" '
+        .downloadsFolder = $dossier
+      | .defaultContextLength = { type: "custom", value: 8192 }
+      | .modelLoadingGuardrails =
+          ((.modelLoadingGuardrails // {}) + { alwaysAllowLoadAnyway: true })
+     ' "$reglages" >"$temporaire" && [[ -s "$temporaire" ]]; then
+    cat "$temporaire" >"$reglages"
+    [[ -n "$compte" ]] && chown "${compte}:${compte}" "$reglages"
+    succes "Réglages écrits dans ${reglages}"
+  else
+    attention "Fusion impossible dans ${reglages} — fichier laissé intact."
+    attention "À faire dans l'application : dossier de modèles ${RACINE_IA}/lmstudio,"
+    attention "contexte 8192, et « toujours autoriser le chargement »."
+  fi
+
+  rm -f "$temporaire"
 }
 
 # Une AppImage de type 2 est un ELF dont les octets 8 à 10 valent « AI\x02 ».

@@ -66,6 +66,39 @@ dispo() {
   command -v "$1" >/dev/null 2>&1
 }
 
+# Compte pour lequel on installe, quand le script tourne en root. Chaîne vide
+# si indéterminable.
+#
+# `sudo` renseigne SUDO_USER, mais il exige un terminal pour son mot de passe et
+# devient donc inutilisable depuis un contexte non interactif : on passe alors
+# par `pkexec`, qui ne renseigne que PKEXEC_UID. Sans ce repli, tout `chown`
+# conditionné à SUDO_USER est silencieusement sauté et les dossiers restent à
+# root — hors de portée de l'application de bureau censée y écrire.
+utilisateur_cible() {
+  if [[ -n "${SUDO_USER:-}" ]]; then
+    printf '%s\n' "$SUDO_USER"
+    return 0
+  fi
+
+  if [[ -n "${PKEXEC_UID:-}" ]]; then
+    local nom
+    nom="$(getent passwd "$PKEXEC_UID" 2>/dev/null | cut -d: -f1)"
+    [[ -n "$nom" ]] && { printf '%s\n' "$nom"; return 0; }
+  fi
+
+  # Dernier repli : le premier compte humain. Les comptes de service ont un UID
+  # inférieur à 1000, et « nobody » se place tout en haut de la plage.
+  getent passwd 2>/dev/null |
+    awk -F: '$3 >= 1000 && $3 < 60000 { print $1; exit }'
+}
+
+# Dossier personnel du compte passé en argument. Chaîne vide si inconnu.
+dossier_personnel() {
+  local compte="$1"
+  [[ -n "$compte" ]] || return 0
+  getent passwd "$compte" 2>/dev/null | cut -d: -f6
+}
+
 # Affiche la valeur de la commande si elle existe, sinon un message explicite.
 # Évite qu'un outil manquant (fréquent sur une install fraîche) fasse échouer
 # tout le script alors qu'on ne fait que collecter de l'information.
@@ -260,6 +293,33 @@ sous_reseau_local() {
 
   # Normalise vers l'adresse réseau : 192.168.1.42/24 -> 192.168.1.0/24
   python3 - "$cidr" <<'PY' 2>/dev/null || printf '%s\n' "$cidr"
+import ipaddress, sys
+print(ipaddress.ip_interface(sys.argv[1]).network)
+PY
+}
+
+# Préfixe IPv6 du réseau local au format CIDR (ex. 2001:861:3910:e4f0::/64).
+# Chaîne vide si la machine n'a pas d'adresse IPv6 globale.
+#
+# Sert à écrire des règles de pare-feu IPv6 : contrairement à IPv4, il n'y a pas
+# de NAT pour masquer la machine, son adresse est routable depuis Internet. Le
+# préfixe est délégué par la box et peut changer — d'où la nécessité de rejouer
+# le script qui s'en sert si l'accès IPv6 au réseau local cesse de fonctionner.
+prefixe_ipv6_local() {
+  dispo ip || return 0
+
+  local interface cidr
+  interface="$(interface_defaut)"
+  [[ -n "$interface" ]] || return 0
+
+  # `scope global` écarte déjà le lien-local ; on prend la première adresse
+  # permanente, en sautant les adresses temporaires de vie privée.
+  cidr="$(ip -6 -o addr show dev "$interface" scope global 2>/dev/null |
+          grep -v temporary |
+          awk '{ print $4; exit }')"
+  [[ -n "$cidr" ]] || return 0
+
+  python3 - "$cidr" <<'PY' 2>/dev/null || true
 import ipaddress, sys
 print(ipaddress.ip_interface(sys.argv[1]).network)
 PY
