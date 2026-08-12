@@ -18,6 +18,52 @@ des modèles de langage en local, et héberge des serveurs Minecraft et Valheim.
 | 3 | `03-ia.sh` | Ollama, Open WebUI, LM Studio, modèles Hermes | non |
 | 4 | `04-jeux.sh` | Minecraft (Paper) et Valheim (SteamCMD) | non |
 
+## Où en est la machine `pop-os`
+
+*Mis à jour le 2026-08-12. Rien de tout ceci n'est déductible du dépôt :
+`rapport-audit.md` est ignoré par git et les scripts ne laissent pas de trace
+versionnée. D'où cette section.*
+
+| Étape | État | Détail |
+|---|---|---|
+| 0 — audit | ✅ | Rejoué après l'installation du pilote, la synthèse est fiable |
+| 1 — disques | ✅ | `sdb1` → `/srv/ia` (916 Gio), `sdc1` → `/srv/jeux` (146 Gio), ext4, `fstab` par UUID, remontage vérifié après redémarrage |
+| 2 — pilotes | ✅ | `nvidia-driver-580` (580.173.02, CUDA 13.0), GTX 1070 et ses 8 Gio de VRAM reconnues |
+| 3 — pile IA | ✅ | Voir ci-dessous |
+| 4 — jeux | ⬜ | Pas commencée. `/srv/jeux` est vide, aucune unité `minecraft`/`valheim` |
+
+Détail de l'étape 3 :
+
+- **Ollama** 0.32.7, service actif, API sur `*:11434`, modèles dans
+  `/srv/ia/ollama` : `hermes3:8b` et `nomic-embed-text`, à 100 % sur le GPU.
+- **Open WebUI** en conteneur Docker, port 8080.
+- **LM Studio** 0.4.21, moteur `llama.cpp-linux-x86_64-nvidia-cuda-avx2` 2.28.2,
+  modèles dans `/srv/ia/lmstudio` : Qwen3.5 9B (multimodal), Qwen2.5-Coder 7B,
+  Gemma 3 4B (multimodal), tous en `Q4_K_M`.
+- **Mesuré** le 2026-08-12 : Gemma 3 4B en contexte 8192 charge en 3,0 s, occupe
+  4168 Mio de VRAM (donc entièrement sur le GPU) et produit 42 jetons/seconde.
+
+### Points ouverts, à traiter avant d'aller plus loin
+
+1. **Docker court-circuite `ufw`.** Ses règles s'insèrent dans `FORWARD` avant
+   celles d'ufw : la restriction « 8080 depuis `192.168.1.0/24` seulement » ne
+   protège donc pas le conteneur Open WebUI. Sans redirection sur la box la
+   portée reste le réseau local, mais c'est à corriger avant toute ouverture
+   vers l'extérieur.
+2. **`openssh-server` n'est pas installé** — toute l'administration se fait
+   devant la machine.
+3. **LM Studio :** le garde-fou `modelLoadingGuardrails` est en mode `high` et
+   peut refuser un chargement que la VRAM permettrait ; et le contexte par
+   défaut de Qwen3.5 (262 000 jetons) dépasse de loin la VRAM — rester entre
+   8 000 et 16 000.
+4. **`sudo` est inutilisable sans terminal** sur cette machine (il exige un tty
+   pour le mot de passe). Pour toute commande privilégiée lancée depuis un
+   contexte non interactif, passer par `pkexec`, qui s'appuie sur l'agent polkit
+   de COSMIC — en pensant à repasser les variables d'environnement, que `pkexec`
+   réinitialise.
+
+---
+
 ### Deux règles qui s'appliquent partout
 
 **Rien ne s'exécute sans `--confirm`.** Lancé sans ce drapeau, chaque script
@@ -73,6 +119,7 @@ sudo ./04-jeux.sh --confirm minecraft
 | Interface de chat (Open WebUI) | `http://<ip-du-pc>:8080` | Depuis n'importe quel appareil du réseau |
 | API Ollama | `http://<ip-du-pc>:11434` | Compatible avec le format d'API OpenAI |
 | LM Studio | application de bureau | Nécessite un écran branché |
+| API LM Studio | `http://127.0.0.1:1234` | Format OpenAI. Machine locale seulement, sauf activation explicite dans l'application |
 | Minecraft | `<ip-du-pc>:25565` | |
 | Valheim | `<ip-du-pc>:2456` | |
 
