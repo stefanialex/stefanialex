@@ -20,6 +20,7 @@ source "${ICI}/lib/common.sh"
 CONFIRME=0
 SAUTER_SSH="${SAUTER_SSH:-0}"
 SAUTER_PARE_FEU="${SAUTER_PARE_FEU:-0}"
+SAUTER_MAJ_AUTO="${SAUTER_MAJ_AUTO:-0}"
 
 usage() {
   cat <<'FIN'
@@ -30,6 +31,7 @@ Usage : sudo ./02-drivers.sh [--confirm]
 Variables d'environnement :
   SAUTER_SSH=1        N'installe et ne configure pas OpenSSH
   SAUTER_PARE_FEU=1   Ne touche pas à ufw
+  SAUTER_MAJ_AUTO=1   N'active pas les mises à jour de sécurité automatiques
 FIN
 }
 
@@ -325,6 +327,172 @@ FIN
   info "Adresse pour te connecter : ssh $(utilisateur_cible)@$(ip_locale)"
 }
 
+# Une machine allumée en permanence dont personne ne surveille les paquets est
+# le vrai risque de long terme : les deux autres trous d'un serveur maison sont
+# statiques, celui-là s'aggrave tout seul à chaque publication de faille.
+#
+# Le piège de Pop!_OS : `lsb_release -is` répond « Pop », mais les correctifs
+# sont des paquets Ubuntu (`o=Ubuntu,a=noble-security`) servis par le miroir
+# apt.pop-os.org. Le modèle livré par le paquet cible
+# « ${distro_id}:${distro_codename}-security », soit « Pop:noble-security » — qui
+# ne correspond à aucune origine existante. Installé sans rien changer,
+# unattended-upgrades tournerait chaque nuit sans jamais rien appliquer, et
+# `systemctl status` afficherait un service parfaitement vert.
+#
+# On écrit donc une origine explicite, désignée par `origin=` plutôt que par le
+# nom de la distribution, et dans un fichier à nous : les mises à jour du paquet
+# réécrivent 50unattended-upgrades.
+configurer_maj_securite() {
+  titre "Mises à jour de sécurité automatiques"
+
+  if [[ "$SAUTER_MAJ_AUTO" == "1" ]]; then
+    info "Ignoré (SAUTER_MAJ_AUTO=1)"
+    return 0
+  fi
+
+  installer unattended-upgrades
+
+  info "Origine ciblée : origin=Ubuntu, archive=<codename>-security"
+  faire tee /etc/apt/apt.conf.d/52serveur-ia-securite >/dev/null <<'FIN'
+// Posé par serveur/02-drivers.sh — voir le commentaire du script.
+//
+// Sur Pop!_OS, « ${distro_id} » vaut « Pop » alors que les correctifs portent
+// l'origine « Ubuntu ». On désigne donc l'origine explicitement, sinon rien
+// n'est jamais installé.
+Unattended-Upgrade::Origins-Pattern {
+        "origin=Ubuntu,archive=${distro_codename}-security";
+};
+
+// Redémarrage laissé à la main : cette machine héberge des serveurs de jeu et
+// des sessions d'inférence qu'un redémarrage nocturne couperait net. En
+// contrepartie, un correctif de noyau n'est actif qu'après un redémarrage
+// manuel — voir /var/run/reboot-required.
+Unattended-Upgrade::Automatic-Reboot "false";
+
+// Fait le ménage des vieux noyaux : /boot est petit, et son remplissage fait
+// échouer les mises à jour suivantes, sécurité comprise.
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+Unattended-Upgrade::Remove-New-Unused-Dependencies "true";
+
+// Découpe l'installation en petites étapes : si la machine s'éteint au milieu,
+// ce qui est déjà appliqué l'est proprement.
+Unattended-Upgrade::MinimalSteps "true";
+FIN
+
+  faire tee /etc/apt/apt.conf.d/20auto-upgrades >/dev/null <<'FIN'
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+APT::Periodic::AutocleanInterval "7";
+FIN
+
+  # Ce sont les minuteries systemd qui déclenchent tout : sans elles, les
+  # fichiers ci-dessus ne sont jamais lus.
+  faire systemctl enable --now apt-daily.timer apt-daily-upgrade.timer
+
+  if (( CONFIRME )); then
+    verifier_maj_securite
+  fi
+}
+
+# Contrôle qui compte : la seule preuve qu'unattended-upgrades fasse quelque
+# chose est qu'il désigne nos origines et retienne des paquets. « service actif »
+# ne dit rien — c'est précisément ainsi que la panne silencieuse passe inaperçue.
+verifier_maj_securite() {
+  local sortie codename
+  # LC_ALL=C est indispensable : en français l'outil répond « Les origines
+  # autorisées sont : », que les motifs ci-dessous ne reconnaîtraient pas. Un
+  # contrôle qui échoue à cause de la langue est pire que pas de contrôle, il
+  # annonce une panne inexistante.
+  sortie="$(LC_ALL=C unattended-upgrade --dry-run --debug 2>&1)" || true
+  codename="$(lsb_release -cs 2>/dev/null || echo noble)"
+
+  # On cherche la trace de l'origine dans la décision, pas seulement dans la
+  # liste des origines autorisées : ce qui compte est qu'un paquet du dépôt de
+  # sécurité soit effectivement retenu.
+  if grep -q "archive:'${codename}-security' origin:'Ubuntu'" <<<"$sortie"; then
+    succes "Le dépôt de sécurité Ubuntu est bien pris en compte"
+  elif grep -q "origin=Ubuntu,archive=${codename}-security" <<<"$sortie"; then
+    succes "Origine de sécurité autorisée, aucun paquet concerné pour l'instant"
+  else
+    attention "L'origine de sécurité n'est PAS reconnue : les correctifs ne seront"
+    attention "jamais appliqués, alors que le service paraîtra en bonne santé."
+    attention "Inspecter : LC_ALL=C unattended-upgrade --dry-run --debug"
+    return 0
+  fi
+
+  # Le relevé vient d'apt et non de la sortie de débogage d'unattended-upgrades,
+  # qui étale les noms de paquets sur plusieurs lignes sans marqueur de fin.
+  # « Inst » n'est pas traduit dans une simulation apt.
+  local liste
+  liste="$(LC_ALL=C apt-get -s upgrade 2>/dev/null |
+             awk '/^Inst/ && /-security/ { print $2 }' | sort -u | tr '\n' ' ')"
+  if [[ -n "${liste// /}" ]]; then
+    info "Correctifs de sécurité en attente : ${liste}"
+  else
+    succes "Aucun correctif de sécurité en attente"
+  fi
+
+  local prochaine
+  prochaine="$(systemctl list-timers apt-daily-upgrade.timer --no-pager 2>/dev/null |
+                 awk 'NR==2 { print $1, $2, $3 }')"
+  [[ -n "$prochaine" ]] && info "Prochain passage : ${prochaine}"
+
+  signaler_paquets_epingles
+}
+
+# Pop!_OS épingle son propre dépôt à la priorité 1001, au-dessus de tout le
+# reste. Là où il livre sa propre version d'un paquet, celle du dépôt de sécurité
+# Ubuntu ne s'installera donc jamais — ni automatiquement, ni par `apt upgrade`.
+# Le cas concret est systemd, que Pop reconstruit avec ses correctifs.
+#
+# On ne touche pas à cet épinglage : passer outre remplacerait le systemd de Pop
+# par celui d'Ubuntu, au risque de casser COSMIC et l'intégration System76. Mais
+# ce décalage doit être visible, sinon « aucune mise à jour en attente » se lit
+# comme « rien à corriger », ce qui est faux.
+signaler_paquets_epingles() {
+  dispo python3 || return 0
+
+  local rapport
+  rapport="$(python3 - <<'PY' 2>/dev/null || true
+import apt, apt_pkg
+try:
+    cache = apt.Cache()
+except Exception:
+    raise SystemExit(0)
+
+retard = {}
+for paquet in cache:
+    if not paquet.is_installed:
+        continue
+    installee = paquet.installed.version
+    for version in paquet.versions:
+        for origine in version.origins:
+            if origine.origin == "Ubuntu" and origine.archive.endswith("-security"):
+                if apt_pkg.version_compare(version.version, installee) > 0:
+                    retard[paquet.name] = version.version
+                break
+
+if retard:
+    print(len(retard))
+    print(" ".join(sorted(retard)[:6]))
+PY
+)"
+
+  local nombre noms
+  nombre="$(sed -n '1p' <<<"$rapport")"
+  noms="$(sed -n '2p' <<<"$rapport")"
+
+  if [[ -n "$nombre" ]] && (( nombre > 0 )); then
+    attention "${nombre} paquets restent en retard sur le dépôt de sécurité Ubuntu,"
+    attention "retenus par l'épinglage de Pop!_OS (priorité 1001) : ${noms}…"
+    attention "Ce n'est pas un défaut de configuration : Pop livre ses propres"
+    attention "versions et rattrape à son rythme. Rien à faire, sauf à décider"
+    attention "d'écraser son systemd par celui d'Ubuntu — au risque de COSMIC."
+  else
+    succes "Aucun paquet en retard sur le dépôt de sécurité Ubuntu"
+  fi
+}
+
 configurer_pare_feu() {
   titre "Pare-feu"
 
@@ -412,6 +580,7 @@ main() {
   configurer_horloge
   configurer_ssh
   configurer_pare_feu
+  configurer_maj_securite
 
   echo
   if (( CONFIRME )); then

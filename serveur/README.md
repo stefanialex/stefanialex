@@ -101,6 +101,40 @@ machine : relancer l'étape concernée la repose à l'identique.
    jetons, très au-delà de ce que 8 Gio de VRAM encaissent. Rester entre 8 000
    et 16 000.
 
+### Mises à jour de sécurité automatiques (2026-08-12)
+
+Activées par `02-drivers.sh`. Vérifié en bout de chaîne : les deux correctifs qui
+attendaient (`yelp`, `libyelp0`) ont été installés par `unattended-upgrades`
+lui-même, pas par un `apt upgrade` à la main. Prochain passage automatique tous
+les jours vers 06 h 40.
+
+**Le piège de Pop!_OS, qui aurait rendu tout ça décoratif.** `lsb_release -is`
+répond `Pop`, alors que les correctifs sont des paquets Ubuntu
+(`o=Ubuntu,a=noble-security`) servis par le miroir `apt.pop-os.org`. Le modèle
+livré avec le paquet cible `${distro_id}:${distro_codename}-security`, soit
+`Pop:noble-security` — qui ne correspond à aucune origine existante. Installé
+sans rien changer, `unattended-upgrades` aurait tourné chaque nuit sans jamais
+rien appliquer, et `systemctl status` aurait affiché un service parfaitement
+vert. D'où l'origine désignée explicitement par `origin=` dans
+`/etc/apt/apt.conf.d/52serveur-ia-securite`.
+
+**Le redémarrage reste manuel** (`Automatic-Reboot "false"`) : un redémarrage
+nocturne couperait net les serveurs de jeu et les sessions d'inférence. En
+contrepartie, un correctif de noyau n'est actif qu'après un redémarrage.
+Surveiller `/var/run/reboot-required`.
+
+**Seize paquets resteront en retard, et c'est voulu par la distribution.**
+Pop!_OS épingle son dépôt à la priorité 1001, au-dessus de tout : là où il livre
+sa propre version, celle du dépôt de sécurité Ubuntu ne s'installe jamais. Au
+2026-08-12 il s'agit de toute la famille systemd, en `255.4-1ubuntu8.15pop0…`
+face à `255.4-1ubuntu8.17` côté Ubuntu. Rien d'autre n'est concerné.
+
+Ce n'est pas un défaut de configuration et on n'y touche pas : forcer le systemd
+d'Ubuntu par-dessus celui de Pop risque de casser COSMIC et l'intégration
+System76. Mais `02-drivers.sh` le signale à chaque exécution, parce que « aucune
+mise à jour en attente » se lirait sinon comme « rien à corriger », ce qui est
+faux.
+
 ### Le piège permanent de cette machine
 
 **`sudo` est inutilisable sans terminal** : il exige un tty pour son mot de
