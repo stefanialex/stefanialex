@@ -31,6 +31,10 @@ SAUTER_MODELES="${SAUTER_MODELES:-0}"
 PORT_OLLAMA=11434
 PORT_WEBUI=8080
 
+# Lien de téléchargement stable : le site redirige de lui-même vers la dernière
+# version publiée, il n'y a donc pas de numéro de version à maintenir ici.
+URL_LMSTUDIO="https://lmstudio.ai/download/latest/linux/x64?format=AppImage"
+
 usage() {
   cat <<'FIN'
 Usage : sudo ./03-ia.sh [--confirm]
@@ -392,28 +396,43 @@ installer_lmstudio() {
   if [[ -x /opt/lmstudio/LM-Studio.AppImage ]]; then
     succes "LM Studio déjà présent dans /opt/lmstudio"
   else
-    attention "L'URL de téléchargement de LM Studio change à chaque version et le site"
-    attention "ne publie pas de lien stable exploitable en script."
-    info "Marche à suivre :"
-    printf '      1. Ouvrir https://lmstudio.ai/download depuis un navigateur\n'
-    printf '      2. Télécharger la version Linux (.AppImage)\n'
-    printf '      3. sudo mv ~/Téléchargements/LM-Studio-*.AppImage /opt/lmstudio/LM-Studio.AppImage\n'
-    printf '      4. sudo chmod +x /opt/lmstudio/LM-Studio.AppImage\n'
-    printf '      5. Relancer ce script : le raccourci sera créé automatiquement\n'
-    return 0
+    info "Téléchargement de LM Studio (environ 1 Gio)"
+    faire curl -fL --retry 3 --retry-delay 5 \
+      -o /opt/lmstudio/LM-Studio.AppImage "$URL_LMSTUDIO"
+
+    if (( CONFIRME )) && ! appimage_valide /opt/lmstudio/LM-Studio.AppImage; then
+      attention "Le fichier récupéré n'est pas une AppImage exploitable (téléchargement"
+      attention "interrompu, ou page d'erreur servie à la place du binaire)."
+      faire rm -f /opt/lmstudio/LM-Studio.AppImage
+      info "À la main : https://lmstudio.ai/download, puis"
+      printf '      sudo mv ~/Téléchargements/LM-Studio-*.AppImage /opt/lmstudio/LM-Studio.AppImage\n'
+      printf '      sudo chmod +x /opt/lmstudio/LM-Studio.AppImage && relancer ce script\n'
+      return 0
+    fi
+
+    faire chmod 0755 /opt/lmstudio/LM-Studio.AppImage
+  fi
+
+  # L'icône vit dans l'AppImage : l'extraire évite un raccourci à l'icône
+  # générique. En cas d'échec, on retombe sur un thème système.
+  local icone=applications-science
+  if (( CONFIRME )) && extraire_icone_lmstudio; then
+    icone=/opt/lmstudio/lm-studio.png
   fi
 
   info "Création du raccourci d'application"
-  faire tee /usr/share/applications/lmstudio.desktop >/dev/null <<'FIN'
+  faire tee /usr/share/applications/lmstudio.desktop >/dev/null <<FIN
 [Desktop Entry]
 Name=LM Studio
 Comment=Exécution de modèles de langage en local
-Exec=/opt/lmstudio/LM-Studio.AppImage
-Icon=applications-science
+Exec=/opt/lmstudio/LM-Studio.AppImage %U
+Icon=${icone}
 Terminal=false
 Type=Application
 Categories=Development;Science;
+StartupWMClass=LM Studio
 FIN
+  faire update-desktop-database /usr/share/applications
 
   succes "LM Studio installé"
   info "Configure son dossier de modèles sur ${RACINE_IA}/lmstudio pour ne pas saturer le disque système."
@@ -422,6 +441,46 @@ FIN
   if [[ -n "${SUDO_USER:-}" ]]; then
     faire chown -R "${SUDO_USER}:${SUDO_USER}" "${RACINE_IA}/lmstudio"
   fi
+}
+
+# Une AppImage de type 2 est un ELF dont les octets 8 à 10 valent « AI\x02 ».
+# Le contrôle attrape le cas courant : une page HTML d'erreur enregistrée sous
+# le nom du binaire, qu'un simple test d'existence laisserait passer.
+appimage_valide() {
+  local fichier="$1"
+  [[ -s "$fichier" ]] || return 1
+  (( $(stat -c %s "$fichier" 2>/dev/null || echo 0) > 100000000 )) || return 1
+  [[ "$(od -An -tx1 -j8 -N3 "$fichier" 2>/dev/null | tr -d ' \n')" == "414902" ]]
+}
+
+# Récupère l'icône livrée dans l'AppImage. Le chemin interne « lm-studio.png »
+# de la racine est un lien symbolique ; on va donc chercher le vrai fichier.
+extraire_icone_lmstudio() {
+  [[ -f /opt/lmstudio/lm-studio.png ]] && return 0
+
+  local temp
+  temp="$(mktemp -d)" || return 1
+
+  # --appimage-extract est traité par le lanceur de l'AppImage sans démarrer
+  # l'application : utilisable en root, contrairement à Electron qui refuse.
+  if ! ( cd "$temp" && /opt/lmstudio/LM-Studio.AppImage \
+         --appimage-extract 'usr/share/icons/*' ) >/dev/null 2>&1; then
+    rm -rf "$temp"
+    return 1
+  fi
+
+  local trouvee
+  trouvee="$(find "${temp}/squashfs-root" -type f -name 'lm-studio.png' \
+    -printf '%s\t%p\n' 2>/dev/null | sort -rn | head -n1 | cut -f2)"
+
+  if [[ -n "$trouvee" ]]; then
+    install -m 0644 "$trouvee" /opt/lmstudio/lm-studio.png
+    rm -rf "$temp"
+    return 0
+  fi
+
+  rm -rf "$temp"
+  return 1
 }
 
 # Installe un paquet unique, sans échouer si son nom n'existe pas dans la

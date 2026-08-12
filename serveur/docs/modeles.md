@@ -152,4 +152,62 @@ df -h /srv/ia                  # Place restante
 ```
 
 Pour LM Studio, le dossier de modèles se règle dans ses préférences — pointe-le
-sur `/srv/ia/lmstudio`, pour la même raison.
+sur `/srv/ia/lmstudio`, pour la même raison. Il est enregistré sous la clé
+`downloadsFolder` de `~/.lmstudio/settings.json`.
+
+---
+
+## LM Studio sur cette machine
+
+### Le sélecteur de dossier ne montre pas `/srv`
+
+Le bureau COSMIC fournit son propre sélecteur de fichiers
+(`xdg-desktop-portal-cosmic`), qui n'affiche que le dossier personnel et les
+emplacements qu'il connaît — et il n'a pas le `Ctrl+L` de GTK pour saisir un
+chemin. `/srv/ia` semble alors ne pas exister.
+
+Le contournement en place est un lien symbolique visible depuis le dossier
+personnel :
+
+```bash
+ln -sfn /srv/ia/lmstudio ~/Modeles-IA
+```
+
+LM Studio suit le lien et enregistre le chemin réel dans ses réglages.
+
+### Quantisations : rester sur les K-quants
+
+La GTX 1070 est de génération **Pascal**. Les i-quants (`IQ4_XS`, `IQ3_M`…)
+demandent plus de calcul à la déquantisation et y sont sensiblement plus lents,
+pour un gain de taille marginal. Préférer `Q4_K_M` ou `Q5_K_M`.
+
+Par ailleurs, seul le moteur `llama.cpp-linux-x86_64-nvidia-cuda-avx2` est
+installé : les modèles au format **safetensors** apparaissent comme
+« willNotFit » dans la recherche. Il faut du **GGUF**.
+
+### Les deux moteurs se disputent les 8 Gio de VRAM
+
+Ollama et LM Studio ignorent chacun ce que l'autre a chargé. Deux modèles de
+5 Gio réclamés en même temps débordent en RAM et la vitesse s'écroule. Ollama
+libère seul après cinq minutes d'inactivité ; pour forcer :
+
+```bash
+ollama ps                    # Voir ce qui occupe la VRAM
+ollama stop hermes3:8b       # Libérer maintenant
+nvidia-smi                   # Vérifier
+```
+
+### Télécharger sans passer par l'interface
+
+Le binaire `lms` est livré dans `~/.lmstudio/bin` (l'application doit tourner) :
+
+```bash
+export PATH="$HOME/.lmstudio/bin:$PATH"
+lms get qwen/qwen3.5-9b@q4_k_m --gguf -y
+lms status
+lms server start             # API compatible OpenAI, port 1234
+```
+
+Attention au contexte : Qwen3.5 9B accepte 262 000 jetons, mais le cache
+correspondant dépasse de loin la VRAM disponible. Sur cette machine, rester
+autour de 8 000 à 16 000 jetons.
