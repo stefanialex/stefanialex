@@ -38,7 +38,7 @@ Mesures réelles, contexte demandé à 65 536 :
 | Modèle | Poids | Résultat |
 |---|---|---|
 | Gemma 3 4B (LM Studio) | 3,34 Gio | ✅ **charge** — 5 887 Mio / 8 192 utilisés |
-| Qwen3 4B (LM Studio) | 2,50 Gio | ❌ `failed to allocate buffer for kv cache` |
+| Qwen3 4B (LM Studio) | 2,50 Gio | ❌ cache trop lourd, **et** plafond du GGUF à 32 768 jetons |
 | Qwen2.5-Coder 7B (LM Studio) | 4,68 Gio | ❌ `failed to allocate buffer for kv cache` |
 | Qwen3.5 9B (LM Studio) | 6,55 Gio | ❌ le moteur `llama-server` meurt sur `SIGABRT` |
 | `hermes3:8b` (Ollama) | 4,7 Gio | ❌ voir ci-dessous, pire que d'échouer |
@@ -99,6 +99,54 @@ ollama create hermes3-agent:8b -f Modelfile     # ollama rm pour défaire
 Inutile ici — 16 384 reste sous le minimum de 64 000 — mais c'est la bonne
 méthode le jour où un contexte plus large sera nécessaire.
 
+## Quantiser le cache KV : comment, et jusqu'où ça mène
+
+Le cache se quantise, ce qui le divise par deux (`q8_0`) ou par quatre (`q4_0`).
+**Le CLI `lms load` ne l'expose pas** — sa seule option mémoire est `--gpu`. Le
+réglage se fait dans l'interface graphique de LM Studio, ou en écrivant
+directement le fichier de configuration par modèle, dont voici le format (il
+n'apparaît qu'après un premier réglage par l'interface) :
+
+```
+~/.lmstudio/.internal/user-concrete-model-default-config/<éditeur>/<modèle>.json
+```
+
+```json
+{ "load": { "fields": [
+  { "key": "llm.load.llama.kCacheQuantizationType", "value": {"checked": true, "value": "q8_0"} },
+  { "key": "llm.load.llama.vCacheQuantizationType", "value": {"checked": true, "value": "q4_0"} },
+  { "key": "llm.load.contextLength", "value": 65536 }
+] } }
+```
+
+Les deux caches se règlent **séparément**, et n'en régler qu'un ne sert presque à
+rien : K et V pèsent autant l'un que l'autre. Quand la mémoire manque, quantiser
+K en `q8_0` et V en `q4_0` est le bon compromis — le cache K souffre davantage de
+la quantisation.
+
+Les messages d'erreur se lisent comme un thermomètre, du plus grave au plus
+proche du but :
+
+| Message | Ce qu'il veut dire |
+|---|---|
+| `unable to allocate CUDA0 buffer` | il y a autre chose sur le GPU — vérifier `nvidia-smi` avant tout |
+| `failed to allocate buffer for kv cache` | le cache lui-même ne rentre pas |
+| `failed to allocate compute pp buffers` | le cache rentre, ce sont les tampons de calcul qui manquent — on y est presque |
+
+Avec K en `q8_0` et V en `q4_0`, Qwen3 4B charge en 2,1 s et occupe 6 673 Mio sur
+8 192. **Et ça ne suffit toujours pas**, pour une raison qui n'a rien à voir avec
+la mémoire : ce GGUF plafonne à 32 768 jetons.
+
+```bash
+curl -s http://127.0.0.1:1234/api/v0/models | python3 -m json.tool | grep context
+# "max_context_length": 32768
+```
+
+**Toujours vérifier `max_context_length` avant de se battre avec la VRAM.**
+Demander 65 536 à `lms load` ne provoque aucune erreur : le modèle charge, et
+`lms ps` affiche tranquillement 32768. Une heure peut se perdre à optimiser la
+mémoire pour un plafond qui est dans le fichier du modèle.
+
 ## Le second mur : un modèle qui tient n'est pas un modèle qui sait
 
 Gemma 3 4B charge à 64k, et **n'appelle aucun outil**. Invité à lire un fichier
@@ -139,16 +187,7 @@ lms load google/gemma-3-4b --context-length 65536 --gpu max
 
 ## Les voies possibles
 
-1. **Quantiser le cache KV**, la seule piste locale encore ouverte. En `q8_0` le
-   cache est divisé par deux : Qwen3 4B retomberait autour de 4,5 Gio, soit ~7
-   Gio avec ses poids — juste dans les 7,5 Gio disponibles. En `q4_0` c'est
-   confortable, au prix de la qualité. **Le CLI `lms load` ne l'expose pas** : le
-   réglage vit dans l'interface graphique de LM Studio, avec Flash Attention
-   qu'il faut activer d'abord. Le dossier
-   `~/.lmstudio/.internal/user-concrete-model-default-config` est vide, donc il
-   n'y a pas de format connu à écrire à la main — mieux vaut la souris que du
-   reverse-engineering sur un format interne.
-2. **Décharger une partie en RAM** (`--gpu 0.7`) pour faire tenir un 7B. Le
+1. **Décharger une partie en RAM** (`--gpu 0.7`) pour faire tenir un 7B. Le
    cache KV va dans les 16 Gio de RAM, le calcul retombe sur l'i5-7500 : ça
    fonctionne, c'est très lent, et un agent enchaîne beaucoup d'appels.
 3. **Une API distante** (Nous Portal, OpenRouter, Anthropic). C'est ce que le
