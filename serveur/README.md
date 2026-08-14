@@ -20,7 +20,7 @@ des modèles de langage en local, et héberge des serveurs Minecraft et Valheim.
 
 ## Où en est la machine `pop-os`
 
-*Mis à jour le 2026-08-12 (seconde passe : points ouverts traités). Rien de tout
+*Mis à jour le 2026-08-14 (SSH passé en clé uniquement). Rien de tout
 ceci n'est déductible du dépôt : `rapport-audit.md` est ignoré par git et les
 scripts ne laissent pas de trace versionnée. D'où cette section.*
 
@@ -80,11 +80,14 @@ machine : relancer l'étape concernée la repose à l'identique.
    seulement et retire l'ancienne. Aucune tentative d'intrusion dans les
    journaux des sept jours précédents.
 
-   **Reste à faire de ton côté :** aucune clé publique n'est installée, donc
-   l'authentification par mot de passe demeure. `02-drivers.sh` refuse de la
-   désactiver sans clé — ce serait s'enfermer dehors. Après un
-   `ssh-copy-id lapserv@192.168.1.120` depuis ton poste, relancer le script
-   basculera SSH en « clé uniquement ».
+   **Réglé le 2026-08-14 :** la clé publique du portable `stefa@PClapin`
+   (ED25519, `SHA256:N2uHKXqg0tvnbDNictzQk6re5VlHQP0QQcu4vrFStDc`) est déposée
+   dans `/home/lapserv/.ssh/authorized_keys`, et `02-drivers.sh --confirm` l'a
+   détectée : `/etc/ssh/sshd_config.d/99-serveur.conf` porte
+   `PasswordAuthentication no`. Vérifié autrement qu'en lisant le fichier — une
+   connexion forçant `PreferredAuthentications=password` se fait renvoyer
+   « Permission denied (**publickey**) », donc sshd n'annonce plus le mot de
+   passe du tout.
 
    L'accès SSH en IPv6 est fermé, y compris depuis le réseau local : l'IPv4
    suffit à la maison, et cela évite de dépendre d'un préfixe qui change.
