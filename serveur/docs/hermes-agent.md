@@ -155,10 +155,56 @@ Hermes Agent » — il a pris son prompt système pour un sujet de dissertation.
 modèle de 4 milliards de paramètres ne produit pas d'appels d'outils structurés
 de façon fiable, et aucun réglage n'y changera quoi que ce soit.
 
-D'où la situation : le seul modèle local qui **tient** en mémoire est celui qui ne
-**sait** pas s'en servir, et ceux qui sauraient ne tiennent pas. Le projet est
-cohérent avec lui-même sur ce point — son README annonce « aucun GPU requis,
-tourne sur un VPS à 5 $ », parce qu'il appelle par défaut une API distante.
+**Mais ce n'est pas une fatalité de taille.** Qwen3 4B, à nombre de paramètres
+égal, produit un appel parfaitement formé :
+
+```json
+{"name": "read_file", "arguments": {"path": "temoin.txt"}}   finish_reason: tool_calls
+```
+
+Un 4B peut donc outiller ; c'est Gemma 3 qui ne sait pas le faire, pas les
+petits modèles en général. La piste locale reste ouverte, et le critère de choix
+d'un modèle est triple, chaque terme ayant éliminé au moins un candidat ici :
+savoir appeler des outils, avoir un contexte natif ≥ 64k, tenir en mémoire.
+
+### Tester la compétence sans passer par Hermes
+
+Inutile de déboguer l'agent pour savoir si un modèle sait outiller. Une requête
+suffit, et elle isole la question :
+
+```bash
+curl -s http://127.0.0.1:1234/v1/chat/completions -H "Content-Type: application/json" -d '{
+  "model": "<modèle>",
+  "messages": [{"role":"user","content":"Lis le fichier temoin.txt et dis-moi ce qu'"'"'il contient."}],
+  "tools": [{"type":"function","function":{"name":"read_file","description":"Lit un fichier",
+    "parameters":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}}}],
+  "max_tokens": 300, "stream": false
+}' | python3 -m json.tool
+```
+
+Un `finish_reason: "tool_calls"` avec des arguments corrects vaut réponse. Du
+texte libre, ou des arguments vides, signent un modèle inapte — quels que soient
+les réglages.
+
+### La vitesse, second critère et vraie difficulté
+
+L'appel ci-dessus a pris **3 min 41 s**. Deux causes : Qwen3 est un modèle à
+raisonnement, qui « réfléchit » longuement avant chaque réponse (le serveur le
+signale — `Reasoning setting … Falling back to 'on'`), et le cache quantisé coûte
+du temps de calcul sur une Pascal, génération que Flash Attention n'accélère pas.
+
+Un agent enchaîne cinq à dix appels pour une tâche : à ce rythme, une demande
+simple prendrait une demi-heure. **La compétence ne suffit pas, il faut aussi le
+débit** — d'où l'intérêt des variantes `Instruct` sans raisonnement.
+
+### Le blocage d'Hermes en mode non interactif
+
+`hermes -z "…"` reste bloqué indéfiniment : 610 secondes pour ne rien écrire, le
+GPU à 1 %, une seconde de temps processeur. Le système d'approbation des
+commandes attend vraisemblablement un accord sur l'entrée standard que le mode
+non interactif ne fournit jamais. Non résolu ; contourné par le test direct
+ci-dessus. À creuser du côté de `hermes approvals` et `hermes tools` avant de
+compter s'en servir dans un script ou une tâche planifiée.
 
 ## Configuration en place
 
