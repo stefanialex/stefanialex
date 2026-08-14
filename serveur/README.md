@@ -49,11 +49,11 @@ Détail de l'étape 3 :
 
 **Hermes Agent** — le programme de Nous Research, à ne pas confondre avec le
 modèle `hermes3:8b` — a été installé dans `~/.hermes` (v0.20.1, 2,1 Gio, rien au
-niveau système, `rm -rf` suffit à défaire). Il démarre et parle aux serveurs
-locaux, mais **aucun modèle de cette machine ne permet de s'en servir** : il
-exige 64 000 jetons de contexte, et un cache KV de cette taille ne tient pas
-dans 8 Gio de VRAM — sauf avec Gemma 3 4B, qui charge mais n'est pas capable
-d'appeler les outils. Mesures, pièges et voies restantes :
+niveau système, `rm -rf` suffit à défaire). Il exige 64 000 jetons de contexte,
+ce qui a éliminé quatre modèles sur cinq. **Le bon est
+`qwen3-4b-instruct-2507`** : appels d'outils corrects, 0,73 s par réponse contre
+3 min 41 s pour un Qwen3 à raisonnement, contexte natif de 262 144 jetons. Deux
+choses restent à finir, dont une à la souris dans LM Studio :
 [`docs/hermes-agent.md`](docs/hermes-agent.md).
 
 ### Traité le 2026-08-12

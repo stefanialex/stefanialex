@@ -9,8 +9,24 @@ et une boucle qui fabrique ses propres « skills ». **Ce n'est pas le modèle
 
 ## État au 2026-08-14
 
-**Installé et fonctionnel côté programme, inutilisable avec les modèles locaux
-de cette machine.** Les deux moitiés de cette phrase comptent.
+**Installé, avec un modèle local qui convient — reste à finir la configuration
+depuis l'interface graphique.** Le modèle retenu est
+**Qwen3 4B Instruct 2507** (`lmstudio-community`, Q4_K_M, 2,5 Gio), et il coche
+les trois cases que les autres ratent :
+
+| | Résultat |
+|---|---|
+| Appel d'outil | ✅ `finish_reason: tool_calls`, arguments corrects |
+| Temps de réponse | **0,73 s** — contre 3 min 41 s pour Qwen3 4B ordinaire |
+| Jetons de raisonnement | **0** — c'est la version sans mode « thinking » |
+| Contexte natif | **262 144** jetons |
+
+Le gain de vitesse vient du raisonnement supprimé : Qwen3 4B « pense » avant
+chaque réponse, ce qui est ruineux pour un agent qui enchaîne les appels. Pour
+cet usage, **toujours préférer une variante `Instruct` à une variante
+hybride ou `Thinking`**.
+
+Ce qui reste à faire est listé en fin de document.
 
 - Version **0.20.1**, dans `~/.hermes` (2,1 Gio), avec son propre `uv`, son
   propre Python 3.11.15 et son propre Node — **rien n'est installé au niveau du
@@ -231,7 +247,46 @@ lms server start
 lms load google/gemma-3-4b --context-length 65536 --gpu max
 ```
 
-## Les voies possibles
+## Ce qui reste à faire, et pourquoi ça passe par la souris
+
+**1. Quantiser le cache de `qwen3-4b-instruct-2507` pour atteindre 64k.** Chargé
+à 32 768 jetons sans quantisation, il occupe déjà 7 534 Mio sur 8 192. Pour
+doubler le contexte il faut quantiser le cache — et **écrire le fichier de
+configuration à la main ne marche pas pour un modèle qui n'en a jamais eu**. Les
+quatre emplacements plausibles ont été essayés, dont celui qui correspond
+exactement au `modelKey` retourné par `lms ls --json`, avec redémarrage du
+serveur entre chaque : le chargement échoue toujours sur
+`failed to allocate buffer for kv cache`, signe que le fichier est ignoré.
+
+Le fichier existant de `qwen/qwen3-4b` fonctionne, lui, parce qu'il a d'abord été
+créé par l'interface graphique. **Conclusion : le premier réglage d'un modèle se
+fait à la souris**, ensuite le fichier est modifiable au clavier. Dans LM Studio,
+sur `Qwen3 4B Instruct 2507` : Flash Attention activée, K Cache en `q8_0`, V Cache
+en `q4_0`, contexte `65536`.
+
+> Vérifier le contexte après coup — une saisie à `6553` au lieu de `65536` passe
+> sans aucune alerte, et `lms ps` affiche alors tranquillement le mauvais chiffre.
+
+**2. Faire fonctionner les outils.** L'agent répond en 6-7 s via LM Studio, mais
+en mode `-z` il dit ne pas avoir d'outil de lecture, et la requête envoyée au
+serveur ne fait que 250 jetons — sans le prompt système de 20 000 jetons ni les
+schémas. Cause non établie.
+
+**Et elle ne s'établira pas en ligne de commande scriptée** : `hermes tools`
+refuse de tourner autrement que dans un vrai terminal.
+
+```
+Error: 'hermes tools' requires an interactive terminal.
+It cannot be run through a pipe or non-interactive subprocess.
+```
+
+C'est cohérent avec la nature du programme : son mode normal est une interface
+interactive. Le diagnostic se fera donc en lançant `hermes` dans un terminal, où
+`hermes tools` permet d'inspecter et d'activer les jeux d'outils. Le mode `-z`
+reste utile pour les scripts, mais ce n'est pas le chemin principal — et il se
+bloquait déjà indéfiniment sur les modèles précédents.
+
+## Les voies possibles si le local ne suffit pas
 
 1. **Décharger une partie en RAM** (`--gpu 0.7`) pour faire tenir un 7B. Le
    cache KV va dans les 16 Gio de RAM, le calcul retombe sur l'i5-7500 : ça
