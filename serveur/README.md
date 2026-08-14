@@ -45,6 +45,17 @@ Détail de l'étape 3 :
   4168 Mio de VRAM (donc entièrement sur le GPU) et produit 42 jetons/seconde.
   Débit d'`hermes3:8b` sur Ollama, mesuré le même jour : 36,5 jetons/seconde.
 
+### Hermes Agent (2026-08-14)
+
+**Hermes Agent** — le programme de Nous Research, à ne pas confondre avec le
+modèle `hermes3:8b` — a été installé dans `~/.hermes` (v0.20.1, 2,1 Gio, rien au
+niveau système, `rm -rf` suffit à défaire). Il démarre et parle aux serveurs
+locaux, mais **aucun modèle de cette machine ne permet de s'en servir** : il
+exige 64 000 jetons de contexte, et un cache KV de cette taille ne tient pas
+dans 8 Gio de VRAM — sauf avec Gemma 3 4B, qui charge mais n'est pas capable
+d'appeler les outils. Mesures, pièges et voies restantes :
+[`docs/hermes-agent.md`](docs/hermes-agent.md).
+
 ### Traité le 2026-08-12
 
 Les trois points ouverts de la première passe, plus un problème découvert en
@@ -272,6 +283,8 @@ sudo RAM_MINECRAFT=8G ./04-jeux.sh --confirm minecraft
   comprendre les quantisations, les modèles Hermes
 - [`docs/exploitation.md`](docs/exploitation.md) — démarrer/arrêter, lire les
   journaux, sauvegardes, faire cohabiter IA et serveur de jeu, accès distant
+- [`docs/hermes-agent.md`](docs/hermes-agent.md) — l'agent Hermes (le programme,
+  pas le modèle) : installé, mais 64k de contexte minimum contre 8 Gio de VRAM
 
 ---
 
