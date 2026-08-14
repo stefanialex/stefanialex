@@ -38,13 +38,23 @@ Mesures réelles, contexte demandé à 65 536 :
 | Modèle | Poids | Résultat |
 |---|---|---|
 | Gemma 3 4B (LM Studio) | 3,34 Gio | ✅ **charge** — 5 887 Mio / 8 192 utilisés |
+| Qwen3 4B (LM Studio) | 2,50 Gio | ❌ `failed to allocate buffer for kv cache` |
 | Qwen2.5-Coder 7B (LM Studio) | 4,68 Gio | ❌ `failed to allocate buffer for kv cache` |
 | Qwen3.5 9B (LM Studio) | 6,55 Gio | ❌ le moteur `llama-server` meurt sur `SIGABRT` |
 | `hermes3:8b` (Ollama) | 4,7 Gio | ❌ voir ci-dessous, pire que d'échouer |
 
 **Gemma 3 tient grâce à son architecture**, qui alterne cinq couches d'attention
 locale (fenêtre 1024) pour une globale : son cache KV croît beaucoup moins vite
-que celui d'un Llama ou d'un Qwen. C'est le seul des trois qui passe.
+que celui d'un Llama ou d'un Qwen. C'est le seul des cinq qui passe.
+
+**La taille du modèle ne prédit pas la taille du cache**, et c'est le
+contre-sens à éviter. Qwen3 4B, deuxième plus petit du lot avec ses 2,5 Gio de
+poids, échoue là où Gemma 3 passe : ses 36 couches et ses 8 têtes KV lui donnent
+un cache **plus lourd** que celui d'un Llama de 8 milliards de paramètres —
+environ 0,14 Mio par jeton, soit près de 9 Gio pour 64 000 jetons. Ce qui compte
+est `couches × têtes_KV × dimension`, pas le nombre de paramètres. Il a été
+téléchargé le 2026-08-14 exprès pour ce test, en pariant sur sa petite taille :
+le pari était mal posé.
 
 Deux réglages qui *ne* sauvent *pas* les autres modèles, vérifiés : `--parallel 1`
 au lieu de 4 ne change rien à l'échec, et `--estimate-only` **ne compte pas le
@@ -129,9 +139,15 @@ lms load google/gemma-3-4b --context-length 65536 --gpu max
 
 ## Les voies possibles
 
-1. **Un petit modèle taillé pour l'outillage.** Qwen3 4B est le candidat sérieux
-   non essayé : cache KV léger comme Gemma 3, mais réputé bien meilleur en
-   appels de fonctions. C'est la dernière carte locale, et elle n'est pas jouée.
+1. **Quantiser le cache KV**, la seule piste locale encore ouverte. En `q8_0` le
+   cache est divisé par deux : Qwen3 4B retomberait autour de 4,5 Gio, soit ~7
+   Gio avec ses poids — juste dans les 7,5 Gio disponibles. En `q4_0` c'est
+   confortable, au prix de la qualité. **Le CLI `lms load` ne l'expose pas** : le
+   réglage vit dans l'interface graphique de LM Studio, avec Flash Attention
+   qu'il faut activer d'abord. Le dossier
+   `~/.lmstudio/.internal/user-concrete-model-default-config` est vide, donc il
+   n'y a pas de format connu à écrire à la main — mieux vaut la souris que du
+   reverse-engineering sur un format interne.
 2. **Décharger une partie en RAM** (`--gpu 0.7`) pour faire tenir un 7B. Le
    cache KV va dans les 16 Gio de RAM, le calcul retombe sur l'i5-7500 : ça
    fonctionne, c'est très lent, et un agent enchaîne beaucoup d'appels.
