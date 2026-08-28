@@ -20,32 +20,64 @@ des modèles de langage en local, et héberge des serveurs Minecraft et Valheim.
 
 ## Où en est la machine `pop-os`
 
-*Mis à jour le 2026-08-14 (SSH passé en clé uniquement). Rien de tout
-ceci n'est déductible du dépôt : `rapport-audit.md` est ignoré par git et les
-scripts ne laissent pas de trace versionnée. D'où cette section.*
+*Mis à jour le 2026-08-28 (pile IA désinstallée, serveur Valheim en service).
+Rien de tout ceci n'est déductible du dépôt : `rapport-audit.md` est ignoré par
+git et les scripts ne laissent pas de trace versionnée. D'où cette section.*
 
 | Étape | État | Détail |
 |---|---|---|
 | 0 — audit | ✅ | Rejoué après l'installation du pilote, la synthèse est fiable |
 | 1 — disques | ✅ | `sdb1` → `/srv/ia` (916 Gio), `sdc1` → `/srv/jeux` (146 Gio), ext4, `fstab` par UUID, remontage vérifié après redémarrage |
 | 2 — pilotes | ✅ | `nvidia-driver-580` (580.173.02, CUDA 13.0), GTX 1070 et ses 8 Gio de VRAM reconnues |
-| 3 — pile IA | ✅ | Voir ci-dessous |
-| 4 — jeux | ⬜ | Pas commencée. `/srv/jeux` est vide, aucune unité `minecraft`/`valheim` |
+| 3 — pile IA | ❌ | **Désinstallée le 2026-08-28**, voir ci-dessous. Les scripts restent valables pour la remonter ailleurs |
+| 4 — jeux | 🟧 | Valheim en service depuis le 2026-08-28. Minecraft pas commencé, aucune unité `minecraft` |
 
-Détail de l'étape 3 :
+### Étape 3 — désinstallée le 2026-08-28
 
-- **Ollama** 0.32.7, service actif, API sur `*:11434`, modèles dans
-  `/srv/ia/ollama` : `hermes3:8b` et `nomic-embed-text`, à 100 % sur le GPU.
-- **Open WebUI** en conteneur Docker, port 8080. Il voit bien les modèles
-  d'Ollama depuis le 2026-08-12 — ce n'était pas le cas avant, voir le point 2.
-- **LM Studio** 0.4.21, moteur `llama.cpp-linux-x86_64-nvidia-cuda-avx2` 2.28.2,
-  modèles dans `/srv/ia/lmstudio` : Qwen3.5 9B (multimodal), Qwen2.5-Coder 7B,
-  Gemma 3 4B (multimodal), tous en `Q4_K_M`.
+Ollama, Open WebUI, LM Studio et Docker retirés en suivant
+[`docs/desinstaller-ia.md`](docs/desinstaller-ia.md). `/` est passé de 32 à
+24 Gio utilisés, `/srv/ia` de 24 Gio à 890 Mio. `03-ia.sh` et les docs associées
+sont conservés tels quels : ils resserviront sur la machine de destination.
+
+Ce qui **reste** sur la machine, non couvert par le doc de désinstallation —
+4,8 Gio en tout :
+
+- `/srv/ia/openwebui` (890 Mio) — conversations et comptes Open WebUI. Le doc en
+  fait un choix explicite ; gardé faute de décision.
+- `~/.hermes` (3,0 Gio) et `~/.lmstudio` (1,8 Gio), plus le lien mort
+  `~/Modeles-IA` → `/srv/ia/lmstudio` et `~/.lmstudio-home-pointer`.
+- Le groupe `docker` (vide) et le bloc `DOCKER-USER` dans `/etc/ufw/after.rules`.
+
+`/srv/ia` lui-même n'est pas supprimé : c'est le point de montage de `sdb1`. Le
+`rmdir` de l'étape 5 du doc échoue donc, sans conséquence — montage et `fstab`
+intacts.
+
+**Piège rencontré, à connaître avant de rejouer la désinstallation :**
+`apt autoremove` voulait emporter `nvidia-firmware-595-595.84`, sans aucun
+rapport avec Docker. Le pilote chargé est le 580.173.02 avec son
+`nvidia-firmware-580` assorti ; le paquet 595 est un orphelin d'une série non
+installée, sans dépendance inverse. Passé en « installé manuellement » pour le
+soustraire à l'`autoremove`, qui n'a alors retiré que les cinq paquets Docker
+(`containerd`, `runc`, `pigz`, `bridge-utils`, `ubuntu-fan`).
+
+### Ce qui avait été mesuré, avant désinstallation
+
+Gardé parce que ces chiffres valent pour la machine de destination, à VRAM
+comparable.
+
+- **Ollama** 0.32.7, API sur `*:11434`, modèles `hermes3:8b` et
+  `nomic-embed-text`, à 100 % sur le GPU.
+- **LM Studio** 0.4.21, moteur `llama.cpp-linux-x86_64-nvidia-cuda-avx2` 2.28.2 :
+  Qwen3.5 9B (multimodal), Qwen2.5-Coder 7B, Gemma 3 4B (multimodal), en `Q4_K_M`.
 - **Mesuré** le 2026-08-12 : Gemma 3 4B en contexte 8192 charge en 3,0 s, occupe
   4168 Mio de VRAM (donc entièrement sur le GPU) et produit 42 jetons/seconde.
   Débit d'`hermes3:8b` sur Ollama, mesuré le même jour : 36,5 jetons/seconde.
 
 ### Hermes Agent (2026-08-14)
+
+*Toujours installé dans `~/.hermes` : la désinstallation de la pile IA ne l'a pas
+touché, le doc ne le mentionne pas. Sans modèle local, il n'a plus rien à
+piloter sur cette machine.*
 
 **Hermes Agent** — le programme de Nous Research, à ne pas confondre avec le
 modèle `hermes3:8b` — a été installé dans `~/.hermes` (v0.20.1, 2,1 Gio, rien au
@@ -55,6 +87,50 @@ ce qui a éliminé quatre modèles sur cinq. **Le bon est
 3 min 41 s pour un Qwen3 à raisonnement, contexte natif de 262 144 jetons. Deux
 choses restent à finir, dont une à la souris dans LM Studio :
 [`docs/hermes-agent.md`](docs/hermes-agent.md).
+
+### Étape 4 — Valheim, installé le 2026-08-28
+
+Posé à la main en suivant [`docs/valheim.md`](docs/valheim.md), pas par
+`04-jeux.sh`. Serveur **privé** (`-public 0`, absent de la liste publique) et
+**sans crossplay** (pas de drapeau `-crossplay`).
+
+- Serveur dédié app 896660 dans `/srv/jeux/valheim/serveur` (1,7 Gio), monde
+  `Midgard` dans `/srv/jeux/valheim/donnees`, sous le compte système `valheim`
+  (uid 995, `nologin`).
+- Unité `valheim.service` active et activée au démarrage, port UDP 2456.
+  Identifiants dans `/etc/valheim.env` (`600`, root).
+- Sauvegarde quotidienne à 04 h 30 : `sauvegarde-valheim.timer`, archives dans
+  `/srv/jeux/sauvegardes`, purge au-delà de 14 jours. Essai concluant.
+
+**Accès distant par Tailscale (2026-08-28).** Aucune redirection de port sur la
+box, aucune exposition Internet : le serveur est joignable sur `100.76.246.124`
+par un tunnel Tailscale. Le pare-feu n'accepte plus que SSH depuis
+`192.168.1.0/24`, l'interface `tailscale0`, et `41641/udp` pour la traversée de
+NAT ; les règles `2456:2457/udp` ouvertes au monde ont été retirées.
+
+Le choix est motivé dans [`docs/valheim.md`](docs/valheim.md), étape 6 : tous les
+joueurs sont sur PC, ce qui écarte `-crossplay` et son code d'invitation
+régénéré à chaque redémarrage. **L'expiration de clé du nœud `valheim-serveur` a
+été désactivée** dans la console Tailscale — sans ça il quitte le réseau au bout
+de 180 jours, sans prévenir.
+
+Débit mesuré le 2026-08-28 : 273 Mb/s descendants, **107 Mb/s montants**. Valheim
+consomme 1 à 2 Mb/s montants par joueur : la connexion n'est pas un facteur
+limitant, même à dix.
+
+Deux choses que le doc ne dit pas, vérifiées ici :
+
+1. **`Midgard.db` n'existe pas juste après le premier démarrage** — seul le
+   `.fwl`. La vérification de l'étape 7 du doc échoue donc si on la lit au pied
+   de la lettre. Le `.db` n'est écrit qu'à la première sauvegarde : au bout des
+   30 min de `-saveinterval`, ou à l'arrêt propre. Un `systemctl stop` suffit à
+   le faire apparaître, et valide au passage le `KillSignal=SIGINT` de l'unité
+   (`World saved`, 8 s, loin des 120 s de marge).
+2. **Le mot de passe reste lisible par tout utilisateur local.** Le sortir de
+   l'unité vers `/etc/valheim.env` atteint l'objectif annoncé, mais systemd
+   développe `${MOT_DE_PASSE}` dans `ExecStart` : il atterrit dans
+   `/proc/<pid>/cmdline`, et `ps -eo args` l'affiche en clair depuis un compte
+   non privilégié. Sans importance à un seul utilisateur, à savoir sinon.
 
 ### Traité le 2026-08-12
 
@@ -151,8 +227,18 @@ faux.
 
 ### Le piège permanent de cette machine
 
-**`sudo` est inutilisable sans terminal** : il exige un tty pour son mot de
-passe. Toute commande privilégiée lancée depuis un contexte non interactif doit
+> **Levé le 2026-08-28.** `/etc/sudoers.d/99-lapserv-nopasswd` accorde
+> `lapserv ALL=(ALL) NOPASSWD: ALL` : `sudo -n` fonctionne désormais depuis un
+> contexte non interactif, et `pkexec` n'est plus nécessaire. La raison est
+> l'usage, pas le confort — chaque `pkexec` ouvrait une fenêtre polkit sur
+> l'écran physique, à valider au mot de passe, une par commande. Le revers est
+> assumé : tout processus tournant sous `lapserv` peut devenir root sans
+> authentification. Pour revenir en arrière,
+> `sudo rm /etc/sudoers.d/99-lapserv-nopasswd`, et le paragraphe ci-dessous
+> redevient vrai.
+
+**`sudo` était inutilisable sans terminal** : il exige un tty pour son mot de
+passe. Toute commande privilégiée lancée depuis un contexte non interactif devait
 passer par `pkexec`, qui s'appuie sur l'agent polkit de COSMIC — en pensant à
 repasser les variables d'environnement, que `pkexec` réinitialise.
 
@@ -169,14 +255,27 @@ Autre correction au passage : le test « le pare-feu est-il actif ? » cherchait
 scripts ont été relus : ni `00-audit.sh`, ni `01-disques.sh`, ni `04-jeux.sh` ne
 touchent à `SUDO_USER` ou à ce motif.
 
-### À trancher au début de l'étape 4
+### Tranché le 2026-08-28 : les ports de jeu sont ouverts à tous
 
 `04-jeux.sh` ouvre les ports de jeu sans restriction de provenance
 (`ufw allow 25565/tcp`, `ufw allow 2456:2458/udp`), alors que le tableau plus bas
-affirme que rien n'est exposé au-delà du réseau local. Les deux ne peuvent pas
-être vrais en même temps. Jouer avec des gens hors de la maison suppose une
-exposition assumée ; sinon il faut restreindre ces règles comme les autres. Rien
-n'a été modifié : c'est un choix d'usage, pas un bug à corriger d'office.
+affirmait que rien n'est exposé au-delà du réseau local. Les deux ne pouvaient
+pas être vrais en même temps.
+
+L'usage a tranché : le serveur Valheim est destiné à des amis hors de la maison,
+donc l'exposition est assumée. `ufw allow 2456:2458/udp` est en place, sans
+restriction de provenance.
+
+**Ce que le doc Valheim ne dit pas, et qui compte ici :** la machine a une IPv6
+publique routable, sans NAT pour la masquer. Contrairement à l'IPv4 — qui
+exigerait encore une redirection sur la box — le serveur est donc **déjà
+joignable depuis Internet en IPv6**, du seul fait de cette règle ufw. Pour
+revenir au réseau local :
+
+```bash
+sudo ufw delete allow 2456:2458/udp
+sudo ufw allow from 192.168.1.0/24 to any port 2456:2458 proto udp
+```
 
 ---
 
@@ -230,20 +329,26 @@ sudo ./04-jeux.sh --confirm minecraft
 
 ## Ce que tu obtiens
 
+*Ce que les scripts installent. Sur `pop-os` au 2026-08-28, seules les deux
+dernières lignes sont en service : la pile IA a été désinstallée.*
+
 | Service | Adresse | Remarque |
 |---|---|---|
-| Interface de chat (Open WebUI) | `http://<ip-du-pc>:8080` | Depuis n'importe quel appareil du réseau |
-| API Ollama | `http://<ip-du-pc>:11434` | Compatible avec le format d'API OpenAI |
-| LM Studio | application de bureau | Nécessite un écran branché |
-| API LM Studio | `http://127.0.0.1:1234` | Format OpenAI. Machine locale seulement, sauf activation explicite dans l'application |
+| ~~Interface de chat (Open WebUI)~~ | ~~`http://<ip-du-pc>:8080`~~ | Désinstallé le 2026-08-28 |
+| ~~API Ollama~~ | ~~`http://<ip-du-pc>:11434`~~ | Désinstallé le 2026-08-28 |
+| ~~LM Studio~~ | ~~application de bureau~~ | Désinstallé le 2026-08-28 |
+| ~~API LM Studio~~ | ~~`http://127.0.0.1:1234`~~ | Désinstallé le 2026-08-28 |
 | Administration à distance | `ssh <toi>@<ip-du-pc>` | IPv4 et réseau local uniquement |
-| Minecraft | `<ip-du-pc>:25565` | Voir la réserve sur la provenance, plus haut |
-| Valheim | `<ip-du-pc>:2456` | Idem |
+| Minecraft | `<ip-du-pc>:25565` | Pas installé |
+| **Valheim** | `<ip-du-pc>:2456` (UDP) | **En service.** Ouvert à tous, voir la section « Tranché » |
 
-Les ports des services d'IA et de SSH ne sont ouverts **que pour le réseau
-local**, en IPv4 comme en IPv6, y compris pour ce qui tourne en conteneur.
-Aucun n'est exposé sur Internet : l'API Ollama n'a pas d'authentification, et
-une API de modèle ouverte au monde est utilisée par des tiers en quelques heures.
+SSH n'est ouvert que pour le **réseau local**, en clé uniquement. Les ports d'IA
+ont été refermés avec la désinstallation.
+
+Les ports de jeu font exception et sont ouverts sans restriction de provenance :
+c'est le choix acté plus haut. La seule authentification devant le serveur
+Valheim est donc son mot de passe — il tient le rôle d'une serrure exposée sur
+la rue, à choisir en conséquence.
 
 Deux réflexes à garder si tu ajoutes un service plus tard. Un port publié par un
 conteneur Docker n'est **pas** protégé par une règle `ufw allow from … to any
