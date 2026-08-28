@@ -70,8 +70,14 @@ connexion limite les dégâts.
 ```bash
 sudo useradd --system --create-home --home-dir /srv/jeux/valheim \
              --shell /usr/sbin/nologin valheim
-sudo mkdir -p /srv/jeux/valheim/serveur /srv/jeux/valheim/donnees
+sudo mkdir -p /srv/jeux/valheim/serveur
 sudo chown -R valheim:valheim /srv/jeux/valheim
+
+# Le monde ne vit pas avec les binaires : il va sur le SSD, /srv/jeux etant un
+# disque mecanique. Voir « Performances ».
+sudo mkdir -p /var/lib/valheim/donnees
+sudo chown -R valheim:valheim /var/lib/valheim
+sudo chmod 750 /var/lib/valheim
 ```
 
 **Vérification :**
@@ -145,10 +151,15 @@ sudo tee /etc/systemd/system/valheim.service >/dev/null <<'FIN'
 [Unit]
 Description=Serveur Valheim
 After=network-online.target
+# Sans ces montages le service ne démarre pas du tout, plutôt que de démarrer
+# et d'échouer de façon obscure — ou pire, de créer un monde vide.
+RequiresMountsFor=/srv/jeux /var/lib/valheim
 Wants=network-online.target
 
 [Service]
 Type=simple
+# Pas de Nice= ici : il serait réécrit. Voir « Performances ».
+CPUWeight=500
 User=valheim
 Group=valheim
 WorkingDirectory=/srv/jeux/valheim/serveur
@@ -165,9 +176,9 @@ ExecStart=/srv/jeux/valheim/serveur/valheim_server.x86_64 \
   -port 2456 \
   -world "${NOM_MONDE}" \
   -password "${MOT_DE_PASSE}" \
-  -savedir /srv/jeux/valheim/donnees \
+  -savedir /var/lib/valheim/donnees \
   -public 0 \
-  -saveinterval 1800 \
+  -saveinterval 600 \
   -backups 4 -backupshort 7200 -backuplong 43200
 
 # Valheim sauvegarde le monde en s'arrêtant. Sans ces deux lignes, systemd le
@@ -183,7 +194,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/srv/jeux/valheim
+ReadWritePaths=/srv/jeux/valheim /var/lib/valheim
 
 [Install]
 WantedBy=multi-user.target
@@ -198,8 +209,8 @@ sudo systemctl enable valheim
 | Option | Effet |
 |---|---|
 | `-public 0` | Serveur **privé** : absent de la liste publique, rejoint par IP |
-| `-savedir` | Chemin de sauvegarde explicite, au lieu de `~/.config/unity3d/…` — prévisible, et compatible avec `ProtectHome=true` |
-| `-saveinterval 1800` | Sauvegarde automatique toutes les 30 minutes |
+| `-savedir` | Chemin explicite, au lieu de `~/.config/unity3d/…` — prévisible, et compatible avec `ProtectHome=true`. Pointé sur le SSD, voir « Performances » |
+| `-saveinterval 600` | Sauvegarde automatique toutes les 10 minutes. C'est exactement ce qu'une coupure de courant peut emporter |
 | `-backups 4` | Conserve 4 sauvegardes tournantes |
 | *(absent)* `-crossplay` | Ouvre aux joueurs Xbox/PlayStation et fournit un code d'invitation. Inutile ici : Tailscale rend déjà le serveur joignable sans redirection. Voir l'étape 6 |
 
@@ -335,7 +346,7 @@ tu dois voir passer :
 
 ```bash
 sudo ss -ulnp | grep 2456
-sudo ls -l /srv/jeux/valheim/donnees/worlds_local/
+sudo ls -l /var/lib/valheim/donnees/worlds_local/
 ```
 
 Deux fichiers doivent exister : `Midgard.fwl` (le monde) et `Midgard.db` (les
@@ -382,27 +393,104 @@ quasi nulle — ce qui ne dispense pas de tenir la machine à jour
 
 ## Étape 10 — Sauvegardes
 
-Valheim fait ses propres sauvegardes tournantes, mais **dans le même dossier** :
-une panne de disque emporte tout. Une archive quotidienne à part :
+Quatre pannes distinctes, quatre protections différentes. Le tableau dit
+laquelle couvre quoi ; sans lui, on empile des sauvegardes sans savoir contre
+quoi elles servent.
+
+| Panne | Ce qui sauve | Perte maximale |
+|---|---|---|
+| Coupure de courant, plantage | `-saveinterval 600` | 10 min de jeu |
+| Fausse manœuvre, monde corrompu | Archives horaires | 1 h |
+| Un disque lâche | Miroirs sur les deux autres disques | 1 h |
+| Incendie, vol, machine perdue | Copie quotidienne hors site | 24 h |
+
+Valheim fait ses propres sauvegardes tournantes, mais **dans le même dossier**
+que le monde : une panne de disque emporte les deux. D'où ce qui suit.
+
+### Le script d'archivage
 
 ```bash
-sudo mkdir -p /srv/jeux/sauvegardes
+sudo tee /usr/local/bin/sauvegarde-valheim.sh >/dev/null <<'FIN'
+#!/bin/bash
+set -euo pipefail
 
+SOURCE=/var/lib/valheim/donnees
+PRIMAIRE=/srv/jeux/sauvegardes                 # sdc1 - disque mecanique
+MIROIRS=(/srv/ia/sauvegardes-valheim           # sdb1 - autre disque mecanique
+         /var/backups/valheim)                 # sda3 - SSD systeme
+RETENTION_JOURS=30
+GRAIN_FIN_JOURS=3
+
+NOM="valheim-$(date +%Y%m%d-%H%M%S).tar.gz"
+
+mkdir -p "$PRIMAIRE"
+tar czf "$PRIMAIRE/$NOM.partiel" -C "$SOURCE" .
+
+gzip -t "$PRIMAIRE/$NOM.partiel"
+tar tzf "$PRIMAIRE/$NOM.partiel" >/dev/null
+mv "$PRIMAIRE/$NOM.partiel" "$PRIMAIRE/$NOM"
+
+for m in "${MIROIRS[@]}"; do
+    mkdir -p "$m"
+    cp -p "$PRIMAIRE/$NOM" "$m/$NOM.partiel"
+    mv "$m/$NOM.partiel" "$m/$NOM"
+done
+
+for d in "$PRIMAIRE" "${MIROIRS[@]}"; do
+    find "$d" -name 'valheim-*.tar.gz' -mtime "+$RETENTION_JOURS" -delete
+    find "$d" -name 'valheim-*.tar.gz' -mtime +"$GRAIN_FIN_JOURS" -printf '%f\n' \
+        | sort \
+        | awk -F'-' '{ jour = $2 } jour == precedent { print } { precedent = jour }' \
+        | while read -r vieille; do rm -f "$d/$vieille"; done
+    find "$d" -name '*.partiel' -mmin +60 -delete
+done
+FIN
+sudo chmod 750 /usr/local/bin/sauvegarde-valheim.sh
+```
+
+Trois choix méritent d'être justifiés, parce qu'ils ne sautent pas aux yeux.
+
+**L'écriture en `.partiel` puis le renommage.** Un `tar` interrompu — coupure de
+courant, disque plein — laisse une archive tronquée. Sous son nom définitif,
+rien ne la distingue d'une bonne, et on ne s'en aperçoit que le jour où on en a
+besoin. Le renommage est atomique : le nom final n'apparaît qu'une fois
+l'archive complète.
+
+**La vérification avant publication.** `gzip -t` puis `tar tzf` coûtent quelques
+millisecondes sur un monde de quelques mégaoctets. Sans eux, on accumule des
+archives dont on ignore si elles sont lisibles, ce qui est pire que pas de
+sauvegarde du tout : ça donne une fausse assurance.
+
+**Les trois destinations.** Le monde vit sur le SSD (`sda3`). Les archives vont
+sur les deux disques mécaniques **et** sur le SSD. Trois disques physiques :
+aucune panne matérielle unique n'emporte l'ensemble.
+
+**L'éclaircissage.** Passé trois jours, une seule archive par jour est
+conservée. Sans ça, 24 archives quotidiennes finissent par saturer le disque
+quand le monde grossit — un monde longuement exploré dépasse facilement 100 Mio.
+
+### La minuterie horaire
+
+```bash
 sudo tee /etc/systemd/system/sauvegarde-valheim.service >/dev/null <<'FIN'
 [Unit]
 Description=Sauvegarde du monde Valheim
+After=valheim.service
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -c 'tar czf /srv/jeux/sauvegardes/valheim-$(date +%%Y%%m%%d-%%H%%M).tar.gz -C /srv/jeux/valheim/donnees . && find /srv/jeux/sauvegardes -name "valheim-*.tar.gz" -mtime +14 -delete'
+ExecStart=/usr/local/bin/sauvegarde-valheim.sh
+Nice=10
+IOSchedulingClass=idle
 FIN
 
 sudo tee /etc/systemd/system/sauvegarde-valheim.timer >/dev/null <<'FIN'
 [Unit]
-Description=Sauvegarde quotidienne du monde Valheim
+Description=Sauvegarde horaire du monde Valheim
 
 [Timer]
-OnCalendar=*-*-* 04:30:00
+OnCalendar=hourly
+RandomizedDelaySec=120
 Persistent=true
 
 [Install]
@@ -413,16 +501,242 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now sauvegarde-valheim.timer
 ```
 
-**Vérification :**
+`Persistent=true` rattrape au démarrage une sauvegarde manquée pendant une
+coupure. `Nice=10` et `IOSchedulingClass=idle` sont ici volontaires — à
+l'inverse du serveur, l'archivage doit s'effacer devant la partie en cours.
+
+### La copie hors site
+
+Les trois copies sont sur trois disques, mais dans le même boîtier. Un
+incendie, un vol ou une alimentation qui grille tout les emporte ensemble.
 
 ```bash
-systemctl list-timers | grep sauvegarde-valheim
-sudo systemctl start sauvegarde-valheim
-ls -lh /srv/jeux/sauvegardes/
+sudo apt install -y rclone
+
+# Autorisation Google, une seule fois. Ouvre un navigateur sur cette machine.
+# La portee « drive.file » limite rclone aux fichiers qu'il cree lui-meme :
+# le reste du Drive lui reste invisible.
+rclone config create gdrive drive scope=drive.file
+
+# Le service tourne en root : il lui faut sa propre copie de la configuration,
+# qui contient un jeton d'acces.
+sudo mkdir -p /etc/rclone
+sudo cp ~/.config/rclone/rclone.conf /etc/rclone/rclone.conf
+sudo chown root:root /etc/rclone/rclone.conf && sudo chmod 600 /etc/rclone/rclone.conf
 ```
 
-Ces archives restent sur la même machine : elles te sauvent d'une fausse
-manœuvre, pas d'une panne de disque. Copie-les périodiquement ailleurs.
+Le script d'envoi revalide l'archive avant de la téléverser — envoyer hors site
+une archive illisible donnerait une assurance qui n'existe pas :
+
+```bash
+sudo tee /usr/local/bin/sauvegarde-valheim-hors-site.sh >/dev/null <<'FIN'
+#!/bin/bash
+set -euo pipefail
+
+SOURCE=/srv/jeux/sauvegardes
+DISTANT=gdrive:sauvegardes-valheim
+CONF=/etc/rclone/rclone.conf
+RETENTION_DISTANTE=90d
+
+DERNIERE=$(ls -1t "$SOURCE"/valheim-*.tar.gz 2>/dev/null | head -1)
+[ -n "$DERNIERE" ] || { echo "aucune archive locale a envoyer" >&2; exit 1; }
+
+gzip -t "$DERNIERE"
+
+OPTS=(--config "$CONF" --drive-use-trash=false --retries 3 --low-level-retries 5 --timeout 120s)
+rclone copy "${OPTS[@]}" "$DERNIERE" "$DISTANT/"
+rclone delete "${OPTS[@]}" --min-age "$RETENTION_DISTANTE" "$DISTANT/"
+FIN
+sudo chmod 750 /usr/local/bin/sauvegarde-valheim-hors-site.sh
+```
+
+Avec une minuterie quotidienne à 04 h 45, `After=network-online.target` sur le
+service, et `--drive-use-trash=false` pour que les suppressions ne remplissent
+pas la corbeille du Drive.
+
+### Vérifier — et le faire pour de vrai
+
+Une sauvegarde qu'on n'a jamais restaurée n'est pas une sauvegarde. Le test
+complet, depuis la copie la plus éloignée :
+
+```bash
+T=$(mktemp -d)
+rclone copy gdrive:sauvegardes-valheim/ "$T/"
+A=$(ls -1 "$T"/valheim-*.tar.gz | head -1)
+
+gzip -t "$A"                                  # l'archive est-elle intacte ?
+tar tzf "$A" | grep Midgard                   # contient-elle le monde ?
+
+# Et la preuve : meme somme de controle que l'originale locale.
+md5sum "$A"
+sudo md5sum /srv/jeux/sauvegardes/$(basename "$A")
+
+rm -rf "$T"
+```
+
+Pour restaurer réellement, serveur arrêté :
+
+```bash
+sudo systemctl stop valheim
+sudo mv /var/lib/valheim/donnees /var/lib/valheim/donnees.avant-restauration
+sudo mkdir -p /var/lib/valheim/donnees
+sudo tar xzf /srv/jeux/sauvegardes/valheim-AAAAMMJJ-HHMMSS.tar.gz -C /var/lib/valheim/donnees
+sudo chown -R valheim:valheim /var/lib/valheim
+sudo systemctl start valheim
+```
+
+Ne supprime l'ancien dossier qu'après avoir vérifié en jeu que le monde
+restauré est le bon.
+
+---
+
+## Performances
+
+Mesuré sur cette machine — i5-7500 quatre cœurs, 16 Gio — avec quelques
+joueurs : **1,1 Gio de mémoire et 10 à 35 % d'un cœur**, charge moyenne sous 1.
+À cette échelle rien n'est saturé, et la plupart des conseils qu'on trouve en
+ligne visent des serveurs qui le sont. Ce qui suit corrige deux pièges réels
+plutôt que d'optimiser dans le vide.
+
+### Le piège de l'ordonnanceur Pop!_OS
+
+`com.system76.Scheduler` est actif par défaut sur Pop!_OS, et sa configuration
+classe tout ce qui vit dans `/system.slice` ainsi :
+
+```
+system-services nice=12 io="idle" {
+    include cgroup="/system.slice/*"
+}
+```
+
+Le serveur Valheim, étant un service systemd, hérite donc de `nice=12` et
+surtout d'**entrées-sorties en classe `idle`** : ses écritures de sauvegarde
+passent après tout le reste de la machine. C'est le point le plus gênant, et il
+est invisible tant qu'on ne va pas le chercher.
+
+Un `Nice=` dans l'unité systemd **ne suffit pas** : l'ordonnanceur repasse
+toutes les 60 secondes et le réécrit. Une assignation par nom de processus ne
+suffit pas non plus — la règle par cgroup l'emporte. Il faut exclure le service
+de la règle, en repartant d'une copie complète de la configuration par défaut :
+
+```bash
+sudo mkdir -p /etc/system76-scheduler
+sudo cp /usr/share/system76-scheduler/config.kdl /etc/system76-scheduler/config.kdl
+# Dans le bloc system-services, ajouter :
+#     exclude cgroup="/system.slice/valheim.service"
+
+sudo mkdir -p /etc/system76-scheduler/process-scheduler
+sudo tee /etc/system76-scheduler/process-scheduler/valheim.kdl >/dev/null <<'FIN'
+assignments {
+	games {
+		include name="valheim_server*"
+	}
+}
+FIN
+
+sudo systemctl restart com.system76.Scheduler
+```
+
+**Vérification** — le profil `games` donne `nice=-5` et `io=(best-effort)0` :
+
+```bash
+P=$(pgrep -f valheim_server.x86_64 | head -1)
+awk '{print $19}' /proc/$P/stat      # doit afficher -5, pas 12
+sudo ionice -p $P                    # doit afficher best-effort, priorité 0
+```
+
+Dans l'unité systemd, `CPUWeight=500` complète le dispositif : il agit au
+niveau du cgroup, hors de portée de l'ordonnanceur comme de l'application.
+Il ne joue qu'en cas de contention, ce qui n'arrive pas à cette échelle — c'est
+une assurance, pas un gain mesurable aujourd'hui.
+
+### Le monde sur le SSD
+
+`/srv/jeux` est un disque mécanique. Les sauvegardes automatiques d'un monde
+qui y réside provoquent des micro-blocages perceptibles en jeu. Le monde tient
+dans quelques mégaoctets : il vit donc sur le SSD, en `/var/lib/valheim`, et
+seules les **archives** vont sur les disques mécaniques — où leur lenteur n'a
+aucune importance.
+
+Le déplacement se fait serveur arrêté, et se vérifie avant de basculer :
+
+```bash
+sudo systemctl stop valheim
+sudo find /srv/jeux/valheim/donnees -type f -exec md5sum {} \; | sort > /tmp/avant
+sudo cp -a /srv/jeux/valheim/donnees /var/lib/valheim/donnees
+sudo chown -R valheim:valheim /var/lib/valheim
+# comparer /tmp/avant aux empreintes de la copie AVANT de modifier l'unite
+```
+
+Puis `-savedir`, `ReadWritePaths` et le `SOURCE` du script de sauvegarde. Ce
+dernier est le piège : oublié, on archive indéfiniment une copie figée.
+
+### Fréquence processeur
+
+Pop!_OS démarre en profil *Balanced*, gouverneur `powersave`, soit environ
+2400 MHz sur les 3800 disponibles. Le gain du profil `performance` n'est pas la
+vitesse brute — avec `intel_pstate`, `powersave` monte aussi en charge — mais la
+suppression du délai de montée en régime, qui se traduit par des à-coups.
+
+`system76-power` ne mémorise pas le profil : sans unité dédiée, la machine
+repart en *Balanced* à chaque redémarrage.
+
+```bash
+sudo tee /etc/systemd/system/profil-performance.service >/dev/null <<'FIN'
+[Unit]
+Description=Applique le profil processeur « performance » au demarrage
+After=com.system76.PowerDaemon.service
+Wants=com.system76.PowerDaemon.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/system76-power profile performance
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target
+FIN
+sudo systemctl enable --now profil-performance.service
+```
+
+### Redémarrage hebdomadaire
+
+Valheim accumule de la mémoire au fil des jours ; les hébergeurs s'accordent à
+dire que le redémarrage régulier est le remède le plus efficace. Une minuterie
+le lundi à 5 h, précédée d'une sauvegarde, ne dérange personne.
+
+### Ce qu'on n'a pas fait : le plafond de 60 ko/s
+
+Valheim bride ses envois à environ 60 ko/s par joueur, ce qui est la cause
+n°1 de désynchronisation à plusieurs. Aucune ligne, si rapide soit-elle, n'y
+change quoi que ce soit : le plafond est interne au jeu.
+
+Le contourner exige un mod — BepInEx plus *BetterNetworking* — **installé sur le
+serveur et sur chaque client**, à remettre à jour à chaque version du jeu. À
+garder sous le coude si de la désynchronisation apparaît réellement à plusieurs.
+Pas à faire par précaution.
+
+---
+
+## Après une coupure de courant
+
+Trois couches, et la réponse diffère à chaque étage.
+
+| Couche | Reprend seule ? |
+|---|---|
+| Le processus Valheim, s'il plante | **Oui** — `Restart=on-failure`, `RestartSec=10s` |
+| Les services, au démarrage de la machine | **Oui** — tout est `enabled`, et les minuteries ont `Persistent=true` |
+| La machine elle-même, au retour du courant | **Non par défaut** — réglage BIOS |
+
+Le dernier point ne se règle pas depuis Linux. Sur la carte MSI B250M MORTAR de
+cette machine :
+
+> `Suppr` au démarrage → **Settings → Advanced → Power Management Setup →
+> Restore after AC Power Loss** → **Power On**. Désactiver **ErP Ready** s'il est
+> actif : il coupe l'alimentation de veille et empêche le rallumage.
+
+Tant que ce réglage n'est pas fait, une coupure laisse la machine éteinte
+jusqu'à ce que quelqu'un appuie sur le bouton.
 
 ---
 
@@ -449,9 +763,11 @@ Restaurer un monde :
 
 ```bash
 sudo systemctl stop valheim
-sudo tar xzf /srv/jeux/sauvegardes/valheim-AAAAMMJJ-HHMM.tar.gz \
-     -C /srv/jeux/valheim/donnees
-sudo chown -R valheim:valheim /srv/jeux/valheim/donnees
+sudo mv /var/lib/valheim/donnees /var/lib/valheim/donnees.avant-restauration
+sudo mkdir -p /var/lib/valheim/donnees
+sudo tar xzf /srv/jeux/sauvegardes/valheim-AAAAMMJJ-HHMMSS.tar.gz \
+     -C /var/lib/valheim/donnees
+sudo chown -R valheim:valheim /var/lib/valheim
 sudo systemctl start valheim
 ```
 
