@@ -726,17 +726,20 @@ Trois couches, et la réponse diffère à chaque étage.
 |---|---|
 | Le processus Valheim, s'il plante | **Oui** — `Restart=on-failure`, `RestartSec=10s` |
 | Les services, au démarrage de la machine | **Oui** — tout est `enabled`, et les minuteries ont `Persistent=true` |
-| La machine elle-même, au retour du courant | **Non par défaut** — réglage BIOS |
+| La machine elle-même, au retour du courant | **Oui depuis le 2026-08-28** — réglage BIOS fait |
 
-Le dernier point ne se règle pas depuis Linux. Sur la carte MSI B250M MORTAR de
-cette machine :
+Le dernier point ne se règle pas depuis Linux, et ne se relit pas non plus : le
+réglage a été fait à la main dans le BIOS de la carte MSI B250M MORTAR le
+2026-08-28. L'emplacement, pour le jour où il faudra le refaire — remise à zéro
+du BIOS, changement de la pile de la carte mère :
 
 > `Suppr` au démarrage → **Settings → Advanced → Power Management Setup →
-> Restore after AC Power Loss** → **Power On**. Désactiver **ErP Ready** s'il est
-> actif : il coupe l'alimentation de veille et empêche le rallumage.
+> Restore after AC Power Loss** → **Power On**. **ErP Ready**, dans le même
+> menu, doit rester désactivé : il coupe l'alimentation de veille et empêche le
+> rallumage.
 
-Tant que ce réglage n'est pas fait, une coupure laisse la machine éteinte
-jusqu'à ce que quelqu'un appuie sur le bouton.
+Si le réglage se perd, une coupure laisse la machine éteinte jusqu'à ce que
+quelqu'un appuie sur le bouton — et aucune commande Linux ne le signale.
 
 ---
 

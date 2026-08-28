@@ -147,12 +147,14 @@ Autre écueil : `system76-power` ne mémorise pas son profil. Sans l'unité
 `profil-performance.service`, la machine repart en *Balanced* — gouverneur
 `powersave`, ~2400 MHz sur 3800 — à chaque redémarrage.
 
-**Non fait, et hors de portée depuis Linux :** le rallumage automatique après
-coupure de courant. C'est un réglage du BIOS MSI B250M MORTAR (*Settings →
-Advanced → Power Management Setup → Restore after AC Power Loss → Power On*,
-et désactiver *ErP Ready*). Tant qu'il n'est pas fait, une coupure laisse la
-machine éteinte : le logiciel, lui, repart seul (`Restart=on-failure`, services
-`enabled`, minuteries `Persistent=true`).
+**Fait le 2026-08-28, et hors de portée depuis Linux :** le rallumage
+automatique après coupure de courant. C'est un réglage du BIOS MSI B250M MORTAR
+(*Settings → Advanced → Power Management Setup → Restore after AC Power Loss →
+Power On*), avec *ErP Ready* laissé désactivé dans le même menu — il coupe
+l'alimentation de veille et empêche le rallumage. À revérifier après toute
+remise à zéro du BIOS ou changement de pile : rien, depuis Linux, ne permet de
+lire cet état. Le logiciel, lui, repartait déjà seul (`Restart=on-failure`,
+services `enabled`, minuteries `Persistent=true`).
 
 Deux choses que le doc ne dit pas, vérifiées ici :
 
