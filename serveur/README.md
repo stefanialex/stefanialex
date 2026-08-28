@@ -118,6 +118,42 @@ Débit mesuré le 2026-08-28 : 273 Mb/s descendants, **107 Mb/s montants**. Valh
 consomme 1 à 2 Mb/s montants par joueur : la connexion n'est pas un facteur
 limitant, même à dix.
 
+**Sauvegardes et performances (2026-08-28, seconde passe).** Le monde a été
+déplacé de `sdc1` vers le SSD, en `/var/lib/valheim/donnees` — copie vérifiée
+empreinte par empreinte, ancien dossier conservé sous
+`/srv/jeux/valheim/donnees.avant-deplacement`. Archivage horaire vérifié
+(`gzip -t` + `tar tzf`) et répliqué sur les trois disques, éclairci à une
+archive par jour au-delà de trois jours, plus une copie quotidienne sur Google
+Drive via rclone en portée `drive.file`. Restauration testée de bout en bout :
+l'archive retéléchargée depuis le Drive a la même somme MD5 que l'originale.
+
+`smartd` est actif, auto-test court chaque nuit et long le samedi. Les deux
+disques mécaniques affichent **0 secteur réalloué, 0 en attente, 0
+illisible** ; `sdb` totalise 25 300 heures, `sdc` 19 293. Les deux auto-tests
+lancés le 28 août se sont terminés sans erreur.
+
+**Le piège non évident de cette machine, et il coûte cher :**
+`com.system76.Scheduler`, actif par défaut sur Pop!_OS, classe tout ce qui vit
+dans `/system.slice` en `system-services nice=12 io="idle"`. Le serveur Valheim
+héritait donc de la **priorité d'entrées-sorties la plus basse** — ses écritures
+de sauvegarde passaient après tout le reste. Un `Nice=` dans l'unité systemd ne
+suffit pas : l'ordonnanceur repasse toutes les 60 secondes et le réécrit ; une
+assignation par nom de processus ne suffit pas non plus, la règle par cgroup
+l'emporte. Il faut exclure explicitement `valheim.service` de cette règle dans
+une copie complète de `/etc/system76-scheduler/config.kdl`. Résultat vérifié :
+`nice=-5`, `io=(best-effort)0`.
+
+Autre écueil : `system76-power` ne mémorise pas son profil. Sans l'unité
+`profil-performance.service`, la machine repart en *Balanced* — gouverneur
+`powersave`, ~2400 MHz sur 3800 — à chaque redémarrage.
+
+**Non fait, et hors de portée depuis Linux :** le rallumage automatique après
+coupure de courant. C'est un réglage du BIOS MSI B250M MORTAR (*Settings →
+Advanced → Power Management Setup → Restore after AC Power Loss → Power On*,
+et désactiver *ErP Ready*). Tant qu'il n'est pas fait, une coupure laisse la
+machine éteinte : le logiciel, lui, repart seul (`Restart=on-failure`, services
+`enabled`, minuteries `Persistent=true`).
+
 Deux choses que le doc ne dit pas, vérifiées ici :
 
 1. **`Midgard.db` n'existe pas juste après le premier démarrage** — seul le
