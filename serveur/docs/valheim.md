@@ -1,7 +1,12 @@
 # Serveur Valheim — installation pas à pas
 
 Marche à suivre manuelle, commande par commande, pour un serveur **privé**
-(non listé publiquement) **sans crossplay** (Steam uniquement).
+(non listé publiquement) **sans crossplay** (Steam uniquement), joignable par
+**Tailscale**.
+
+Le choix de Tailscale est délibéré : il évite toute redirection de port sur la
+box, n'expose **rien** sur Internet, et donne au serveur une adresse qui ne
+change jamais. Voir l'étape 6 pour la comparaison avec les deux alternatives.
 
 Chaque étape indique ce que tu dois voir pour savoir qu'elle a réussi. Si une
 sortie diffère, arrête-toi là plutôt que d'enchaîner.
@@ -196,23 +201,121 @@ sudo systemctl enable valheim
 | `-savedir` | Chemin de sauvegarde explicite, au lieu de `~/.config/unity3d/…` — prévisible, et compatible avec `ProtectHome=true` |
 | `-saveinterval 1800` | Sauvegarde automatique toutes les 30 minutes |
 | `-backups 4` | Conserve 4 sauvegardes tournantes |
-| *(absent)* `-crossplay` | Ajoute ce drapeau pour ouvrir aux joueurs Xbox/PlayStation et obtenir un code d'invitation |
+| *(absent)* `-crossplay` | Ouvre aux joueurs Xbox/PlayStation et fournit un code d'invitation. Inutile ici : Tailscale rend déjà le serveur joignable sans redirection. Voir l'étape 6 |
 
 ---
 
-## Étape 6 — Pare-feu
+## Étape 6 — Réseau privé Tailscale
 
-UDP **2456** (jeu) et **2457** (requête Steam) sont indispensables ; 2458 est
-réservé par le moteur, autant l'inclure.
+### Pourquoi, et les alternatives écartées
+
+Pour que des joueurs extérieurs atteignent le serveur, il faut résoudre deux
+problèmes : traverser la box, et disposer d'une adresse stable. Trois solutions
+existent.
+
+| Solution | Box à configurer | Adresse stable | Exposition Internet | Consoles |
+|---|---|---|---|---|
+| **Tailscale** | non | **oui, définitive** | **aucune** | non (PC seulement) |
+| Redirection de ports | oui, NAT/PAT + bail statique | non — IP dynamique, sauf DNS dynamique | serveur exposé | oui |
+| `-crossplay` | non | non — **le code change à chaque redémarrage** | aucune | oui |
+
+Tailscale l'emporte dès que tous les joueurs sont sur PC. Le crossplay reste la
+seule option si quelqu'un joue sur Xbox ou PlayStation : Tailscale ne s'installe
+pas sur console.
+
+### Installer
 
 ```bash
-sudo ufw allow 2456:2458/udp
-sudo ufw status
+. /etc/os-release
+CODE=${UBUNTU_CODENAME:-$VERSION_CODENAME}   # « noble » sur Pop!_OS 24.04
+
+curl -fsSL "https://pkgs.tailscale.com/stable/ubuntu/${CODE}.noarmor.gpg" \
+  | sudo tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
+curl -fsSL "https://pkgs.tailscale.com/stable/ubuntu/${CODE}.tailscale-keyring.list" \
+  | sudo tee /etc/apt/sources.list.d/tailscale.list
+
+sudo apt update
+sudo apt install -y tailscale
+```
+
+### Authentifier la machine
+
+```bash
+sudo tailscale login --hostname=valheim-serveur --qr=false
+```
+
+La commande **bloque** en attendant que tu ouvres le lien d'authentification
+dans un navigateur. Sur un serveur sans écran, ou si le lien ne s'affiche pas,
+il est aussi écrit dans le journal :
+
+```bash
+sudo journalctl -u tailscaled --since -2min | grep -o 'https://login.tailscale.com/a/[a-z0-9]*'
+```
+
+Ne tue pas la commande `login` avant d'avoir validé dans le navigateur : le
+processus doit rester vivant pour terminer l'enregistrement.
+
+**Vérification :**
+
+```bash
+sudo tailscale status
+sudo tailscale ip -4
+```
+
+Tu dois obtenir une adresse en `100.x.y.z` — ici **`100.76.246.124`**. Elle est
+attribuée une fois pour toutes : ni un redémarrage, ni un changement d'IP
+publique ne la modifient.
+
+### Dans la console d'administration
+
+Deux réglages qui ne se font pas en ligne de commande, sur
+[login.tailscale.com/admin/machines](https://login.tailscale.com/admin/machines).
+
+**1. Désactiver l'expiration de la clé.** Menu `...` de la ligne
+`valheim-serveur` → **Disable key expiry**. Sans ça la clé expire au bout de
+180 jours et le serveur disparaît du réseau sans prévenir — une panne
+incompréhensible six mois plus tard.
+
+**2. Partager la machine.** Menu `...` → **Share...**, un lien par invité.
+L'invité ne voit **que** cette machine, rien d'autre du réseau domestique, et
+ne compte pas dans les 6 utilisateurs du plan gratuit. C'est préférable à
+l'inviter comme utilisateur du réseau, ce qui lui donnerait accès à tout.
+
+---
+
+## Étape 7 — Pare-feu
+
+Le serveur n'étant joignable que par le tunnel, **aucun port de jeu n'a besoin
+d'être ouvert sur Internet**.
+
+```bash
+sudo ufw allow in on tailscale0 comment 'Reseau prive Tailscale'
+sudo ufw allow 41641/udp comment 'Tailscale traversee NAT'
+sudo ufw status verbose
+```
+
+`41641/udp` n'est pas indispensable : il permet aux pairs de se joindre en
+**direct** plutôt que via un relais, ce qui réduit la latence. Comme aucune
+redirection n'existe sur la box, rien ne peut l'atteindre depuis Internet.
+
+Si le serveur a d'abord été exposé, retire l'ancienne règle :
+
+```bash
+sudo ufw delete allow 2456:2457/udp
+```
+
+État attendu — SSH en local, le reste par le tunnel, rien d'ouvert au monde :
+
+```
+Par défaut : deny (incoming), allow (outgoing)
+22/tcp                     ALLOW IN    192.168.1.0/24
+Anywhere on tailscale0     ALLOW IN    Anywhere
+41641/udp                  ALLOW IN    Anywhere
 ```
 
 ---
 
-## Étape 7 — Démarrer
+## Étape 8 — Démarrer
 
 ```bash
 sudo systemctl start valheim
@@ -240,32 +343,44 @@ données de jeu).
 
 ---
 
-## Étape 8 — Se connecter
+## Étape 9 — Se connecter
 
-Relève l'adresse locale du PC :
+Une seule adresse sert à tout le monde, depuis la maison comme de l'extérieur :
+celle du tunnel.
 
 ```bash
-ip -brief address | grep -v LOOPBACK
+sudo tailscale ip -4      # ici 100.76.246.124
 ```
 
-Dans Valheim : **Rejoindre une partie → Rejoindre par IP →** `<adresse>:2456`,
-puis le mot de passe.
+Dans Valheim : **Rejoindre une partie → Rejoindre par IP →**
+`100.76.246.124:2456`, puis le mot de passe.
 
-### Depuis l'extérieur de la maison
+L'adresse locale `192.168.1.120` fonctionne aussi depuis la maison, mais autant
+n'en retenir qu'une.
 
-Trois choses, dans cet ordre :
+### Ce que chaque joueur doit faire
 
-1. **Fixer l'adresse IP du PC** dans la box (bail DHCP statique). Sans ça,
-   l'adresse changera un jour et la redirection pointera vers un autre appareil.
-2. **Rediriger UDP 2456-2458** sur la box vers cette adresse.
-3. Donner à tes amis ton IP publique (`curl ifconfig.me`) et le mot de passe.
+1. Ouvrir le lien de partage reçu et se connecter — compte Google, Microsoft ou
+   GitHub, gratuit, aucune carte bancaire.
+2. Installer Tailscale depuis [tailscale.com/download](https://tailscale.com/download)
+   et se connecter avec **le même compte**.
+3. Dans Valheim : **Rejoindre par IP** → `100.76.246.124:2456` + mot de passe.
 
-Le serveur devient alors joignable depuis Internet : garde la machine à jour
+Tailscale doit tourner pendant la partie. Il ne ralentit pas leur connexion :
+seul le trafic à destination du serveur emprunte le tunnel, le reste de leur
+Internet est inchangé.
+
+À savoir : le serveur n'apparaît pas dans la liste Steam et le bouton
+« Rejoindre » depuis la liste d'amis Steam ne fonctionne pas. C'est **Rejoindre
+par IP**, à chaque fois.
+
+Le serveur n'étant pas exposé sur Internet, la surface d'attaque est
+quasi nulle — ce qui ne dispense pas de tenir la machine à jour
 (`sudo apt update && sudo apt upgrade`).
 
 ---
 
-## Étape 9 — Sauvegardes
+## Étape 10 — Sauvegardes
 
 Valheim fait ses propres sauvegardes tournantes, mais **dans le même dossier** :
 une panne de disque emporte tout. Une archive quotidienne à part :
@@ -364,9 +479,30 @@ Ensuite, dans l'ordre :
 - personne n'arrive à se connecter → vérifier `sudo ufw status`, puis que le
   client utilise bien **UDP 2456** et non un autre port.
 
+### Côté Tailscale
+
+| Symptôme | Cause probable |
+|---|---|
+| Le serveur a disparu du réseau après des mois | Expiration de la clé — la désactiver dans la console (étape 6) |
+| Un joueur ne voit pas la machine | Partage non accepté, ou connecté avec un autre compte que celui de l'invitation |
+| Ça se connecte mais ça rame | Connexion passée par un relais : `tailscale ping 100.76.246.124` indique `via DERP` au lieu de `direct` |
+| `Logged out` après un redémarrage | `sudo systemctl enable --now tailscaled` |
+
+Diagnostic général :
+
+```bash
+sudo tailscale status          # qui est joignable, et par quel chemin
+sudo tailscale netcheck        # qualité de la traversée de NAT
+```
+
 ---
 
 ## Cohabitation avec le serveur IA
+
+> **Périmé depuis le 28 août 2026.** La pile IA a été désinstallée de cette
+> machine (voir [`desinstaller-ia.md`](desinstaller-ia.md)) : Valheim y est
+> désormais seul et dispose des 16 Gio. Section conservée au cas où l'IA serait
+> réinstallée.
 
 Valheim occupe environ 3 Gio. Un modèle de langage en occupe 5 à 16 selon sa
 taille. Sur une machine de 16 Gio, les deux tiennent avec un modèle 7–8B, mais
