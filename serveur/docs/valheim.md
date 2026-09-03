@@ -716,6 +716,144 @@ serveur et sur chaque client**, à remettre à jour à chaque version du jeu. À
 garder sous le coude si de la désynchronisation apparaît réellement à plusieurs.
 Pas à faire par précaution.
 
+### Ce qui pèse dans le monde — recensement du 2026-09-03
+
+Le monde comptait **232 292 ZDOs** ce jour-là, pour 11 Mo de `Midgard.db`. La
+répartition, mesurée et non supposée :
+
+| Ce que c'est | Nombre | Part |
+|---|---|---|
+| Arbres et buissons debout | 105 991 | 46 % |
+| Rochers et filons | 45 612 | 20 % |
+| Cueillettes (pierres, branches, pissenlits…) | 39 287 | 17 % |
+| Construction | ~12 135 | 5 % |
+| Contrôleurs de zone (`_ZoneCtrl`) | 2 377 | 1 % |
+| Objets au sol | 2 670 | 1,1 % |
+| Générateurs de monstres | 1 152 | 0,5 % |
+| Coffres (dont 135 de crypte) | 411 | 0,2 % |
+| Troncs et souches abattus | 237 | 0,1 % |
+
+**Le seul chiffre à retenir : 85 ZDOs par zone explorée.** 2 377 zones générées
+× 85 ≈ 200 000, soit 86 % du monde. Autrement dit le poids du monde suit
+l'**exploration**, pas la construction ni le désordre : 83 % de ces ZDOs sont
+du décor naturel intact, que personne ne doit supprimer. Six donjons générés
+en seize minutes ont ajouté 4 670 ZDOs le soir du recensement — les cryptes
+sont le deuxième facteur.
+
+Conséquence pratique : quand le serveur paraîtra poussif, ne cherchez pas des
+objets à nettoyer. Un monde à 230 000 ZDOs tient sans effort (4 % de charge
+processeur mesurés avec trois joueurs connectés).
+
+#### Refaire le recensement
+
+Le `.db` de la version 37 ne se parcourt pas en champ à champ sans se tromper.
+La méthode fiable est de compter les empreintes de prefabs : Valheim stocke
+chaque objet sous l'entier 32 bits de `GetStableHashCode()` de son nom, et sur
+11 Mo la probabilité qu'une empreinte donnée apparaisse par hasard est de
+0,003 — aucun faux positif. **Travailler sur une copie extraite d'une archive
+de sauvegarde, jamais sur le monde en service.**
+
+```python
+import struct
+def hs(s):                                    # GetStableHashCode() de C#
+    h1 = h2 = 5381; i = 0
+    while i < len(s):
+        h1 = (((h1 << 5) + h1) & 0xFFFFFFFF) ^ ord(s[i])
+        if i == len(s) - 1: break
+        h2 = (((h2 << 5) + h2) & 0xFFFFFFFF) ^ ord(s[i+1])
+        i += 2
+    return (h1 + h2 * 1566083941) & 0xFFFFFFFF
+
+b = open("Midgard.db", "rb").read()
+print(struct.unpack_from("<i", b, 24)[0], "ZDOs")        # le compte est a l'offset 24
+for nom in ("Beech1", "Rock_4", "Pickable_Stone", "wood_floor", "_ZoneCtrl"):
+    print(b.count(struct.pack("<I", hs(nom))), nom)
+```
+
+Les noms de prefabs ne sont **pas** tous dans `resources.assets` du serveur :
+arbres, rochers et végétation en sont absents, il faut les écrire à la main.
+Les compteurs de *champs* sont plus parlants que les noms pour certaines
+catégories : `support` donne le bâti (12 135), `stack` et `quality` donnent les
+objets au sol et se valident l'un l'autre (2 670 chacun), `picked` les
+cueillettes déjà ramassées.
+
+### Les objets au sol : le jeu s'en occupe déjà
+
+Valheim détruit tout objet posé au sol au bout de **3 600 secondes**, sauf dans
+le rayon d'une « base » — établi, feu de camp, lit. C'est du comportement de
+base, sans mod.
+
+Donc ce qui reste au sol est, par construction, **dans vos bases** : là où le
+jeu refuse de supprimer pour ne pas jeter ce qu'on y a déposé exprès. Un mod de
+nettoyage ne trie pas, il jette ça. Pour 1,1 % de la charge.
+
+Les mods vérifiés le 2026-09-03, pour ne pas refaire le tour :
+
+- **DropCleaner** — annoncé côté client, chaque joueur doit l'installer.
+- **WorldCleaner** — l'auteur écrit lui-même « encore en développement, à
+  utiliser à vos risques », décline toute responsabilité en cas de corruption
+  de monde, et n'a aucune protection des bases.
+- **TrashCleanup** — le seul honnête : `trashscan` compte avant, `trashclean`
+  supprime dans un rayon de 100 m. Manuel et sous contrôle, mais exige BepInEx
+  sur le serveur, donc un redémarrage et une remise à jour à chaque patch.
+- **ValheimPlus** — permet de régler le délai des 3 600 s, mais touche à tout
+  le reste du jeu.
+
+Décision : **aucun mod installé.** Dix minutes de ramassage en jeu font le même
+travail sans risque.
+
+### Diagnostiquer un lag : l'ordre qui marche
+
+Établi le 2026-09-03 sur un cas réel — monstres qui se téléportent et loot qui
+refuse de se ramasser.
+
+**La clé est mécanique :** dans Valheim, un monstre comme un objet au sol est un
+ZDO dont la **propriété appartient à un client**, pas au serveur. Ramasser exige
+un transfert de propriété. Si le détenteur est un client à la traîne, la demande
+reste sans réponse et l'objet « refuse » d'être pris ; l'IA des monstres qu'il
+possède saute d'une position à l'autre. **Un seul joueur mal connecté dégrade la
+partie de tout le monde**, et rien côté serveur ne le montre.
+
+L'ordre de dépouillement, du moins coûteux au plus coûteux :
+
+```bash
+# 1. La machine est-elle en cause ? Trois chiffres suffisent.
+cat /proc/pressure/{cpu,io,memory}     # « some avg60 » proche de 0 = innocente
+ps -o pid,ni,pcpu -p $(pgrep -f valheim_server.x86_64)
+sudo ionice -p $(pgrep -f valheim_server.x86_64)   # doit rester best-effort 0
+
+# 2. Le lien local ? Erreurs et file d'attente.
+ip -s link show enp0s31f6              # errors/dropped doivent rester negligeables
+tc qdisc show dev enp0s31f6            # fq_codel attendu
+
+# 3. Chaque joueur, un par un. C'est ici que ca se joue.
+tailscale status --json                # « CurAddr » vide = relais DERP, mauvais signe
+for ip in $(tailscale status | awk '/active|direct/ {print $1}'); do
+  echo -n "$ip : "; tailscale ping -c 1 --timeout 3s $ip | grep -o 'in .*'
+done
+```
+
+Le verdict est venu de vingt sondes rapprochées vers chaque joueur : **médiane
+752 ms, pointe à 1 626 ms, gigue 324 ms, et 0 % de perte** chez l'un, contre
+**22 ms très stables** chez l'autre, au même instant et par le même chemin
+direct. Perte nulle avec une latence énorme et erratique = **file d'attente
+saturée chez le joueur** (bufferbloat), pas un problème de serveur. Le débit le
+confirmait : le serveur n'arrivait plus à lui envoyer que 2 à 3 ko/s, contre 31
+à 51 ko/s aux autres.
+
+Le test qui tranche sans rien redémarrer : **que le joueur suspect quitte cinq
+minutes.** Le serveur réattribue la propriété de ses ZDOs ; si les symptômes
+disparaissent, c'est réglé. Côté joueur, dans l'ordre : câble plutôt que wifi,
+chercher qui sature sa ligne en émission, redémarrer sa box.
+
+**Ne pas se faire piéger par le journal.** Les lignes `Connections 4` du journal
+Valheim **ne comptent pas les joueurs** : elles appartiennent au générateur de
+donjons, où « connections » désigne les liaisons entre salles. Elles arrivent
+entourées de `Available rooms:18`, `placed 10 doors`, `Placed 26 rooms`. Le
+compte réel des joueurs est dans les lignes `Connections N ZDOS:… sent:… recv:…`
+(une toutes les dix minutes), ou en comptant les `Got character ZDOID from` sans
+`Closing socket` correspondant.
+
 ---
 
 ## Après une coupure de courant
