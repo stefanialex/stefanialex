@@ -300,20 +300,88 @@ touchent à `SUDO_USER` ou à ce motif.
 affirmait que rien n'est exposé au-delà du réseau local. Les deux ne pouvaient
 pas être vrais en même temps.
 
-L'usage a tranché : le serveur Valheim est destiné à des amis hors de la maison,
-donc l'exposition est assumée. `ufw allow 2456:2458/udp` est en place, sans
-restriction de provenance.
+**État actuel, vérifié le 2026-09-03 : plus aucune règle de port de jeu dans
+`ufw`.** Le choix du 2026-08-28 a été rétabli entre-temps : les joueurs passent
+tous par Tailscale, et c'est mesuré — les trois connexions du soir arrivaient
+sur des adresses `100.x`. C'est le montage à conserver.
 
 **Ce que le doc Valheim ne dit pas, et qui compte ici :** la machine a une IPv6
 publique routable, sans NAT pour la masquer. Contrairement à l'IPv4 — qui
-exigerait encore une redirection sur la box — le serveur est donc **déjà
-joignable depuis Internet en IPv6**, du seul fait de cette règle ufw. Pour
-revenir au réseau local :
+exigerait encore une redirection sur la box — un simple `ufw allow 2456:2458/udp`
+rendrait le serveur **immédiatement joignable depuis Internet**, du seul fait de
+cette règle. Si un jour il faut ouvrir le jeu à quelqu'un qui refuse Tailscale,
+borner la provenance plutôt que d'ouvrir à tous :
 
 ```bash
-sudo ufw delete allow 2456:2458/udp
 sudo ufw allow from 192.168.1.0/24 to any port 2456:2458 proto udp
 ```
+
+---
+
+### Administration web, installée le 2026-09-03 : Cockpit
+
+Console d'administration de la machine dans le navigateur : état des trois
+disques avec leur usure SMART, services systemd — donc **démarrer, arrêter,
+redémarrer `valheim.service` et lire son journal sans terminal** —, mises à
+jour, réseau, et un gestionnaire de fichiers pour récupérer une archive de
+`/srv/ia/sauvegardes-valheim`.
+
+**L'installation ne marche pas avec le dépôt principal.** Noble est resté en
+Cockpit 314, alors que `cockpit-files` exige un `cockpit-bridge` ≥ 318. Il faut
+prendre l'ensemble en backports, où vit la branche réellement maintenue :
+
+```bash
+sudo apt-get install -y -t noble-backports \
+  cockpit cockpit-ws cockpit-bridge cockpit-system cockpit-storaged cockpit-files
+```
+
+Sans `-t noble-backports`, apt garde la priorité 100 des backports et refuse de
+bouger, avec un message de dépendance non satisfaite qui n'explique rien.
+Installé ici : Cockpit **362**, `cockpit-files` **39**, plus
+`cockpit-networkmanager` et `cockpit-packagekit` venus en dépendance.
+
+**Le point de sécurité, et il n'est pas évident.** Le paquet active
+`cockpit.socket` tout seul, qui écoute sur `*:9090` — donc aussi sur
+`tailscale0`. Or le pare-feu autorise **tous les ports** sur cette interface
+(`allow in on tailscale0`), et le tailnet ne contient pas que les machines de la
+maison : les PC des autres joueurs y sont partagés pour pouvoir se connecter au
+jeu. Laissé en l'état, ça revient à publier un formulaire de connexion root à
+leur intention.
+
+L'écoute est donc bornée au réseau local :
+
+```bash
+sudo mkdir -p /etc/systemd/system/cockpit.socket.d
+sudo tee /etc/systemd/system/cockpit.socket.d/ecoute-locale.conf >/dev/null <<'FIN'
+[Socket]
+ListenStream=
+ListenStream=192.168.1.120:9090
+FreeBind=yes
+FIN
+sudo systemctl daemon-reload && sudo systemctl restart cockpit.socket
+sudo ufw allow from 192.168.1.0/24 to any port 9090 proto tcp \
+  comment 'Cockpit, reseau local uniquement'
+```
+
+Le `ListenStream=` vide est indispensable : il annule la valeur du paquet au
+lieu de s'y ajouter, les sockets systemd étant cumulatives.
+
+Accès : **`https://192.168.1.120:9090`**, compte `lapserv` avec le mot de passe
+du compte. Cockpit passe par PAM — la dispense `sudo` sans mot de passe ne s'y
+applique pas. Le certificat est auto-signé, le navigateur avertit une fois.
+
+Vérification, la deuxième ligne devant échouer :
+
+```bash
+curl -sk -o /dev/null -w '%{http_code}\n' https://192.168.1.120:9090/   # 200
+curl -sk -o /dev/null -w '%{http_code}\n' https://100.76.246.124:9090/  # 000
+```
+
+**Reste à faire si l'accès à distance devient utile :** ajouter l'adresse
+Tailscale à `ListenStream`, mais **seulement après** avoir restreint la
+politique d'accès du tailnet dans la console Tailscale, pour que les appareils
+partagés n'aient droit qu'à l'UDP 2456-2458 du jeu au lieu de tout. Dans cet
+ordre, jamais l'inverse.
 
 ---
 
