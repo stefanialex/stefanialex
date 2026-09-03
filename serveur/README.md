@@ -385,6 +385,52 @@ ordre, jamais l'inverse.
 
 ---
 
+### Module Cockpit « Valheim », ajouté le 2026-09-03
+
+Cockpit administre la machine, pas la partie. Le complément vit dans
+[`cockpit-valheim/`](cockpit-valheim/) : deux fichiers statiques, aucun service,
+aucun port supplémentaire, et **l'authentification est celle de Cockpit** — donc
+rien de nouveau à protéger.
+
+```bash
+sudo mkdir -p /usr/share/cockpit/valheim
+sudo cp cockpit-valheim/index.html cockpit-valheim/manifest.json /usr/share/cockpit/valheim/
+sudo chown root:root /usr/share/cockpit/valheim/*
+sudo chmod 644 /usr/share/cockpit/valheim/*
+cockpit-bridge --packages | grep valheim    # doit lister le module
+```
+
+Un onglet « Valheim » apparaît dans la barre latérale après rechargement de la
+page. Aucun redémarrage de service : Cockpit relit ses modules à chaque session.
+Pour modifier la page, éditer `/usr/share/cockpit/valheim/index.html` et
+recharger — pas de compilation, pas d'outillage.
+
+Ce qu'il affiche : l'état du service et sa mémoire, **qui est en jeu par pseudo**,
+la latence et le débit de chaque appareil du tailnet, le compte de ZDOs du monde
+avec l'estimation des zones explorées, les prochaines sauvegardes et les
+dernières archives. Deux boutons : sauvegarder maintenant, et redémarrer la
+partie avec confirmation.
+
+**Les pseudos ne sont pas dans une base, ils se déduisent du journal.** Aucune
+ligne ne relie un pseudo à un compte Steam : il faut suivre la séquence
+`Got connection SteamID <compte>` → `Got character ZDOID from <pseudo>`, puis
+`Closing socket <compte>` pour le départ. C'est ce que fait `analyseJournal()`,
+et c'est pour ça qu'elle lit le journal dans l'ordre au lieu de filtrer.
+
+**Deux pièges rencontrés en l'écrivant :**
+
+`NextElapseUSecRealtime` ne renvoie **pas** des microsecondes malgré son nom,
+mais une date lisible (`Thu 2026-09-03 21:01:36 CEST`). La convertir côté
+serveur avec `date -d "$n" +%s` évite en plus toute ambiguïté de fuseau entre la
+machine et le navigateur.
+
+Les appels privilégiés utilisent `superuser: "require"`. Au premier chargement,
+Cockpit affiche un bandeau « accès limité » : il faut activer l'accès
+administrateur, sinon les cartes restent vides avec une erreur. La dispense
+`sudo` sans mot de passe de cette machine rend l'opération immédiate.
+
+---
+
 ### Deux règles qui s'appliquent partout
 
 **Rien ne s'exécute sans `--confirm`.** Lancé sans ce drapeau, chaque script

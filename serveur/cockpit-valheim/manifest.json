@@ -1,0 +1,11 @@
+{
+  "version": 0,
+  "requires": { "cockpit": "266" },
+  "menu": {
+    "index": {
+      "label": "Valheim",
+      "order": 25,
+      "keywords": [ { "matches": [ "valheim", "jeu", "joueurs", "monde", "sauvegarde" ] } ]
+    }
+  }
+}
