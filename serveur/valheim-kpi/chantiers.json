@@ -126,7 +126,10 @@
       "titulaires": [
         "Baby"
       ],
-      "etat": "a_faire"
+      "etat": "a_faire",
+      "alias": [
+        "portails"
+      ]
     },
     {
       "nom": "Port + fonderie base",
@@ -145,7 +148,24 @@
       "titulaires": [
         "Baby"
       ],
-      "etat": "a_faire"
+      "etat": "a_faire",
+      "alias": [
+        "armurerie"
+      ]
+    },
+    {
+      "nom": "Trophée de Golem de pierre",
+      "titulaires": [
+        "Beny"
+      ],
+      "etat": "a_faire",
+      "note": "le « caillou avec un visage » demandé par Benny. Trophée au plus faible taux de chute du jeu, sur les golems des Montagnes. Déclaratif : le serveur ne voit aucun objet.",
+      "alias": [
+        "caillou",
+        "caillou rare",
+        "trophée golem",
+        "stone golem"
+      ]
     }
   ]
 }

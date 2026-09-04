@@ -108,13 +108,17 @@ function rendMonde(d) {
 /* ---------- progression ---------- */
 function rendProgression(etapes) {
   const tb = $("progression").tBodies[0];
-  const boss = etapes.filter((e) => e.boss);
-  if (!boss.length) return vide(tb, "aucun boss vaincu détecté");
+  const boss = (etapes || []).filter((e) => e.boss);
+  if (!boss.length) return vide(tb, "relevé des clés du monde pas encore effectué");
   tb.replaceChildren();
   for (const e of boss) {
     const tr = el("tr");
     tr.append(el("td", null, e.boss));
-    tr.append(el("td", "ip", `vaincu avant le ${court(e.premier)}`));
+    // « exacte » distingue une chute observée par le relevé d'une borne haute
+    // déduite d'un raid : dire « le » quand on ne sait que « avant le » serait
+    // une précision inventée.
+    tr.append(el("td", "ip",
+      (e.exacte ? "vaincu le " : "vaincu avant le ") + court(e.premier)));
     tb.append(tr);
   }
 }

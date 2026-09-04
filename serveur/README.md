@@ -1170,6 +1170,74 @@ qu'il faut publier pour que le groupe puisse regarder la carte.
 
 ---
 
+### La progression était fausse d'un boss, le 2026-09-04
+
+**L'erreur.** La progression était déduite du nom des raids : `army_theelder`
+était lu comme « l'Ancien est vaincu ». C'est faux. **Un raid est débloqué par
+le boss précédent, pas par celui dont il porte le nom** — `army_theelder` exige
+`defeated_eikthyr`, `army_bonemass` exige `defeated_gdking`. Toute la lecture
+était donc décalée d'un cran, et le défi de Bab-y comptait les morts à partir
+d'une date trop précoce.
+
+**Comment elle a été trouvée.** En cherchant les *global keys* dans le fichier
+de monde : `defeated_eikthyr` et `defeated_gdking` présentes, `defeated_bonemass`
+**absente** — alors que `army_bonemass` s'était déclenché le 1er septembre.
+L'incohérence ne laissait qu'une explication. Confirmé ensuite par le
+[wiki des événements](https://valheim.fandom.com/wiki/Events).
+
+Conséquence concrète : **Bonemass n'est pas vaincu**, contrairement à ce que la
+page affichait depuis le début.
+
+**La source exacte.** `cles-monde-valheim.py`, toutes les 5 minutes :
+
+```bash
+cles-monde-valheim.py            # relève et annonce les nouvelles clés
+cles-monde-valheim.py --liste    # l'état
+```
+
+Le fichier fait 14 Mo et son format complet exige de parcourir tous les ZDO. On
+ne le parcourt pas : on cherche les chaînes connues sous leur **forme Unity**,
+un octet de longueur suivi du texte. Vérifié sur le monde en place — chaque clé
+présente apparaît exactement une fois, à 97,7 % du fichier, là où vivent les
+global keys.
+
+**On lit `.db.old`, pas `.db`.** La sauvegarde précédente est complète par
+construction, alors que le fichier actif peut être en cours d'écriture — 14 Mo
+ne s'écrivent pas instantanément. Le retard vaut au plus un intervalle de
+sauvegarde, dix minutes, sans conséquence pour détecter la chute d'un boss.
+
+**Les clés n'ont pas d'horodatage**, d'où la routine : en relevant
+régulièrement, on date le passage d'absente à présente. Ce qui était déjà là au
+premier relevé est marqué **incertain**, et la date affichée devient alors la
+meilleure borne haute disponible — le premier raid qui exigeait cette clé.
+L'affichage distingue « vaincu **le** » de « vaincu **avant le** » : dire le
+premier quand on ne sait que le second serait une précision inventée.
+
+---
+
+### Le caillou de Benny, et ce qu'un serveur ne peut pas voir, le 2026-09-04
+
+Demande reçue par `!defi trouver le caillou rare`. Il s'agit du **trophée de
+Golem de pierre**, le trophée au plus faible taux de chute du jeu.
+
+**Non mesurable côté serveur, vérifié et non supposé :**
+
+- le journal du serveur ne contient **aucune** mention d'objet — zéro
+  occurrence sur `trophy|item|loot|pickup|inventory` ;
+- le fichier de monde range les objets par **empreinte numérique**, pas par
+  nom : `TrophyStoneGolem` n'y apparaît nulle part en clair ;
+- et surtout, **un objet dans un sac n'est pas dans le monde** : il vit dans le
+  `.fch` du joueur, sur sa machine, que le serveur ne reçoit jamais.
+
+Suivi en déclaratif, donc, comme les chantiers. **Avec des alias** :
+`chantier-valheim.py` cherche une entrée par les mots qu'on emploie pour elle
+et non par son libellé officiel — Benny dira « caillou », pas « trophée de
+Golem de pierre ». Le rapprochement porte sur le nom **et** sur les alias,
+tolère les accents et l'orthographe, et refuse toujours une correspondance
+multiple.
+
+---
+
 ### Adresse IP fixée en statique, le 2026-09-04
 
 L'adresse `192.168.1.120` venait du DHCP de la box et n'était pas réservée.

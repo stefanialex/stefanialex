@@ -34,16 +34,32 @@ def metadonnees_monde(cx):
             "version_generateur", "premiere_vue", "derniere_vue")
     return [dict(zip(cles, l)) for l in lignes]
 
-# Valheim ne declenche le raid d'un boss qu'une fois ce boss vaincu. La premiere
-# occurrence d'un raid donne donc une borne haute datee de la victoire : le boss
-# etait tombe avant. C'est indirect, mais c'est la seule trace datee que le
-# serveur ecrit -- les global keys vivent dans le fichier de monde, sans date.
-RAIDS_DE_BOSS = {
-    "army_eikthyr": "Eikthyr",
-    "army_theelder": "l'Ancien",
-    "army_bonemass": "Bonemass",
-    "army_moder": "Moder",
-    "army_goblin": "Yagluth",
+# Les boss, par leur cle interne. La progression exacte vient des global keys
+# du fichier de monde, relevees par cles-monde-valheim.py.
+BOSS = [
+    ("defeated_eikthyr", "Eikthyr"),
+    ("defeated_gdking", "l'Ancien"),
+    ("defeated_bonemass", "Bonemass"),
+    ("defeated_dragon", "Moder"),
+    ("defeated_goblinking", "Yagluth"),
+    ("defeated_queen", "la Reine"),
+    ("defeated_fader", "Fader"),
+]
+NOM_BOSS = dict(BOSS)
+
+# Quel raid exige quelle cle. Attention, ce n'est PAS le boss du meme nom : un
+# raid se debloque avec le boss PRECEDENT. « army_theelder » exige
+# defeated_eikthyr et non defeated_gdking ; « army_bonemass » exige
+# defeated_gdking. Deduire la progression du nom des raids -- ce que faisait la
+# premiere version -- decalait donc toute la lecture d'un boss.
+# Verifie sur ce serveur : army_bonemass s'etait declenche alors que
+# defeated_bonemass est absent du fichier de monde.
+RAID_EXIGE = {
+    "army_eikthyr": "defeated_eikthyr",
+    "army_theelder": "defeated_eikthyr",
+    "army_bonemass": "defeated_gdking",
+    "army_moder": "defeated_bonemass",     # deduit du meme motif
+    "army_goblin": "defeated_dragon",      # deduit du meme motif
 }
 
 
@@ -134,14 +150,16 @@ def par_joueur(ident, sessions, morts):
     return res
 
 
-def defi_baby(morts, progression):
+def defi_baby(morts, boss_vaincus):
     """« Au moins un joueur encore jamais mort apres avoir battu l'Ancien. »
 
-    Le defi propose par Bab-y. On compte les morts survenues apres la premiere
-    trace de victoire sur l'Ancien ; un joueur a zero mort depuis cette date
-    tient le defi.
+    Le defi propose par Bab-y. L'ancrage vient de la cle defeated_gdking du
+    fichier de monde, et non plus du raid « army_theelder » : ce raid se
+    declenche apres Eikthyr, pas apres l'Ancien, et le defi comptait donc les
+    morts depuis une date trop precoce.
     """
-    depuis = progression.get("army_theelder")
+    depuis = next((e["date"] for e in boss_vaincus
+                   if e["cle"] == "defeated_gdking"), None)
     if not depuis:
         return None
     tenants, tombes = [], {}
@@ -155,7 +173,44 @@ def defi_baby(morts, progression):
     return {"depuis": depuis, "tenants": tenants, "tombes": tombes}
 
 
-def defis(agg, morts, progression, sessions, ident):
+def progression_boss(cx, monde, progression_raids):
+    """Boss vaincus, avec la meilleure date connue pour chacun.
+
+    Deux sources, dans cet ordre. Les global keys du fichier de monde disent
+    avec certitude qui est tombe ; quand la routine a observe le passage
+    d'absente a presente, la date est exacte. Sinon -- cle deja la au premier
+    releve -- on cherche une borne haute : le premier raid qui exige cette cle
+    prouve qu'elle existait deja a ce moment.
+    """
+    cles = {}
+    try:
+        for cle, vue, certaine in cx.execute(
+                "SELECT cle, premiere_vue, certaine FROM cles_globales WHERE monde = ?",
+                (monde,)):
+            cles[cle] = {"date": vue, "certaine": bool(certaine)}
+    except sqlite3.OperationalError:
+        return []  # la routine n'a pas encore tourne
+
+    # Borne haute par les raids, avec la correspondance exacte raid -> cle.
+    bornes = {}
+    for raid, ts in progression_raids.items():
+        exigee = RAID_EXIGE.get(raid)
+        if exigee and (exigee not in bornes or ts < bornes[exigee]):
+            bornes[exigee] = ts
+
+    resultat = []
+    for cle, nom in BOSS:
+        if cle not in cles:
+            continue
+        e = cles[cle]
+        date, exacte = e["date"], e["certaine"]
+        if not exacte and cle in bornes:
+            date, exacte = bornes[cle], False
+        resultat.append({"cle": cle, "boss": nom, "date": date, "exacte": exacte})
+    return resultat
+
+
+def defis(agg, morts, progression, sessions, ident, boss_vaincus):
     """Construit le tableau des defis, mesures et non declaratifs.
 
     Seules des metriques calculables depuis le journal sont retenues : un defi
@@ -167,10 +222,8 @@ def defis(agg, morts, progression, sessions, ident):
     liste = []
 
     # 1. Le defi de Bab-y, generalise a chaque boss dont on a la date.
-    for cle, boss in RAIDS_DE_BOSS.items():
-        depuis = progression.get(cle)
-        if not depuis:
-            continue
+    for etape in boss_vaincus:
+        cle, boss, depuis = etape["cle"], etape["boss"], etape["date"]
         rangs = []
         for pseudo, e in agg.items():
             apres = [d for d in morts.get(pseudo, []) if d >= depuis]
@@ -226,8 +279,7 @@ def defis(agg, morts, progression, sessions, ident):
         })
 
     # 4. Vitesse de progression du groupe entre deux boss.
-    etapes = sorted(((t, RAIDS_DE_BOSS[c]) for c, t in progression.items()
-                     if c in RAIDS_DE_BOSS))
+    etapes = sorted((e["date"], e["boss"]) for e in boss_vaincus)
     if len(etapes) >= 2:
         rangs = []
         for (t1, b1), (t2, b2) in zip(etapes, etapes[1:]):
@@ -298,7 +350,7 @@ def temps_cumule(sessions, jusqu_a=None):
     return total
 
 
-def valeur_kpi(source, ident, sessions, morts, progression, agg):
+def valeur_kpi(source, ident, sessions, morts, progression, agg, boss_vaincus):
     """Calcule un indicateur. Renvoie None si la donnee manque encore."""
     maintenant = datetime.now()
 
@@ -307,14 +359,11 @@ def valeur_kpi(source, ident, sessions, morts, progression, agg):
         return c["avancement"]["faits"] if c else None
 
     if source == "boss_vaincus":
-        # Borne inferieure : on ne compte que les boss dont un raid a ete vu.
-        # Les global keys du fichier de monde seraient la source exacte, mais
-        # elles vivent dans un binaire de 14 Mo sans horodatage.
-        return sum(1 for c in progression if c in RAIDS_DE_BOSS)
+        return len(boss_vaincus)
 
     if source.startswith("intacts_depuis:"):
-        raid = source.split(":", 1)[1]
-        depuis = progression.get(raid)
+        vise = source.split(":", 1)[1]
+        depuis = next((e["date"] for e in boss_vaincus if e["cle"] == vise), None)
         if not depuis:
             return None
         return sum(1 for p in agg
@@ -350,7 +399,7 @@ def valeur_kpi(source, ident, sessions, morts, progression, agg):
         # En temps de jeu cumule du groupe, et non en calendrier : comparer un
         # ecart de dates a un objectif exprime en heures de jeu melangeait deux
         # unites, et une semaine sans se connecter gonflait le chiffre.
-        etapes = sorted(t for c, t in progression.items() if c in RAIDS_DE_BOSS)
+        etapes = sorted(e["date"] for e in boss_vaincus)
         if len(etapes) < 2:
             return None
         return int(temps_cumule(sessions, datetime.fromisoformat(etapes[-1]))
@@ -370,10 +419,12 @@ def kpis(cx, monde):
         return None
     ident, sessions, morts, progression, _i, _j = charge(cx, monde)
     agg = par_joueur(ident, sessions, morts)
+    boss_vaincus = progression_boss(cx, monde, progression)
 
     resultat = {"kpis": [], "jalons": []}
     for k in conf.get("kpis", []):
-        v = valeur_kpi(k["source"], ident, sessions, morts, progression, agg)
+        v = valeur_kpi(k["source"], ident, sessions, morts, progression, agg,
+                       boss_vaincus)
         cible = k.get("cible")
         entree = dict(k)
         entree["valeur"] = v
@@ -392,7 +443,7 @@ def kpis(cx, monde):
 
     # Jalons : a quel moment du temps de jeu cumule chaque boss est tombe.
     for j in conf.get("jalons", []):
-        ts = progression.get(j["raid"])
+        ts = next((e["date"] for e in boss_vaincus if e["boss"] == j["boss"]), None)
         e = dict(j)
         if ts:
             h = temps_cumule(sessions, datetime.fromisoformat(ts)) / 3600.0
@@ -410,6 +461,7 @@ def kpis(cx, monde):
 def texte(cx, monde=None):
     ident, sessions, morts, progression, infos, jour = charge(cx, monde)
     agg = par_joueur(ident, sessions, morts)
+    boss_vaincus = progression_boss(cx, monde, progression)
 
     nom_monde = (infos[0] if infos and infos[0] else None) or monde or "?"
     print("SERVEUR VALHEIM — monde « %s »" % nom_monde)
@@ -427,18 +479,19 @@ def texte(cx, monde=None):
             e["derniere"] or "-", "  (en jeu)" if e["en_cours"] else ""))
     print()
 
-    print("PROGRESSION, deduite des raids")
-    if not progression:
-        print("  aucun raid enregistre")
-    for cle, ts in sorted(progression.items(), key=lambda kv: kv[1]):
-        boss = RAIDS_DE_BOSS.get(cle)
-        if boss:
-            print("  %-16s vaincu avant le %s   (raid %s)" % (boss, ts, cle))
-        else:
-            print("  %-16s %s   (evenement non lie a un boss)" % ("", ts + " " + cle))
+    print("PROGRESSION, d'apres les cles du monde")
+    if not boss_vaincus:
+        print("  releve des cles pas encore effectue (cles-monde-valheim.py)")
+    for e in boss_vaincus:
+        print("  %-16s vaincu %s %s%s" % (
+            e["boss"], "le" if e["exacte"] else "avant le", e["date"][:16],
+            "" if e["exacte"] else "   (borne haute)"))
+    for cle, nom in BOSS:
+        if not any(e["cle"] == cle for e in boss_vaincus):
+            print("  %-16s pas encore" % nom)
     print()
 
-    d = defi_baby(morts, progression)
+    d = defi_baby(morts, boss_vaincus)
     if d:
         print("DEFI DE BAB-Y — jamais mort depuis la chute de l'Ancien (%s)" % d["depuis"])
         if d["tenants"]:
@@ -449,9 +502,7 @@ def texte(cx, monde=None):
         if not d["tenants"]:
             print("  personne ne tient le defi sur ce monde")
 
-    ident, sessions, morts, progression, _i, _j = charge(cx, monde)
-    for defi in defis(par_joueur(ident, sessions, morts), morts, progression,
-                      sessions, ident):
+    for defi in defis(agg, morts, progression, sessions, ident, boss_vaincus):
         print()
         print("%s — %s" % (defi["nom"].upper(), defi["regle"]))
         for r in defi["rangs"]:
@@ -505,6 +556,7 @@ def texte(cx, monde=None):
 def donnees(cx, monde=None):
     ident, sessions, morts, progression, infos, jour = charge(cx, monde)
     agg = par_joueur(ident, sessions, morts)
+    boss_vaincus = progression_boss(cx, monde, progression)
     return {
         "mondes": metadonnees_monde(cx),
         "monde": (infos[0] if infos and infos[0] else None) or monde,
@@ -513,10 +565,13 @@ def donnees(cx, monde=None):
         "derniere_sauvegarde": infos[1] if infos else None,
         "joueurs": [dict(pseudo=p, **e) for p, e in
                     sorted(agg.items(), key=lambda kv: -kv[1]["temps"])],
-        "progression": [{"raid": c, "boss": RAIDS_DE_BOSS.get(c), "premier": t}
-                        for c, t in sorted(progression.items(), key=lambda kv: kv[1])],
-        "defi_baby": defi_baby(morts, progression),
-        "defis": defis(agg, morts, progression, sessions, ident),
+        "progression": [{"boss": e["boss"], "premier": e["date"],
+                         "exacte": e["exacte"], "cle": e["cle"]}
+                        for e in boss_vaincus],
+        "raids": [{"raid": c, "premier": t}
+                  for c, t in sorted(progression.items(), key=lambda kv: kv[1])],
+        "defi_baby": defi_baby(morts, boss_vaincus),
+        "defis": defis(agg, morts, progression, sessions, ident, boss_vaincus),
         "kpi": kpis(cx, monde),
         "chantiers": chantiers(),
         "genere": datetime.now().isoformat(timespec="seconds"),

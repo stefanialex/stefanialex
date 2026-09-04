@@ -13,7 +13,7 @@
     {
       "cle": "intacts",
       "libelle": "Intacts depuis l'Ancien",
-      "source": "intacts_depuis:army_theelder",
+      "source": "intacts_depuis:defeated_gdking",
       "cible": 1,
       "sens": "plus",
       "unite": "joueurs",
@@ -72,9 +72,9 @@
     },
     {
       "cle": "chantiers",
-      "libelle": "Chantiers achevés",
+      "libelle": "Chantiers et quêtes",
       "source": "chantiers_faits",
-      "cible": 11,
+      "cible": 12,
       "sens": "plus",
       "unite": "chantiers",
       "note": "déclaratif : mis à jour par chantier-valheim.py, pas mesuré"
@@ -83,27 +83,22 @@
   "jalons": [
     {
       "boss": "Eikthyr",
-      "raid": "army_eikthyr",
       "heures_cumulees": 4
     },
     {
       "boss": "l'Ancien",
-      "raid": "army_theelder",
       "heures_cumulees": 10
     },
     {
       "boss": "Bonemass",
-      "raid": "army_bonemass",
       "heures_cumulees": 25
     },
     {
       "boss": "Moder",
-      "raid": "army_moder",
       "heures_cumulees": 40
     },
     {
       "boss": "Yagluth",
-      "raid": "army_goblin",
       "heures_cumulees": 70
     }
   ]

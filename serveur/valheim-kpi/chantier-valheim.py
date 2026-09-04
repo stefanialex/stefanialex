@@ -57,11 +57,19 @@ def trouve(liste, motif):
     entree, pour ne jamais cocher le mauvais chantier.
     """
     m = sans_accent(motif)
-    coups = [e for e in liste if m in sans_accent(e["nom"])]
+    # Les alias comptent autant que le nom : Benny dira « caillou », pas
+    # « trophée de Golem de pierre ». Une entree se cherche par le mot qu'on
+    # emploie pour elle, pas par son libelle officiel.
+    def mots(e):
+        return [sans_accent(x) for x in [e["nom"]] + e.get("alias", [])]
+    coups = [e for e in liste if any(m in x for x in mots(e))]
     if not coups:
-        proches = difflib.get_close_matches(
-            m, [sans_accent(e["nom"]) for e in liste], n=3, cutoff=0.6)
-        coups = [e for e in liste if sans_accent(e["nom"]) in proches]
+        tous = [(x, e) for e in liste for x in mots(e)]
+        proches = difflib.get_close_matches(m, [x for x, _ in tous], n=3, cutoff=0.6)
+        coups = []
+        for x, e in tous:
+            if x in proches and e not in coups:
+                coups.append(e)
     if not coups:
         sys.exit("aucune entree ne correspond a « %s »" % motif)
     if len(coups) > 1:
