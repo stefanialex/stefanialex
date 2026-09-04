@@ -1049,7 +1049,19 @@ sudo systemctl enable --now lit-discord-valheim.timer     # un passage par minut
 
 Le token va dans `/etc/valheim-discord.conf` à côté du webhook —
 `TOKEN=`, `SALON=` (l'identifiant du salon), et `AUTORISES=` en option pour
-restreindre les commandes à certains comptes. **Sans token, le script sort en
+restreindre les commandes à certains comptes.
+
+**L'identifiant du salon n'a pas eu besoin d'être demandé** : le token permet
+de lister les serveurs (`/users/@me/guilds`) puis leurs salons, et de trouver
+`valheim` — `1542942710657454130`, le même que celui du webhook, vérifié en
+interrogeant le webhook lui-même, qui renvoie son `channel_id`.
+
+**Le salon `valheim` est privé, et c'est ce qui bloque.** Une surcharge y refuse
+« voir le salon » à `@everyone` et l'accorde nommément à trois membres et un
+rôle ; le bot n'en fait pas partie. Il lit `général`, `sw` et `jdr-bot` sans
+problème — son rôle global est donc correct. Il faut l'ajouter aux permissions
+de ce salon précis. Le script le dit maintenant explicitement dans le journal
+plutôt que de laisser un `HTTP 403 code 50001` opaque. **Sans token, le script sort en
 succès sans rien faire** : il peut donc être armé avant que le token existe.
 
 **La distinction qui structure le programme.** Deux sortes de demandes :
@@ -1104,11 +1116,46 @@ annonce sur Discord **la première fois** qu'ils divergent. Un marqueur dans
 d'heure. `Persistent=true` : si la machine était éteinte à l'heure du contrôle,
 il a lieu au démarrage suivant.
 
-**Ce qui est automatique et ce qui ne l'est pas.** La minuterie détecte et
-prévient. Elle **n'installe rien** et **ne crée aucun monde** : la mise à jour,
-la sonde et la bascule vers `NordheimV1` restent trois commandes manuelles. Ce
-n'est pas une timidité — la sonde peut annoncer que la génération de monde a
-changé, et ce verdict doit être lu par quelqu'un avant de figer une seed.
+**Passée en chaîne complète le 2026-09-04, à la demande.** La minuterie
+exécute maintenant `--automatique --confirm` : mise à jour, sonde, puis monde
+`NordheimV1` avec une **seed tirée au hasard**, et une annonce Discord à chaque
+étape. L'argument qui justifiait de garder la main — la sonde peut révéler que
+la génération de monde a changé — tombe dès lors que la seed est aléatoire :
+aucune carte repérée d'avance n'est en jeu.
+
+**Trois garde-fous, parce que personne ne lira la sortie au moment où elle
+passe :**
+
+*Une barrière de date.* La chaîne ne fait rien avant le `2026-09-09` ; avant,
+elle se contente de prévenir. Sans cette barrière, **un simple correctif publié
+par Iron Gate d'ici là suffirait à archiver la partie en cours** — le buildid
+aurait changé, et la chaîne aurait conclu à la sortie de la 1.0.
+
+*Un monde déjà là arrête tout.* Si `NordheimV1.fwl` existe, la bascule a déjà
+eu lieu et la chaîne ne recommence pas.
+
+*Chaque échec s'arrête et le dit.* Si la mise à jour échoue, le monde n'est pas
+touché et Discord l'annonce. Si la sonde échoue, la version du générateur est
+inconnue, donc **le monde neuf n'est pas créé** — écrire un `.fwl` avec la
+mauvaise valeur produirait un `LoadError` dont le message parlerait de seed
+alors que le problème serait ailleurs.
+
+**Deux bugs corrigés en écrivant cette chaîne**, tous deux invisibles en
+lecture :
+
+`action_sonde` effaçait le répertoire jetable que `action_monde` lisait ensuite
+pour connaître la version du générateur. `--tout` retombait donc silencieusement
+sur la valeur par défaut. Le résultat est maintenant écrit hors du répertoire,
+dans `/var/lib/valheim-stats/generateur-sonde`.
+
+Le message d'échec de la mise à jour utilisait `$ACTUEL`, variable qui
+n'appartient qu'à l'autre script. Sous `set -u`, la chaîne aurait planté **au
+moment précis où elle annonce une erreur**. Le nom du monde est désormais relu
+depuis `/etc/valheim.env`.
+
+**La seed annoncée est relue dans le fichier créé**, et non recopiée depuis les
+arguments : sans `--seed` elle est tirée au hasard, et c'est cette valeur-là
+qu'il faut publier pour que le groupe puisse regarder la carte.
 
 ---
 

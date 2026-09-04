@@ -1,8 +1,13 @@
 [Unit]
-Description=Controle de la publication de Valheim 1.0
+Description=Bascule automatique vers Valheim 1.0 et le monde neuf
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/jour-j-valheim.sh --controle
+# --automatique enchaine mise a jour, sonde et monde neuf a seed aleatoire.
+# Avant le 2026-09-09 il se contente de prevenir sur Discord : un correctif
+# mineur publie d'ici la ne doit pas archiver la partie en cours.
+ExecStart=/usr/local/bin/jour-j-valheim.sh --automatique --confirm
+# La chaine peut durer : telechargement SteamCMD, generation d'un monde sonde.
+TimeoutStartSec=3600

@@ -222,8 +222,17 @@ def main():
     try:
         messages = appel("/channels/%s/messages" % salon, token, params=params) or []
     except urllib.error.HTTPError as e:
-        print("lecture impossible : HTTP %s %s" % (e.code, e.read()[:200]),
-              file=sys.stderr)
+        corps = e.read()[:200].decode("utf8", "replace")
+        print("lecture impossible : HTTP %s %s" % (e.code, corps), file=sys.stderr)
+        if "50001" in corps or e.code == 403:
+            # Cas rencontre a l'installation : le salon valheim est prive, et
+            # une surcharge y refuse « voir le salon » a @everyone. Le bot lit
+            # les autres salons mais pas celui-la. Le message dit quoi faire,
+            # sinon le journal ne montrerait qu'un code d'erreur opaque.
+            print("  -> le bot n'a pas acces a ce salon. Dans Discord :\n"
+                  "     Modifier le salon > Permissions > ajouter le bot, avec\n"
+                  "     « Voir les salons », « Voir les anciens messages » et\n"
+                  "     « Envoyer des messages ».", file=sys.stderr)
         return 1
     except (urllib.error.URLError, OSError) as e:
         print("lecture impossible : %s" % e, file=sys.stderr)

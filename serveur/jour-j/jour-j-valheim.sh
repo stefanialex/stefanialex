@@ -25,6 +25,12 @@ SONDE_DIR=/var/tmp/sonde-valheim
 SONDE_PORT=2466
 JOURNAL=/var/log/serveur-ia
 MARQUEUR=/var/lib/valheim-stats/1.0-annoncee
+SONDE_RESULTAT=/var/lib/valheim-stats/generateur-sonde
+# La chaine automatique ne se declenche pas avant cette date. Sans cette
+# barriere, un simple correctif publie par Iron Gate avant la 1.0 suffirait a
+# faire basculer le monde -- la partie en cours serait archivee pour rien.
+PAS_AVANT=2026-09-09
+NOM_AUTO=NordheimV1
 
 CONFIRM=0
 FORCE=0
@@ -63,6 +69,10 @@ Actions, dans l'ordre ou on les utilise le jour J :
   --monde           cree le monde neuf. --nom NOM obligatoire, --seed SEED
                     conseille. La version du generateur vient de --sonde.
   --tout            enchaine maj, sonde, monde. --nom et --seed requis.
+  --automatique     la meme chose sans intervention, pour une minuterie :
+                    monde NordheimV1, seed tiree au hasard, annonces Discord a
+                    chaque etape. Ne fait rien avant le 2026-09-09, et rien si
+                    le monde existe deja.
   --retour-arriere  reinstalle la branche « default_old » (previous stable), si
                     la 1.0 empeche le serveur de demarrer.
 
@@ -73,7 +83,7 @@ AIDE
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        --verifier|--attendre|--controle|--maj|--sonde|--monde|--tout|--retour-arriere)
+        --verifier|--attendre|--controle|--automatique|--maj|--sonde|--monde|--tout|--retour-arriere)
             ACTION="${1#--}"; shift ;;
         --nom) NOM="${2:-}"; shift 2 ;;
         --seed) SEED="${2:-}"; shift 2 ;;
@@ -244,6 +254,55 @@ Prochaine étape, à lancer à la main : \`jour-j-valheim.sh --maj --confirm\`, 
     echo "$bd" >> "$MARQUEUR"
 }
 
+action_automatique() {
+    # Enchaine tout, sans intervention : mise a jour, sonde, monde neuf avec une
+    # seed tiree au hasard. Pensee pour une minuterie, donc chaque garde-fou
+    # compte -- personne ne lira la sortie au moment ou elle passe.
+    local aujourdhui
+    aujourdhui=$(date +%F)
+    if [ "$aujourdhui" \< "$PAS_AVANT" ]; then
+        # Avant la date de sortie annoncee, on se contente de prevenir. Un
+        # correctif mineur publie entre-temps ne doit pas archiver la partie.
+        action_controle
+        return 0
+    fi
+
+    local bi bd
+    bi=$(buildid_installe); bd=$(buildid_distant)
+    if [ -z "$bi" ] || [ -z "$bd" ] || [ "$bi" = "$bd" ]; then
+        echo "rien a faire (installe=${bi:-?} publie=${bd:-?})"
+        return 0
+    fi
+    if [ -e "$MONDES/$NOM_AUTO.fwl" ]; then
+        echo "$NOM_AUTO existe deja : la bascule a deja eu lieu"
+        return 0
+    fi
+    if [ "$CONFIRM" -eq 0 ]; then
+        jaune "simulation : maj vers $bd, sonde, puis monde $NOM_AUTO a seed aleatoire."
+        return 0
+    fi
+
+    # Le nom du monde en cours est relu ici : $ACTUEL appartient au script de
+    # bascule, et sous « set -u » y faire reference depuis celui-ci aurait fait
+    # echouer la chaine au moment ou elle annonce une erreur -- le pire moment.
+    local en_place
+    en_place=$(grep -oP '(?<=^NOM_MONDE=).*' /etc/valheim.env 2>/dev/null | tr -d '"' || true)
+
+    annonce "🔔 **Valheim 1.0 est publié** (build \`$bd\`). Je lance la mise à jour, puis le monde neuf **$NOM_AUTO**. Le serveur revient dans quelques minutes."
+    if ! action_maj; then
+        annonce "⚠️ La mise à jour a échoué. Le monde **${en_place:-actuel}** est intact et le serveur reste sur l'ancienne version. Il faut regarder à la main."
+        return 1
+    fi
+    if ! action_sonde; then
+        annonce "⚠️ La sonde a échoué : je ne connais pas la version du générateur de monde, donc je ne crée pas le monde neuf. Le monde actuel est intact."
+        return 1
+    fi
+    NOM="$NOM_AUTO"
+    SEED=""      # tiree au hasard par le script de bascule
+    FORCE=1      # les joueurs se reconnectent souvent juste apres la mise a jour
+    action_monde
+}
+
 action_maj() {
     local bi bd
     bi=$(buildid_installe); bd=$(buildid_distant)
@@ -351,14 +410,20 @@ action_sonde() {
     echo
     echo "Passe cette valeur a --monde : le generateur $gen sera inscrit dans le"
     echo "monde neuf. Sans ca, le serveur refuserait le fichier."
+    # Le resultat est ecrit hors du repertoire jetable, qu'on efface juste apres.
+    # Sans ca --monde ne trouvait plus rien et retombait sur la valeur par
+    # defaut : sur la 1.0, cela aurait pu produire un fichier refuse au
+    # chargement, avec un message parlant de seed alors que le probleme etait
+    # ailleurs.
+    mkdir -p "$(dirname "$SONDE_RESULTAT")"
+    printf '%s\n' "$gen" > "$SONDE_RESULTAT"
     rm -rf "$SONDE_DIR"
 }
 
 action_monde() {
     [ -n "$NOM" ] || mourir "--nom est obligatoire"
     local gen=""
-    [ -d "$SONDE_DIR" ] && gen=$("$OUTIL" lire "$SONDE_DIR/worlds_local/Sonde.fwl" 2>/dev/null \
-        | awk '/^version_generateur/ { print $2 }' || true)
+    [ -s "$SONDE_RESULTAT" ] && gen=$(cat "$SONDE_RESULTAT")
     local args=(--nom "$NOM")
     [ -n "$SEED" ] && args+=(--seed "$SEED")
     [ -n "$gen" ] && args+=(--generateur "$gen")
@@ -369,7 +434,15 @@ action_monde() {
     [ "$FORCE" -eq 1 ] && args+=(--force)
     "$BASCULE" "${args[@]}"
     if [ "$CONFIRM" -eq 1 ]; then
-        annonce "🌍 Nouveau monde **$NOM** en ligne${SEED:+, seed \`$SEED\`}. Créez un personnage neuf : les compteurs de défis repartent de zéro."
+        # La seed est relue dans le fichier cree : sans --seed elle a ete tiree
+        # au hasard par le script de bascule, et c'est cette valeur-la qu'il
+        # faut annoncer pour que le groupe puisse regarder la carte en ligne.
+        local vraie
+        vraie=$("$OUTIL" lire "$MONDES/$NOM.fwl" 2>/dev/null \
+            | awk '/^seed / { print $2 }' || true)
+        annonce "🌍 **Nouveau monde en ligne : $NOM**
+Seed : \`${vraie:-inconnue}\` — à coller sur valheim-map.world pour voir la carte.
+Créez un personnage neuf. Les compteurs de défis repartent de zéro, dont celui de Bab-y : n'être jamais mort après avoir battu l'Ancien."
     fi
 }
 
@@ -396,13 +469,14 @@ case "$ACTION" in
     verifier) action_verifier ;;
     attendre) action_attendre ;;
     controle) action_controle ;;
-    sonde|maj|monde|tout|retour-arriere)
+    sonde|maj|monde|tout|automatique|retour-arriere)
         [ "$(id -u)" -eq 0 ] || mourir "a lancer avec sudo"
         mkdir -p "$JOURNAL"
         case "$ACTION" in
             maj) action_maj ;;
             sonde) action_sonde ;;
             monde) action_monde ;;
+            automatique) action_automatique ;;
             retour-arriere) action_retour_arriere ;;
             tout)
                 [ -n "$NOM" ] || mourir "--tout exige --nom"
