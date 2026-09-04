@@ -934,6 +934,62 @@ côté serveur et ne demandent rien aux joueurs.
 
 ---
 
+### KPI et objectifs, le 2026-09-04
+
+Les indicateurs et leurs cibles vivent dans `/etc/valheim/objectifs.json`, pas
+dans le code : les objectifs d'un groupe changent en cours de partie, et les
+recompiler n'aurait pas de sens. Le fichier absent n'est pas une erreur — la
+page affiche alors les statistiques brutes.
+
+```bash
+stats-valheim.py               # KPI, jalons et défis au terminal
+stats-valheim.py --json        # même chose pour la page Cockpit
+```
+
+Affichés dans la page **Valheim — défis** en cartes avec jauge, et résumés
+chaque jour à 19 h sur Discord — avant la session du soir, pour que le bilan
+serve à se fixer un objectif plutôt qu'à constater après coup.
+
+**Les jalons se mesurent en temps de jeu cumulé du groupe**, pas en calendrier.
+Les sessions qui se chevauchent sont comptées plusieurs fois, et c'est voulu :
+on mesure l'effort du groupe, pas la durée écoulée. Une semaine sans se
+connecter ne doit pas dégrader un indicateur de progression.
+
+**Trois pièges corrigés en écrivant ça, tous les trois des erreurs de sens
+plutôt que de code.**
+
+*Deux unités mélangées.* « Temps du dernier palier de boss » comparait un écart
+de dates à un objectif exprimé en heures de jeu : 77 h affichées contre 25 h
+visées, alors que le groupe n'avait joué que 29 h 56 entre les deux boss. Le
+KPI est maintenant calculé en temps de jeu, comme les jalons.
+
+*Un raid absent ne prouve rien.* Le jalon Eikthyr affichait « pas encore
+vaincu » alors qu'Eikthyr était forcément tombé — l'Ancien et Bonemass l'étaient.
+Son raid `army_eikthyr` ne s'était simplement jamais déclenché en 154 jours. Les
+raids donnent donc une **borne inférieure** de la progression, et le libellé le
+dit désormais : « aucun raid observé ». La source exacte serait les *global
+keys* du fichier de monde, mais elles vivent dans un binaire de 14 Mo, sans
+horodatage.
+
+*Un meneur sur un défi que personne ne tient.* Le bilan Discord annonçait
+« Intact depuis l'Ancien — en tête : DjOsE » alors que DjOsE avait deux morts :
+il était seulement le moins mauvais. Quand un défi est binaire et que personne
+ne le tient, le message le dit au lieu de désigner un vainqueur.
+
+**Cloisonnement par monde.** Les requêtes filtrent sur le nom du monde, avec le
+monde en cours par défaut (`--monde` pour un autre, `--tous-mondes` pour tout
+additionner). Ce n'est pas cosmétique : à partir du 9 septembre, les événements
+de `Midgard` et de `NordheimV1` cohabitent en base, et sans filtre les morts de
+l'ancien monde compteraient dans les défis du nouveau.
+
+**La jauge de la page Cockpit est un `<progress>`**, pas une `<div>` dont on
+fixerait la largeur. La valeur est un attribut et non du style : rien ne dépend
+alors de ce que la CSP autorise, et si la feuille de style ne chargeait pas, le
+navigateur affiche quand même sa barre native. Après deux échecs silencieux dus
+à cette CSP, autant choisir l'élément qui ne peut pas échouer.
+
+---
+
 ### Adresse IP fixée en statique, le 2026-09-04
 
 L'adresse `192.168.1.120` venait du DHCP de la box et n'était pas réservée.

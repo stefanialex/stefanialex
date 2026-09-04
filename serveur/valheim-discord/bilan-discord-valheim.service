@@ -1,0 +1,17 @@
+[Unit]
+Description=Bilan quotidien du serveur Valheim sur Discord
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=valheim
+Group=valheim
+StateDirectory=valheim-stats
+ExecStart=/usr/local/bin/bilan-discord-valheim.py
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes

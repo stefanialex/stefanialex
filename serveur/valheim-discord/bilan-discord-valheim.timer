@@ -1,0 +1,12 @@
+[Unit]
+Description=Bilan quotidien du serveur Valheim sur Discord
+
+[Timer]
+# 19 h : avant la session du soir, pour que le bilan serve a se fixer un
+# objectif plutot qu'a constater apres coup.
+OnCalendar=*-*-* 19:00:00
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

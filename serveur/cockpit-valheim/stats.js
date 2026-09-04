@@ -148,6 +148,74 @@ function rendDefis(defis) {
   }
 }
 
+/* ---------- KPI et jalons ---------- */
+function rendKpi(k) {
+  const zone = $("kpi");
+  zone.replaceChildren();
+  if (!k || !k.kpis || !k.kpis.length) {
+    zone.append(el("div", "vide",
+      "aucun objectif défini (/etc/valheim/objectifs.json)"));
+    return;
+  }
+  for (const e of k.kpis) {
+    const carte = el("div", e.tenu ? "carte kpi tenu" : "carte kpi");
+    carte.append(el("h2", null, e.libelle));
+    const fmt = (v) => e.unite === "duree" ? duree(v) : nf(v, 3);
+    if (e.valeur === null) {
+      carte.append(el("div", "attente", "pas encore mesurable"));
+    } else {
+      const chiffre = el("div", "chiffre", fmt(e.valeur));
+      chiffre.append(el("span", "sur",
+        ` / ${fmt(e.cible)}${e.unite && e.unite !== "duree" ? " " + e.unite : ""}`));
+      carte.append(chiffre);
+      if (e.avancement !== null) {
+        // <progress> plutot qu'une div dont on fixerait la largeur : la valeur
+        // est un attribut, pas du style, donc rien ici ne depend de ce que la
+        // CSP de Cockpit autorise. Et si la feuille de style ne chargeait pas,
+        // le navigateur affiche quand meme sa barre native.
+        const jauge = el("progress", e.tenu ? "jauge tenu" : "jauge");
+        jauge.max = 1;
+        jauge.value = e.avancement;
+        jauge.textContent = Math.round(e.avancement * 100) + " %";
+        carte.append(jauge);
+      }
+      carte.append(el("div", "etat", e.tenu
+        ? "objectif tenu"
+        : (e.sens === "moins" ? "au-dessus de la cible" : "en dessous de la cible")));
+    }
+    if (e.note) carte.append(el("div", "note", e.note));
+    zone.append(carte);
+  }
+}
+
+function rendJalons(k) {
+  const tb = $("jalons").tBodies[0];
+  if (!k || !k.jalons || !k.jalons.length) return vide(tb, "aucun jalon défini");
+  tb.replaceChildren();
+  const entete = el("tr");
+  for (const [t, c] of [["boss", null], ["atteint en", "num"],
+                        ["objectif", "num"], ["", null]]) {
+    entete.append(el("th", c, t));
+  }
+  tb.append(entete);
+  for (const j of k.jalons) {
+    const tr = el("tr");
+    tr.append(el("td", null, j.boss));
+    if (j.heures_reelles === null) {
+      const td = el("td", "vide", "aucun raid observé");
+      td.colSpan = 3;
+      tr.append(td);
+    } else {
+      tr.append(el("td", "num", nf(j.heures_reelles, 1) + " h"));
+      tr.append(el("td", "num", j.heures_cumulees + " h"));
+      const etat = el("td");
+      etat.append(el("span", j.tenu ? "badge" : "ip", j.tenu ? "tenu" : "dépassé"));
+      tr.append(etat);
+    }
+    tb.append(tr);
+  }
+}
+
 /* ---------- chargement ---------- */
 function resume(d) {
   const p = [];
@@ -171,6 +239,8 @@ function charge() {
       rendJoueurs(d.joueurs || []);
       rendMonde(d);
       rendProgression(d.progression || []);
+      rendKpi(d.kpi);
+      rendJalons(d.kpi);
       rendDefis(d.defis);
     })
     .catch((e) => {

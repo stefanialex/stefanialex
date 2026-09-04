@@ -23,3 +23,26 @@
 
 .regle { color: var(--doux); font-size: .8rem; margin-bottom: .5rem; }
 .seed { font-family: RedHatMono, ui-monospace, monospace; }
+
+/* KPI : la valeur d'abord, la barre ensuite. Le chiffre porte l'information,
+   la barre ne sert qu'a situer d'un coup d'oeil. */
+.kpi { display: flex; flex-direction: column; gap: .4rem; }
+.kpi .chiffre { font-size: 1.75rem; font-weight: 700; font-variant-numeric: tabular-nums;
+  line-height: 1.1; }
+.kpi .sur { color: var(--doux); font-size: .875rem; font-weight: 400; }
+/* progress a besoin d'etre habille dans les deux moteurs : -webkit- pour
+   Chromium, -moz- pour Firefox. Sans ces regles la barre reste fonctionnelle,
+   simplement au style du navigateur. */
+progress.jauge { width: 100%; height: .5rem; border: none; border-radius: 999px;
+  background: var(--survol-doux); appearance: none; display: block; }
+progress.jauge::-webkit-progress-bar { background: var(--survol-doux);
+  border-radius: 999px; }
+progress.jauge::-webkit-progress-value { background: var(--marque);
+  border-radius: 999px; }
+progress.jauge::-moz-progress-bar { background: var(--marque);
+  border-radius: 999px; }
+progress.jauge.tenu::-webkit-progress-value { background: var(--ok); }
+progress.jauge.tenu::-moz-progress-bar { background: var(--ok); }
+.kpi .etat { font-size: .75rem; color: var(--doux); }
+.kpi.tenu .chiffre { color: var(--ok); }
+.attente { color: var(--doux); font-style: italic; font-size: 1rem; }

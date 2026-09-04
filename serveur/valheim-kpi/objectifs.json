@@ -1,0 +1,101 @@
+{
+  "_note": "Liste des KPI et de leurs objectifs. Modifiable sans toucher au code : stats-valheim.py --kpi lit ce fichier. Les valeurs ci-dessous sont des reperes issus de la recherche sur la progression a 4 joueurs, a remplacer par le tableau du groupe.",
+  "kpis": [
+    {
+      "cle": "boss",
+      "libelle": "Boss vus par leur raid",
+      "source": "boss_vaincus",
+      "cible": 8,
+      "sens": "plus",
+      "unite": "boss",
+      "note": "borne inferieure : un boss peut etre tombe sans que son raid se declenche"
+    },
+    {
+      "cle": "intacts",
+      "libelle": "Intacts depuis l'Ancien",
+      "source": "intacts_depuis:army_theelder",
+      "cible": 1,
+      "sens": "plus",
+      "unite": "joueurs",
+      "note": "le defi de Bab-y : il en faut au moins un"
+    },
+    {
+      "cle": "morts_heure",
+      "libelle": "Morts par heure (groupe)",
+      "source": "morts_par_heure",
+      "cible": 0.15,
+      "sens": "moins",
+      "unite": "morts/h"
+    },
+    {
+      "cle": "morts_total",
+      "libelle": "Morts cumulées du groupe",
+      "source": "morts_total",
+      "cible": 40,
+      "sens": "moins",
+      "unite": "morts"
+    },
+    {
+      "cle": "serie",
+      "libelle": "Plus longue série sans mourir",
+      "source": "serie_max",
+      "cible": 86400,
+      "sens": "plus",
+      "unite": "duree"
+    },
+    {
+      "cle": "temps",
+      "libelle": "Temps de jeu du groupe",
+      "source": "temps_groupe",
+      "cible": 396000,
+      "sens": "plus",
+      "unite": "duree",
+      "note": "110 h : le repere pour atteindre la Reine a 4 joueurs"
+    },
+    {
+      "cle": "rythme",
+      "libelle": "Dernier palier de boss (jeu)",
+      "source": "dernier_palier",
+      "cible": 90000,
+      "sens": "moins",
+      "unite": "duree",
+      "note": "25 h entre deux boss"
+    },
+    {
+      "cle": "regularite",
+      "libelle": "Sessions sur 7 jours",
+      "source": "sessions_7j",
+      "cible": 40,
+      "sens": "plus",
+      "unite": "sessions",
+      "note": "a recaler sur le tableau du groupe"
+    }
+  ],
+  "jalons": [
+    {
+      "boss": "Eikthyr",
+      "raid": "army_eikthyr",
+      "heures_cumulees": 4
+    },
+    {
+      "boss": "l'Ancien",
+      "raid": "army_theelder",
+      "heures_cumulees": 10
+    },
+    {
+      "boss": "Bonemass",
+      "raid": "army_bonemass",
+      "heures_cumulees": 25
+    },
+    {
+      "boss": "Moder",
+      "raid": "army_moder",
+      "heures_cumulees": 40
+    },
+    {
+      "boss": "Yagluth",
+      "raid": "army_goblin",
+      "heures_cumulees": 70
+    }
+  ]
+}

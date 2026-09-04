@@ -10,11 +10,12 @@ import argparse
 import json
 import os
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 BASE = os.environ.get("STATE_DIRECTORY", "/var/lib/valheim-stats") + "/valheim.db"
 SAVEDIR = "/var/lib/valheim/donnees/worlds_local"
 OUTIL_MONDE = "/usr/local/bin/monde-valheim.py"
+OBJECTIFS = "/etc/valheim/objectifs.json"
 
 
 def metadonnees_monde(cx):
@@ -53,8 +54,24 @@ def duree(secondes):
     return "%d h %02d" % (h, m)
 
 
-def charge(cx):
-    """Reconstitue les sessions, les morts et la progression."""
+def monde_actif(cx):
+    """Le monde le plus recemment vu par le collecteur."""
+    r = cx.execute("SELECT monde FROM mondes ORDER BY derniere_vue DESC LIMIT 1").fetchone()
+    return r[0] if r else None
+
+
+def charge(cx, monde=None):
+    """Reconstitue les sessions, les morts et la progression d'un monde.
+
+    Le cloisonnement par monde n'est pas cosmetique : a partir du 9 septembre,
+    les evenements de Midgard et ceux de NordheimV1 cohabitent en base. Sans
+    filtre, les morts de l'ancien monde compteraient dans les defis du nouveau.
+    """
+    ou = ""
+    arg = ()
+    if monde:
+        ou = " AND monde = ?"
+        arg = (monde,)
     ident = {sid: pseudo for sid, pseudo in
              cx.execute("SELECT steamid, pseudo FROM joueurs")}
 
@@ -63,7 +80,8 @@ def charge(cx):
     ouvertes, sessions = {}, []
     for ts, typ, sid in cx.execute(
             "SELECT horodatage, type, steamid FROM evenements "
-            "WHERE type IN ('connexion', 'deconnexion') ORDER BY horodatage, id"):
+            "WHERE type IN ('connexion', 'deconnexion')" + ou +
+            " ORDER BY horodatage, id", arg):
         t = datetime.fromisoformat(ts)
         if typ == "connexion":
             ouvertes[sid] = t
@@ -75,24 +93,24 @@ def charge(cx):
 
     morts = {}
     for joueur, ts in cx.execute(
-            "SELECT joueur, horodatage FROM evenements WHERE type = 'mort' "
-            "ORDER BY horodatage"):
+            "SELECT joueur, horodatage FROM evenements WHERE type = 'mort'" + ou +
+            " ORDER BY horodatage", arg):
         morts.setdefault(joueur, []).append(ts)
 
     progression = {}
     for detail, ts in cx.execute(
-            "SELECT detail, min(horodatage) FROM evenements WHERE type = 'raid' "
-            "GROUP BY detail"):
+            "SELECT detail, min(horodatage) FROM evenements WHERE type = 'raid'" + ou +
+            " GROUP BY detail", arg):
         progression[detail] = ts
 
-    monde = cx.execute(
+    infos = cx.execute(
         "SELECT monde, max(horodatage), detail FROM evenements "
-        "WHERE type = 'sauvegarde'").fetchone()
+        "WHERE type = 'sauvegarde'" + ou, arg).fetchone()
     jour = cx.execute(
-        "SELECT detail FROM evenements WHERE type = 'jour' "
-        "ORDER BY horodatage DESC LIMIT 1").fetchone()
+        "SELECT detail FROM evenements WHERE type = 'jour'" + ou +
+        " ORDER BY horodatage DESC LIMIT 1", arg).fetchone()
 
-    return ident, sessions, morts, progression, monde, jour
+    return ident, sessions, morts, progression, infos, jour
 
 
 def par_joueur(ident, sessions, morts):
@@ -226,16 +244,154 @@ def defis(agg, morts, progression, sessions, ident):
     return liste
 
 
-def texte(cx):
-    ident, sessions, morts, progression, monde, jour = charge(cx)
+# ---------- KPI et objectifs ----------
+
+def objectifs():
+    """Liste des KPI et de leurs cibles, hors du code.
+
+    Les indicateurs et les objectifs d'un groupe changent en cours de partie ;
+    les recompiler n'aurait pas de sens. Le fichier est modifiable a la main,
+    et son absence n'est pas une erreur : la page affiche alors les seules
+    statistiques brutes.
+    """
+    try:
+        with open(OBJECTIFS, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
+def temps_cumule(sessions, jusqu_a=None):
+    """Temps de jeu additionne de tout le groupe, eventuellement arrete a une date.
+
+    Les sessions se chevauchent quand plusieurs jouent ensemble, et c'est
+    voulu : on mesure l'effort du groupe, pas la duree calendaire.
+    """
+    total = 0.0
+    for _sid, debut, fin, _en_cours in sessions:
+        if jusqu_a is not None:
+            if debut >= jusqu_a:
+                continue
+            fin = min(fin, jusqu_a)
+        total += max(0.0, (fin - debut).total_seconds())
+    return total
+
+
+def valeur_kpi(source, ident, sessions, morts, progression, agg):
+    """Calcule un indicateur. Renvoie None si la donnee manque encore."""
+    maintenant = datetime.now()
+
+    if source == "boss_vaincus":
+        # Borne inferieure : on ne compte que les boss dont un raid a ete vu.
+        # Les global keys du fichier de monde seraient la source exacte, mais
+        # elles vivent dans un binaire de 14 Mo sans horodatage.
+        return sum(1 for c in progression if c in RAIDS_DE_BOSS)
+
+    if source.startswith("intacts_depuis:"):
+        raid = source.split(":", 1)[1]
+        depuis = progression.get(raid)
+        if not depuis:
+            return None
+        return sum(1 for p in agg
+                   if not [d for d in morts.get(p, []) if d >= depuis])
+
+    if source == "morts_total":
+        return sum(len(v) for v in morts.values())
+
+    if source == "morts_par_heure":
+        h = temps_cumule(sessions) / 3600.0
+        if h < 1:
+            return None
+        return round(sum(len(v) for v in morts.values()) / h, 3)
+
+    if source == "temps_groupe":
+        return int(temps_cumule(sessions))
+
+    if source == "serie_max":
+        series = []
+        for pseudo in agg:
+            dates = morts.get(pseudo, [])
+            if dates:
+                depart = datetime.fromisoformat(dates[-1])
+            else:
+                debuts = [d for sid, d, _f, _c in sessions if ident.get(sid) == pseudo]
+                if not debuts:
+                    continue
+                depart = min(debuts)
+            series.append((maintenant - depart).total_seconds())
+        return int(max(series)) if series else None
+
+    if source == "dernier_palier":
+        # En temps de jeu cumule du groupe, et non en calendrier : comparer un
+        # ecart de dates a un objectif exprime en heures de jeu melangeait deux
+        # unites, et une semaine sans se connecter gonflait le chiffre.
+        etapes = sorted(t for c, t in progression.items() if c in RAIDS_DE_BOSS)
+        if len(etapes) < 2:
+            return None
+        return int(temps_cumule(sessions, datetime.fromisoformat(etapes[-1]))
+                   - temps_cumule(sessions, datetime.fromisoformat(etapes[-2])))
+
+    if source == "sessions_7j":
+        limite = maintenant - timedelta(days=7)
+        return sum(1 for _sid, debut, _f, _c in sessions if debut >= limite)
+
+    return None
+
+
+def kpis(cx, monde):
+    """Chaque KPI avec sa valeur, sa cible et son avancement."""
+    conf = objectifs()
+    if not conf:
+        return None
+    ident, sessions, morts, progression, _i, _j = charge(cx, monde)
     agg = par_joueur(ident, sessions, morts)
 
-    nom_monde = monde[0] if monde and monde[0] else "?"
+    resultat = {"kpis": [], "jalons": []}
+    for k in conf.get("kpis", []):
+        v = valeur_kpi(k["source"], ident, sessions, morts, progression, agg)
+        cible = k.get("cible")
+        entree = dict(k)
+        entree["valeur"] = v
+        if v is None or not cible:
+            entree["avancement"] = None
+            entree["tenu"] = None
+        elif k.get("sens") == "moins":
+            # Un objectif « au plus » est tenu tant qu'on est sous la cible.
+            # L'avancement se lit alors comme une marge : 1 = large, 0 = depasse.
+            entree["tenu"] = v <= cible
+            entree["avancement"] = 1.0 if v == 0 else min(1.0, cible / v)
+        else:
+            entree["tenu"] = v >= cible
+            entree["avancement"] = min(1.0, v / cible)
+        resultat["kpis"].append(entree)
+
+    # Jalons : a quel moment du temps de jeu cumule chaque boss est tombe.
+    for j in conf.get("jalons", []):
+        ts = progression.get(j["raid"])
+        e = dict(j)
+        if ts:
+            h = temps_cumule(sessions, datetime.fromisoformat(ts)) / 3600.0
+            e["heures_reelles"] = round(h, 1)
+            e["date"] = ts
+            e["tenu"] = h <= j["heures_cumulees"]
+        else:
+            e["heures_reelles"] = None
+            e["date"] = None
+            e["tenu"] = None
+        resultat["jalons"].append(e)
+    return resultat
+
+
+def texte(cx, monde=None):
+    ident, sessions, morts, progression, infos, jour = charge(cx, monde)
+    agg = par_joueur(ident, sessions, morts)
+
+    nom_monde = (infos[0] if infos and infos[0] else None) or monde or "?"
     print("SERVEUR VALHEIM — monde « %s »" % nom_monde)
     if jour:
         print("jour %s dans le monde" % jour[0])
-    if monde and monde[2]:
-        print("%s ZDOs a la derniere sauvegarde (%s)" % (monde[2], monde[1]))
+    if infos and infos[2]:
+        print("%s ZDOs a la derniere sauvegarde (%s)" % (infos[2], infos[1]))
     print()
 
     print("JOUEURS")
@@ -268,7 +424,7 @@ def texte(cx):
         if not d["tenants"]:
             print("  personne ne tient le defi sur ce monde")
 
-    ident, sessions, morts, progression, _m, _j = charge(cx)
+    ident, sessions, morts, progression, _i, _j = charge(cx, monde)
     for defi in defis(par_joueur(ident, sessions, morts), morts, progression,
                       sessions, ident):
         print()
@@ -278,22 +434,54 @@ def texte(cx):
             marque = "  TIENT" if r["tient"] else ""
             print("  %-24s %10s   %s%s" % (r["joueur"], v, r["note"], marque))
 
+    k = kpis(cx, monde)
+    if not k:
+        return
+    print()
+    print("KPI ET OBJECTIFS")
+    for e in k["kpis"]:
+        if e["valeur"] is None:
+            print("  %-44s %14s" % (e["libelle"], "pas encore"))
+            continue
+        fmt = duree if e.get("unite") == "duree" else (lambda x: str(x))
+        etat = "TENU" if e["tenu"] else "a faire"
+        barre = ""
+        if e["avancement"] is not None:
+            plein = int(round(e["avancement"] * 10))
+            barre = "[" + "#" * plein + "." * (10 - plein) + "]"
+        print("  %-44s %14s / %-12s %s %s" % (
+            e["libelle"], fmt(e["valeur"]), fmt(e["cible"]), barre, etat))
 
-def donnees(cx):
-    ident, sessions, morts, progression, monde, jour = charge(cx)
+    if any(j["date"] for j in k["jalons"]):
+        print()
+        print("JALONS, en temps de jeu cumule du groupe")
+        print("  (un raid absent ne prouve rien : Eikthyr peut etre tombe sans")
+        print("   que son raid se soit jamais declenche)")
+        for j in k["jalons"]:
+            if not j["date"]:
+                print("  %-16s %s" % (j["boss"], "aucun raid observe"))
+                continue
+            print("  %-16s %6.1f h  (objectif %d h)   %s" % (
+                j["boss"], j["heures_reelles"], j["heures_cumulees"],
+                "TENU" if j["tenu"] else "depasse"))
+
+
+def donnees(cx, monde=None):
+    ident, sessions, morts, progression, infos, jour = charge(cx, monde)
     agg = par_joueur(ident, sessions, morts)
     return {
         "mondes": metadonnees_monde(cx),
-        "monde": monde[0] if monde else None,
+        "monde": (infos[0] if infos and infos[0] else None) or monde,
         "jour": jour[0] if jour else None,
-        "zdos": monde[2] if monde else None,
-        "derniere_sauvegarde": monde[1] if monde else None,
+        "zdos": infos[2] if infos else None,
+        "derniere_sauvegarde": infos[1] if infos else None,
         "joueurs": [dict(pseudo=p, **e) for p, e in
                     sorted(agg.items(), key=lambda kv: -kv[1]["temps"])],
         "progression": [{"raid": c, "boss": RAIDS_DE_BOSS.get(c), "premier": t}
                         for c, t in sorted(progression.items(), key=lambda kv: kv[1])],
         "defi_baby": defi_baby(morts, progression),
         "defis": defis(agg, morts, progression, sessions, ident),
+        "kpi": kpis(cx, monde),
         "genere": datetime.now().isoformat(timespec="seconds"),
     }
 
@@ -301,12 +489,17 @@ def donnees(cx):
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--json", action="store_true", help="sortie JSON pour la page Cockpit")
+    ap.add_argument("--monde", default=None,
+                    help="monde a analyser ; par defaut le monde en cours")
+    ap.add_argument("--tous-mondes", action="store_true",
+                    help="ne cloisonne pas : additionne tous les mondes")
     a = ap.parse_args()
     cx = sqlite3.connect("file:%s?mode=ro" % BASE, uri=True)
+    monde = None if a.tous_mondes else (a.monde or monde_actif(cx))
     if a.json:
-        print(json.dumps(donnees(cx), ensure_ascii=False, indent=1))
+        print(json.dumps(donnees(cx, monde), ensure_ascii=False, indent=1))
     else:
-        texte(cx)
+        texte(cx, monde)
 
 
 if __name__ == "__main__":
