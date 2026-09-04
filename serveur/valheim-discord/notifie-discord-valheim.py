@@ -119,10 +119,17 @@ def message(cx, ev):
     return None
 
 
+# Discord passe par Cloudflare, qui repond 403 a l'agent utilisateur par defaut
+# de Python (« Python-urllib/3.x »). Il faut donc en declarer un explicitement.
+# Le premier essai contre un faux salon local n'avait rien montre : une maquette
+# sur 127.0.0.1 n'a pas de Cloudflare devant elle.
+AGENT = "valheim-serveur/1.0 (collecteur de statistiques auto-heberge)"
+
+
 def publie(url, texte):
     corps = json.dumps({"content": texte, "allowed_mentions": {"parse": []}}).encode()
-    requete = urllib.request.Request(
-        url, data=corps, headers={"Content-Type": "application/json"})
+    requete = urllib.request.Request(url, data=corps, headers={
+        "Content-Type": "application/json", "User-Agent": AGENT})
     with urllib.request.urlopen(requete, timeout=15) as r:
         return r.status
 
