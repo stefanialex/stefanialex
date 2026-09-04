@@ -767,7 +767,9 @@ vrais événements de la base, plutôt que sur Discord :
 
 ### Cockpit joignable même si la box change l'adresse, le 2026-09-04
 
-Écrit et installé, **pas encore exécuté** : `cockpit-adresse-stable.sh --confirm`.
+Appliqué. **`https://192.168.1.253:9090` est désormais l'adresse à retenir** :
+elle ne dépend plus de la box. `192.168.1.120` reste valide et continue de
+servir la redirection de ports du jeu.
 
 Le problème : Cockpit écoute sur `192.168.1.120` en dur, adresse venue du DHCP,
 et la box est inaccessible donc aucune réservation n'est possible. Avec
@@ -829,6 +831,24 @@ Second défaut du même lancement : `nmcli device reapply` rend la main **avant*
 que la nouvelle adresse soit effectivement posée. Le script affichait la liste
 trop tôt et n'y voyait que l'ancienne adresse. Il attend maintenant la preuve,
 quinze secondes au plus, et abandonne si l'adresse n'apparaît pas.
+
+Résultat du second lancement, celui qui est passé :
+
+```
+inet 192.168.1.120/24 ... enp0s31f6
+inet 192.168.1.253/24 ... secondary enp0s31f6
+ecoutes : 192.168.1.120:9090 192.168.1.253:9090
+https://192.168.1.120:9090/ -> 200
+https://192.168.1.253:9090/ -> 200
+```
+
+**Persistance vérifiée**, et pas seulement l'état courant. Le fichier netplan
+porte bien les deux adresses, le keyfile régénéré dans `/run/` les reproduit —
+`address1=192.168.1.120/24,192.168.1.254` puis `address2=192.168.1.253/24` — et
+`netplan generate` rend un fichier au md5 identique, donc le démarrage
+reproduira cet état. La règle `ufw` existante n'a rien demandé : elle porte sur
+le port de destination et la source `192.168.1.0/24`, pas sur l'adresse
+d'arrivée.
 
 ---
 
