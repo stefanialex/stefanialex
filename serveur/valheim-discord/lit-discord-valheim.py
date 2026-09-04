@@ -96,12 +96,120 @@ def appel(chemin, token, methode="GET", corps=None, params=None):
         return json.loads(brut) if brut else None
 
 
-def repond(salon, token, texte):
+VERT = 0x3D7317      # le vert d'etat de Cockpit, pour que tout se ressemble
+GRIS = 0x4D4D4D
+
+
+def repond(salon, token, contenu):
+    """Publie une reponse : du texte, ou un embed si on lui passe un dict.
+
+    Les embeds existent pour ca : titre, colonnes alignees par Discord
+    lui-meme, et une couleur qui distingue une reponse d'un message ordinaire.
+    Un pave monospace faisait le travail mais ne ressemblait a rien.
+    """
+    corps = {"allowed_mentions": {"parse": []}}
+    if isinstance(contenu, dict):
+        corps["embeds"] = [contenu]
+    else:
+        corps["content"] = contenu[:MAX_REPONSE]
     try:
-        appel("/channels/%s/messages" % salon, token, "POST",
-              {"content": texte[:MAX_REPONSE], "allowed_mentions": {"parse": []}})
+        appel("/channels/%s/messages" % salon, token, "POST", corps)
     except (urllib.error.URLError, OSError) as e:
         print("reponse non envoyee : %s" % e, file=sys.stderr)
+
+
+def duree(secondes):
+    s = int(secondes or 0)
+    if s < 3600:
+        return "%d min" % (s // 60)
+    return "%d h %02d" % (s // 3600, (s % 3600) // 60)
+
+
+PUCE = {"fait": "✅", "en_cours": "🔧", "a_faire": "▫️"}
+
+
+def embed_chantiers():
+    r = subprocess.run([STATS, "--json"], capture_output=True, text=True, timeout=60)
+    if r.returncode != 0:
+        return "⚠️ chantiers indisponibles."
+    c = (json.loads(r.stdout) or {}).get("chantiers")
+    if not c:
+        return "Aucun chantier déclaré."
+    a = c.get("avancement", {})
+    lignes = ["%s %s%s" % (PUCE.get(ch["etat"], "▫️"), ch["nom"],
+                           " — " + ", ".join(ch["titulaires"]) if ch["titulaires"] else "")
+              for ch in c["chantiers"]]
+    fonctions = ["**%s** — %s" % (f["nom"], ", ".join(f["titulaires"]) or "personne")
+                 for f in c.get("fonctions", [])]
+    return {"title": "🏗️  Chantiers — %s / %s" % (a.get("faits", 0), a.get("total", 0)),
+            "color": VERT if a.get("faits") else GRIS,
+            "fields": [
+                {"name": "Constructions", "value": "\n".join(lignes)[:1024], "inline": False},
+                {"name": "Fonctions", "value": "\n".join(fonctions)[:1024], "inline": False}],
+            "footer": {"text": "déclaratif · chantier-valheim.py ou !chantier <nom> fait"}}
+
+
+def resume_stats():
+    """Reponse a !stats, construite depuis le JSON et non gratee dans du texte.
+
+    La premiere version filtrait la sortie de presentation sur l'indentation
+    des lignes : les lignes de joueurs commencent au premier caractere, elles
+    passaient donc a la trappe pendant que l'indentation des autres sections
+    etait conservee. Le JSON est le contrat, la mise en page n'en est pas un.
+
+    Le temps de jeu par joueur n'y figure pas volontairement : le groupe a
+    demande de retirer la pointeuse, et une commande tapee dans le salon
+    l'affiche a tout le monde tout autant qu'une annonce automatique. Il reste
+    consultable dans Cockpit.
+    """
+    r = subprocess.run([STATS, "--json"], capture_output=True, text=True, timeout=60)
+    if r.returncode != 0:
+        return "⚠️ statistiques indisponibles."
+    d = json.loads(r.stdout)
+
+    tete = []
+    if d.get("monde"):
+        tete.append("monde *%s*" % d["monde"])
+    if d.get("jour"):
+        tete.append("jour %s" % d["jour"])
+    en_jeu = [j["pseudo"] for j in d.get("joueurs", []) if j.get("en_cours")]
+    tete.append(", ".join(en_jeu) + " en jeu" if en_jeu else "personne en jeu")
+
+    # Serie en cours par joueur : la metrique qui sert les defis.
+    series = {}
+    for defi in d.get("defis") or []:
+        if defi.get("nom") == "Serie en cours":
+            series = {x["joueur"]: x["valeur"] for x in defi["rangs"]}
+
+    joueurs, morts, sans = [], [], []
+    for j in d.get("joueurs", []):
+        h = (j["temps"] or 0) / 3600.0
+        taux = " · %.2f/h" % (j["morts"] / h) if h >= 1 else ""
+        joueurs.append(j["pseudo"] + (" 🎮" if j.get("en_cours") else ""))
+        morts.append("%d%s" % (j["morts"], taux))
+        sans.append(duree(series[j["pseudo"]]) if j["pseudo"] in series else "—")
+
+    # Trois champs « inline » : Discord les met en colonnes et les aligne
+    # lui-meme, quelle que soit la police du lecteur.
+    champs = [
+        {"name": "Joueur", "value": "\n".join(joueurs) or "—", "inline": True},
+        {"name": "Morts", "value": "\n".join(morts) or "—", "inline": True},
+        {"name": "Sans mourir", "value": "\n".join(sans) or "—", "inline": True},
+    ]
+
+    k = d.get("kpi") or {}
+    court = [e for e in k.get("kpis", [])
+             if e["cle"] in ("boss", "intacts", "chantiers") and e["valeur"] is not None]
+    if court:
+        champs.append({"name": "Objectifs", "inline": False, "value": "\n".join(
+            "%s **%s / %s** %s" % (e["libelle"], e["valeur"], e["cible"],
+                                   "✅" if e["tenu"] else "")
+            for e in court)})
+
+    return {"title": "⚔️  Serveur Valheim",
+            "description": " · ".join(tete),
+            "color": VERT, "fields": champs,
+            "footer": {"text": "relevé à " + (d.get("genere") or "")[11:16]}}
 
 
 def lance(argv):
@@ -118,22 +226,18 @@ def traite(contenu, cx):
     cmd, reste = m.group(1).lower(), m.group(2).strip()
 
     if cmd == "aide":
-        return AIDE, False
+        return {"title": "🛠️  Commandes du salon", "color": GRIS,
+                "description": AIDE.split("\n", 1)[1]}, False
 
     if cmd == "stats":
-        _c, sortie = lance([STATS])
-        garde = [l for l in sortie.splitlines()
-                 if l.startswith(("JOUEURS", "KPI", "  ")) ][:24]
-        return "```\n" + "\n".join(garde) + "\n```", False
+        return resume_stats(), False
 
     if cmd == "bilan":
         _c, _s = lance([BILAN])
         return None, False  # le bilan se publie lui-meme
 
     if cmd == "chantiers":
-        _c, sortie = lance([CHANTIER, "liste"])
-        debut = sortie.find("CHANTIERS")
-        return "```\n" + sortie[debut:][:1500] + "\n```", False
+        return embed_chantiers(), False
 
     if cmd == "chantier":
         p = re.match(r"^(.*?)\s+(fait|en[ _]cours|a[ _]?faire)$", reste, re.I)
@@ -272,7 +376,9 @@ def main():
             "VALUES (?, ?, ?, ?, ?, ?, ?)",
             (msg["id"], msg.get("timestamp", "")[:19].replace("T", " "), auteur,
              contenu[:1000], cmd.group(1).lower() if cmd else None,
-             "recu" if differe else "traite", (reponse or "")[:1000]))
+             "recu" if differe else "traite",
+             json.dumps(reponse, ensure_ascii=False)[:1000] if isinstance(reponse, dict)
+             else (reponse or "")[:1000]))
         if reponse:
             repond(salon, token, reponse)
         traites += 1
