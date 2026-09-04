@@ -24,6 +24,7 @@ CONF_DISCORD=/etc/valheim-discord.conf
 SONDE_DIR=/var/tmp/sonde-valheim
 SONDE_PORT=2466
 JOURNAL=/var/log/serveur-ia
+MARQUEUR=/var/lib/valheim-stats/1.0-annoncee
 
 CONFIRM=0
 FORCE=0
@@ -48,6 +49,10 @@ Actions, dans l'ordre ou on les utilise le jour J :
   --attendre        interroge Steam jusqu'a ce que le buildid du serveur dedie
                     change, puis sort. C'est la detection de la sortie de la 1.0.
                     --intervalle SECONDES entre deux interrogations (defaut 300)
+  --controle        un seul controle, pour une minuterie : compare les buildid
+                    et annonce sur Discord la premiere fois qu'ils divergent.
+                    N'installe rien. C'est la detection automatique de la
+                    sortie ; la mise a jour et le monde neuf restent manuels.
   --maj             sauvegarde, arret, mise a jour SteamCMD, redemarrage,
                     verification.
   --sonde           mesure ce que la nouvelle version change : cree un monde
@@ -68,7 +73,7 @@ AIDE
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        --verifier|--attendre|--maj|--sonde|--monde|--tout|--retour-arriere)
+        --verifier|--attendre|--controle|--maj|--sonde|--monde|--tout|--retour-arriere)
             ACTION="${1#--}"; shift ;;
         --nom) NOM="${2:-}"; shift 2 ;;
         --seed) SEED="${2:-}"; shift 2 ;;
@@ -211,6 +216,32 @@ action_attendre() {
         printf '%s buildid %s, rien de neuf\n' "$(date +%H:%M:%S)" "${bd:-?}"
         sleep "$INTERVALLE"
     done
+}
+
+action_controle() {
+    # Pense pour une minuterie : un seul appel, pas de boucle. Le marqueur evite
+    # de reannoncer la meme sortie a chaque passage -- une annonce toutes les
+    # quinze minutes pendant des heures ne servirait personne.
+    local bi bd
+    bi=$(buildid_installe); bd=$(buildid_distant)
+    if [ -z "$bd" ] || [ -z "$bi" ]; then
+        echo "comparaison impossible (installe=${bi:-?} publie=${bd:-?})"
+        return 0
+    fi
+    if [ "$bi" = "$bd" ]; then
+        echo "buildid $bi inchange"
+        return 0
+    fi
+    if [ -f "$MARQUEUR" ] && grep -qx "$bd" "$MARQUEUR" 2>/dev/null; then
+        echo "buildid $bd deja annonce"
+        return 0
+    fi
+    vert "nouveau buildid publie : $bd (installe : $bi)"
+    annonce "🔔 **Nouvelle version du serveur Valheim publiée sur Steam** (build \`$bd\`, installé \`$bi\`).
+Le serveur n'est pas encore à jour : les clients en 1.0 seront refusés jusqu'à la mise à jour.
+Prochaine étape, à lancer à la main : \`jour-j-valheim.sh --maj --confirm\`, puis \`--sonde\`, puis le monde neuf **NordheimV1**."
+    mkdir -p "$(dirname "$MARQUEUR")"
+    echo "$bd" >> "$MARQUEUR"
 }
 
 action_maj() {
@@ -364,6 +395,7 @@ action_retour_arriere() {
 case "$ACTION" in
     verifier) action_verifier ;;
     attendre) action_attendre ;;
+    controle) action_controle ;;
     sonde|maj|monde|tout|retour-arriere)
         [ "$(id -u)" -eq 0 ] || mourir "a lancer avec sudo"
         mkdir -p "$JOURNAL"

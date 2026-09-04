@@ -1,0 +1,23 @@
+[Unit]
+Description=Lecture du salon Discord et execution des commandes Valheim
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=valheim
+Group=valheim
+StateDirectory=valheim-stats
+ExecStart=/usr/local/bin/lit-discord-valheim.py
+
+# Le bot lit un salon public et execute des commandes venues de personnes :
+# il tourne donc avec le moins de droits possible. ReadWritePaths ouvre les
+# deux seuls fichiers qu'il doit modifier, aucun autre.
+ProtectSystem=strict
+ReadWritePaths=/etc/valheim
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+NoNewPrivileges=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes

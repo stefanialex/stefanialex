@@ -9,10 +9,12 @@ qu'on ne prenne pas un declaratif pour une mesure.
 """
 
 import argparse
+import difflib
 import json
 import os
 import sys
 import tempfile
+import unicodedata
 
 FICHIER = "/etc/valheim/chantiers.json"
 ETATS = ("a_faire", "en_cours", "fait")
@@ -40,10 +42,26 @@ def sauve(d):
         raise
 
 
+def sans_accent(t):
+    return "".join(c for c in unicodedata.normalize("NFD", t.lower())
+                   if unicodedata.category(c) != "Mn")
+
+
 def trouve(liste, motif):
-    """Retrouve une entree par fragment de nom, en refusant l'ambiguite."""
-    m = motif.lower()
-    coups = [e for e in liste if m in e["nom"].lower()]
+    """Retrouve une entree par fragment de nom, en refusant l'ambiguite.
+
+    Le rapprochement tolere les accents et l'orthographe : les libelles sont
+    ceux de la feuille de Baby, « Armurie » et non « armurerie », et personne
+    ne tapera son orthographe a elle. On tente d'abord le fragment exact, puis
+    un rapprochement approximatif -- et seulement s'il ne designe qu'une seule
+    entree, pour ne jamais cocher le mauvais chantier.
+    """
+    m = sans_accent(motif)
+    coups = [e for e in liste if m in sans_accent(e["nom"])]
+    if not coups:
+        proches = difflib.get_close_matches(
+            m, [sans_accent(e["nom"]) for e in liste], n=3, cutoff=0.6)
+        coups = [e for e in liste if sans_accent(e["nom"]) in proches]
     if not coups:
         sys.exit("aucune entree ne correspond a « %s »" % motif)
     if len(coups) > 1:

@@ -1038,6 +1038,80 @@ attribué huit morts à la mauvaise personne.
 
 ---
 
+### Bot Discord : lire le salon et exécuter les commandes, le 2026-09-04
+
+Un webhook est à sens unique. Pour **lire** le salon il faut un bot, avec son
+propre token et l'intent *Message Content*.
+
+```bash
+sudo systemctl enable --now lit-discord-valheim.timer     # un passage par minute
+```
+
+Le token va dans `/etc/valheim-discord.conf` à côté du webhook —
+`TOKEN=`, `SALON=` (l'identifiant du salon), et `AUTORISES=` en option pour
+restreindre les commandes à certains comptes. **Sans token, le script sort en
+succès sans rien faire** : il peut donc être armé avant que le token existe.
+
+**La distinction qui structure le programme.** Deux sortes de demandes :
+
+| | Traitement |
+|---|---|
+| `!chantier`, `!qui`, `!objectif`, `!stats`, `!bilan`, `!chantiers`, `!aide` | exécutées par le code, réponse dans la minute |
+| `!defi <idée>` | rangée en file d'attente — **Claude ne tourne pas en permanence** et la traitera à sa prochaine invocation |
+
+C'est le point à ne pas maquiller : « on demande dans le salon et Claude
+répond » ne peut être immédiat que pour ce qu'un script sait faire seul. Le
+reste attend un humain ou une invocation programmée, et le bot le dit
+explicitement en accusant réception.
+
+**Le contenu des messages est traité comme une donnée, jamais comme une
+commande.** Aucun shell n'est invoqué : les sous-processus reçoivent des listes
+d'arguments, et chaque commande est reconnue par une grammaire fermée. Le
+service tourne sous l'utilisateur `valheim` avec `ProtectSystem=strict` et
+`ReadWritePaths=/etc/valheim` — les deux seuls fichiers qu'il peut modifier.
+
+**Permissions.** `/etc/valheim/` est passé en `775 root:valheim` et ses deux
+JSON en `664` : le bot et la CLI tournent sous `valheim` et doivent les écrire.
+Ils ne contiennent aucun secret. Le secret, lui, reste dans
+`/etc/valheim-discord.conf` en `640 root:valheim`, que le bot lit sans pouvoir
+le modifier.
+
+**Le rapprochement des noms tolère l'orthographe.** Les libellés sont ceux de
+la feuille de Baby — « Armurie », pas « armurerie » — et personne ne tapera son
+orthographe. `chantier-valheim.py` tente le fragment exact, puis un
+rapprochement approximatif via `difflib`, en ignorant les accents. Et il
+n'accepte le résultat que s'il désigne **une seule** entrée : `!chantier port
+fait` répond « correspond à 3 entrées » plutôt que de cocher au hasard.
+
+**Le premier passage se cale sur le présent** sans rejouer l'historique du
+salon, qui rejouerait d'anciennes commandes.
+
+Seuls les messages commençant par `!` sont conservés. Le reste de vos
+conversations n'est pas stocké — c'est le minimum nécessaire pour ce qui a été
+demandé, et ça se change si vous voulez que je lise le contexte.
+
+---
+
+### Détection automatique de la sortie de la 1.0, le 2026-09-04
+
+```bash
+sudo systemctl enable --now guette-valheim-1.0.timer      # un contrôle par quart d'heure
+```
+
+`jour-j-valheim.sh --controle` compare le buildid publié au buildid installé et
+annonce sur Discord **la première fois** qu'ils divergent. Un marqueur dans
+`/var/lib/valheim-stats/` évite de réannoncer la même sortie tous les quarts
+d'heure. `Persistent=true` : si la machine était éteinte à l'heure du contrôle,
+il a lieu au démarrage suivant.
+
+**Ce qui est automatique et ce qui ne l'est pas.** La minuterie détecte et
+prévient. Elle **n'installe rien** et **ne crée aucun monde** : la mise à jour,
+la sonde et la bascule vers `NordheimV1` restent trois commandes manuelles. Ce
+n'est pas une timidité — la sonde peut annoncer que la génération de monde a
+changé, et ce verdict doit être lu par quelqu'un avant de figer une seed.
+
+---
+
 ### Adresse IP fixée en statique, le 2026-09-04
 
 L'adresse `192.168.1.120` venait du DHCP de la box et n'était pas réservée.

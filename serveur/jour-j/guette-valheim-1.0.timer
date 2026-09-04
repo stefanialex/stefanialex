@@ -1,0 +1,13 @@
+[Unit]
+Description=Controle de la publication de Valheim 1.0, quatre fois par heure
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=15min
+# Persistent : si la machine etait eteinte au moment du controle, il a lieu au
+# demarrage suivant. La sortie de la 1.0 ne doit pas passer inapercue.
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

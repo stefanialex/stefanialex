@@ -1,0 +1,8 @@
+[Unit]
+Description=Controle de la publication de Valheim 1.0
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/jour-j-valheim.sh --controle
