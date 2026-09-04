@@ -26,6 +26,7 @@ SONDE_PORT=2466
 JOURNAL=/var/log/serveur-ia
 
 CONFIRM=0
+FORCE=0
 ACTION=verifier
 NOM=""
 SEED=""
@@ -61,6 +62,7 @@ Actions, dans l'ordre ou on les utilise le jour J :
                     la 1.0 empeche le serveur de demarrer.
 
   --confirm         execute pour de vrai. Sans lui : simulation.
+  --force           bascule le monde meme si des joueurs sont connectes
 AIDE
 }
 
@@ -72,6 +74,7 @@ while [ $# -gt 0 ]; do
         --seed) SEED="${2:-}"; shift 2 ;;
         --intervalle) INTERVALLE="${2:-}"; shift 2 ;;
         --confirm) CONFIRM=1; shift ;;
+        --force) FORCE=1; shift ;;
         -h|--help) aide; exit 0 ;;
         *) mourir "argument inconnu : $1" ;;
     esac
@@ -329,6 +332,10 @@ action_monde() {
     [ -n "$SEED" ] && args+=(--seed "$SEED")
     [ -n "$gen" ] && args+=(--generateur "$gen")
     [ "$CONFIRM" -eq 1 ] && args+=(--confirm)
+    # Transmis tel quel : le jour J, les joueurs se reconnectent souvent dans la
+    # minute qui suit la mise a jour, et le garde-fou du script delegue bloquerait
+    # la bascule alors qu'on veut justement l'enchainer.
+    [ "$FORCE" -eq 1 ] && args+=(--force)
     "$BASCULE" "${args[@]}"
     if [ "$CONFIRM" -eq 1 ]; then
         annonce "🌍 Nouveau monde **$NOM** en ligne${SEED:+, seed \`$SEED\`}. Créez un personnage neuf : les compteurs de défis repartent de zéro."
