@@ -431,6 +431,67 @@ administrateur, sinon les cartes restent vides avec une erreur. La dispense
 
 ---
 
+### Adresse IP fixée en statique, le 2026-09-04
+
+L'adresse `192.168.1.120` venait du DHCP de la box et n'était pas réservée.
+Cockpit, lui, écoute sur cette adresse en dur (`ListenStream=192.168.1.120:9090`),
+et la redirection de ports du jeu la désigne aussi. Le jour où la box aurait
+attribué autre chose, le service aurait démarré sans être joignable — le socket
+a `FreeBind=yes`, donc il se lie quand même à une adresse absente, et l'échec
+serait resté silencieux.
+
+La connexion filaire est passée en manuel sur la même adresse, pour ne rien
+casser d'autre :
+
+```bash
+UUID=$(nmcli -g UUID,DEVICE -t connection show --active | grep enp0s31f6 | cut -d: -f1)
+sudo nmcli connection modify "$UUID" \
+  ipv4.method manual \
+  ipv4.addresses 192.168.1.120/24 \
+  ipv4.gateway 192.168.1.254 \
+  ipv4.dns 192.168.1.254 \
+  ipv4.dns-search lan
+sudo nmcli device reapply enp0s31f6
+```
+
+**`device reapply`, pas `connection up`.** L'adresse ne changeant pas, `reapply`
+reconfigure l'interface sans la désactiver : les sessions en cours — dont la
+console web Cockpit par laquelle passait l'opération — survivent. Un
+`connection up` aurait coupé le lien.
+
+**Cette machine est sans écran : la manipulation a été faite sous filet.** Un
+minuteur transitoire armé avant de toucher au réseau remettait le DHCP
+automatiquement, désarmé seulement après vérification de la passerelle, du DNS
+et de Cockpit :
+
+```bash
+sudo systemd-run --unit=net-rollback --on-active=300 /var/tmp/net-rollback.sh
+# ... modification, puis vérifications ...
+sudo systemctl stop net-rollback.timer
+```
+
+**Où la configuration est réellement écrite.** Pop!_OS fait passer
+NetworkManager par netplan : la connexion filaire n'a **pas** de fichier dans
+`/etc/NetworkManager/system-connections/`, elle est décrite dans
+`/etc/netplan/90-NM-<uuid>.yaml` et le keyfile est régénéré dans
+`/run/NetworkManager/` à chaque démarrage. Chercher au premier endroit laisse
+croire que `nmcli` n'a rien persisté. La passerelle est stockée en deuxième
+champ de `ipv4.address1` (`192.168.1.120/24,192.168.1.254`), pas dans une clé à
+elle. Vérification que le démarrage reproduira bien l'état courant :
+
+```bash
+sudo netplan generate   # le keyfile de /run doit rester identique
+```
+
+**Ce qui reste dépendant de la box.** `.120` est probablement *dans* la plage
+DHCP (passerelle en `.254`, domaine `lan`). Rien n'empêche donc la box de louer
+`.120` à un autre appareil pendant que le serveur est éteint, et le conflit
+d'adresses ferait tomber les deux. Le statique côté serveur ne se substitue pas
+à une **réservation dans l'interface de la box** — à faire pour être vraiment
+tranquille, ou à défaut déplacer le serveur hors de la plage.
+
+---
+
 ### Deux règles qui s'appliquent partout
 
 **Rien ne s'exécute sans `--confirm`.** Lancé sans ce drapeau, chaque script
