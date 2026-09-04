@@ -800,6 +800,88 @@ d'écoute sauvegardé dans `/var/backups/`.
 
 ---
 
+### Le jour J : `jour-j-valheim.sh`, le 2026-09-04
+
+Un script pour le 9 septembre, parce qu'il n'y a **aucune branche de test
+public** pour le serveur dédié — vérifié en listant les branches Steam de
+l'app 896660 : `public`, plus cinq branches de retour arrière
+(`default_old`, `default_preal`, `default_prebw`, `default_precta`,
+`default_preml`). La 1.0 arrivera donc sans préavis observable, et mieux vaut
+être prêt qu'improviser.
+
+```bash
+jour-j-valheim.sh --verifier                       # audit, ne modifie rien
+jour-j-valheim.sh --attendre                       # guette la publication
+sudo jour-j-valheim.sh --maj --confirm             # met à jour
+sudo jour-j-valheim.sh --sonde --confirm           # mesure ce qui a changé
+sudo jour-j-valheim.sh --monde --nom X --seed Y --confirm
+sudo jour-j-valheim.sh --tout --nom X --seed Y --confirm
+sudo jour-j-valheim.sh --retour-arriere --confirm  # si la 1.0 casse tout
+```
+
+**La détection de la sortie se fait par comparaison de buildid**, et elle est
+déjà fonctionnelle :
+
+```
+buildid installe   21981590     ← "buildid" dans steamapps/appmanifest_896660.acf
+buildid publie     21981590     ← branches/public dans app_info_print
+                   identiques : la 1.0 n'est pas encore publiee
+```
+
+Deux précautions dans la lecture du buildid distant. `app_info_update 1` force
+le rafraîchissement du cache, sans quoi SteamCMD peut resservir une valeur
+vieille de plusieurs heures et la détection passerait à côté. Et l'extraction
+ne lit **que** la branche `public` : les branches `default_pre*` portent des
+buildid plus anciens qui feraient croire à un changement.
+
+**`--sonde` est la pièce la plus utile, et elle remplace toutes les
+spéculations sur les seeds.** Elle laisse le serveur créer un monde tout seul,
+dans un répertoire jetable sur un port séparé, puis lit le `.fwl` qu'il écrit.
+La version du générateur y est inscrite : si elle passe de 2 à autre chose, la
+génération de monde a changé et aucune seed repérée avant la 1.0 ne donne plus
+la même carte. C'est une mesure, pas une hypothèse — la documentation
+communautaire, elle, n'a rien pu confirmer sur ce point.
+
+La sonde prévient si des joueurs sont en jeu : un second serveur Unity prend un
+cœur et quelques Go le temps de générer son monde, et au-delà de 150 ms de
+latence les monstres se téléportent pour tout le monde. Le jour J elle passe
+juste après la mise à jour, serveur vide.
+
+**`--retour-arriere` s'appuie sur la branche `default_old`**, « previous
+stable ». Avertissement inclus dans le script : un monde déjà ouvert par la
+nouvelle version peut ne plus être lisible par l'ancienne.
+
+**Deux pièges rencontrés en l'écrivant.**
+
+Un motif `pgrep -f` finit par se reconnaître lui-même dans sa propre ligne de
+commande : `pkill -f 'port 2466'` a tué le shell qui l'exécutait. La sonde
+garde donc le PID retourné par `$!` au lieu de chercher son processus.
+
+En `awk`, un saut de ligne entre le motif et l'accolade **termine la règle** :
+`/motif/` seul déclenche l'action par défaut, qui est d'imprimer la ligne, et
+le bloc suivant s'applique alors à toutes les lignes. L'audit affichait tout
+en double.
+
+---
+
+### Succès Steam : une seule clé, mais des profils publics, le 2026-09-04
+
+Les succès vivent dans le fichier de personnage, chez le joueur — le serveur ne
+les verra jamais. La seule voie est l'API Web de Steam, et les quatre
+identifiants Steam sont déjà en base, relevés dans le journal du serveur.
+
+**Être amis sur Steam ne suffit pas.** L'API Web ne respecte pas la visibilité
+« amis seulement » : elle ne répond que pour les profils **publics**, quelle
+que soit la relation entre le détenteur de la clé et la personne interrogée.
+Une seule clé d'API suffit donc pour tout le groupe, mais **chacun doit passer
+« Détails du jeu » en Public** dans ses paramètres de confidentialité, sinon la
+réponse est vide.
+
+Rien d'autre n'en dépend : morts, sessions et progression des boss sont mesurés
+côté serveur et ne demandent rien aux joueurs.
+
+---
+
 ### Adresse IP fixée en statique, le 2026-09-04
 
 L'adresse `192.168.1.120` venait du DHCP de la box et n'était pas réservée.
