@@ -216,6 +216,49 @@ function rendJalons(k) {
   }
 }
 
+/* ---------- roles et chantiers, declaratifs ---------- */
+const ETIQUETTE = { fait: "fait", en_cours: "en cours", a_faire: "à faire" };
+
+function rendChantiers(c) {
+  const tf = $("fonctions").tBodies[0];
+  const tc = $("chantiers").tBodies[0];
+  if (!c) {
+    vide(tf, "aucune fonction déclarée");
+    vide(tc, "aucun chantier déclaré");
+    $("compte-chantiers").textContent = "";
+    return;
+  }
+
+  // Le pseudo en jeu quand il est connu, sinon le surnom du tableau : c'est ce
+  // qui relie la feuille du groupe aux mesures du serveur.
+  const nom = (cle) => {
+    const j = (c.joueurs || {})[cle];
+    return j && j.pseudo && j.pseudo !== "?" ? `${cle} (${j.pseudo})` : cle;
+  };
+
+  tf.replaceChildren();
+  for (const f of c.fonctions || []) {
+    const tr = el("tr");
+    tr.append(el("td", null, f.nom));
+    tr.append(el("td", "ip", f.titulaires.map(nom).join(", ") || "personne"));
+    tf.append(tr);
+  }
+
+  const a = c.avancement || {};
+  $("compte-chantiers").textContent = a.total ? `${a.faits} / ${a.total} faits` : "";
+  tc.replaceChildren();
+  for (const ch of c.chantiers || []) {
+    const tr = el("tr");
+    const etat = el("td");
+    etat.append(el("span", ch.etat === "fait" ? "badge" : "ip",
+                   ETIQUETTE[ch.etat] || ch.etat));
+    tr.append(etat);
+    tr.append(el("td", null, ch.nom));
+    tr.append(el("td", "ip", ch.titulaires.map(nom).join(", ") || "—"));
+    tc.append(tr);
+  }
+}
+
 /* ---------- chargement ---------- */
 function resume(d) {
   const p = [];
@@ -241,6 +284,7 @@ function charge() {
       rendProgression(d.progression || []);
       rendKpi(d.kpi);
       rendJalons(d.kpi);
+      rendChantiers(d.chantiers);
       rendDefis(d.defis);
     })
     .catch((e) => {

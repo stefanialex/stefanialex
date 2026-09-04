@@ -69,6 +69,15 @@
       "sens": "plus",
       "unite": "sessions",
       "note": "a recaler sur le tableau du groupe"
+    },
+    {
+      "cle": "chantiers",
+      "libelle": "Chantiers achevés",
+      "source": "chantiers_faits",
+      "cible": 11,
+      "sens": "plus",
+      "unite": "chantiers",
+      "note": "déclaratif : mis à jour par chantier-valheim.py, pas mesuré"
     }
   ],
   "jalons": [

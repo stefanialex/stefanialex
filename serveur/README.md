@@ -990,6 +990,45 @@ navigateur affiche quand même sa barre native. Après deux échecs silencieux d
 
 ---
 
+### Rôles et chantiers de la feuille de Baby, le 2026-09-04
+
+La feuille que Baby a préparée n'est pas un tableau de KPI : c'est une matrice
+de **rôles** et de **chantiers de construction** par joueur. Transcrite dans
+`/etc/valheim/chantiers.json` — dix fonctions, onze chantiers — libellés
+d'origine conservés.
+
+```bash
+chantier-valheim.py liste
+sudo chantier-valheim.py etat portails fait
+sudo chantier-valheim.py qui "avant poste marais" Djoose
+sudo chantier-valheim.py pseudo Lapin Brewtmoiminou
+```
+
+**Rien de tout cela n'est mesurable depuis le serveur.** Il ne voit ni la
+cuisine, ni le bûcheronnage, ni un port achevé — ce sont des actions de jeu qui
+vivent chez le client. Ces objectifs sont donc **déclaratifs**, tenus à la main,
+et exposés sous une clé JSON distincte des KPI mesurés. La page Cockpit et le
+bilan Discord le disent explicitement : un affichage ne doit pas pouvoir faire
+passer un déclaratif pour une mesure.
+
+C'est le point qui a orienté toute la réponse. Un tableau de bord qui
+mélangerait « 19 morts » (compté par le serveur) et « armurerie construite »
+(coché à la main) sans le dire perdrait toute valeur de preuve dès la première
+contestation — or ce groupe se lance des défis, donc les chiffres doivent
+pouvoir être opposés à quelqu'un.
+
+Le fichier écrit par renommage atomique : une interruption ne doit pas laisser
+une configuration tronquée que plus rien ne lirait.
+
+**Deux pseudos restent à confirmer.** La feuille nomme les joueurs Lapin, Beny,
+Djoose et Baby ; le serveur connaît Beware, Brewtmoiminou, DjOsE et Bab-y.
+`Djoose → DjOsE` et `Baby → Bab-y` sont évidents ; `Lapin` et `Beny` se
+partagent `Beware` et `Brewtmoiminou`, sans certitude — d'où le `?` dans le
+fichier plutôt qu'une supposition silencieuse, puisque toute l'attribution des
+KPI en dépend.
+
+---
+
 ### Adresse IP fixée en statique, le 2026-09-04
 
 L'adresse `192.168.1.120` venait du DHCP de la box et n'était pas réservée.

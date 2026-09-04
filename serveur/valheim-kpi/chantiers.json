@@ -1,0 +1,34 @@
+{
+  "_note": "Transcription de la feuille de Baby (sw lapin), relevee le 2026-09-04. Les fonctions et les chantiers ne sont pas mesurables depuis le serveur : il ne voit ni la cuisine, ni le bucheronnage, ni un port construit. Ils sont donc declaratifs, mis a jour a la main par chantier-valheim.py. Les libelles sont ceux de Baby, y compris ses orthographes.",
+  "joueurs": {
+    "Lapin":  { "pseudo": "?", "discord": "aixlelapin" },
+    "Beny":   { "pseudo": "?", "discord": "BenXL" },
+    "Djoose": { "pseudo": "DjOsE", "discord": "Djoose" },
+    "Baby":   { "pseudo": "Bab-y", "discord": "Baby" }
+  },
+  "fonctions": [
+    { "nom": "Explorateur",             "titulaires": ["Lapin", "Djoose"] },
+    { "nom": "Cuisinier",               "titulaires": ["Beny"] },
+    { "nom": "Eleveur",                 "titulaires": ["Djoose"] },
+    { "nom": "Responsable arché",       "titulaires": ["Baby"] },
+    { "nom": "Farmeur de sterling",     "titulaires": ["Lapin", "Beny"] },
+    { "nom": "Happynes manager",        "titulaires": ["Baby"] },
+    { "nom": "Agriculteur",             "titulaires": ["Beny", "Djoose"] },
+    { "nom": "Porteur établi, portail", "titulaires": ["Baby"] },
+    { "nom": "Capitaine de navire",     "titulaires": ["Djoose"] },
+    { "nom": "Bucheron",                "titulaires": ["Lapin"] }
+  ],
+  "chantiers": [
+    { "nom": "Base",                  "titulaires": [],         "etat": "a_faire" },
+    { "nom": "Avant poste foret",     "titulaires": [],         "etat": "a_faire" },
+    { "nom": "Avant poste marais",    "titulaires": [],         "etat": "a_faire" },
+    { "nom": "Avant poste desert",    "titulaires": [],         "etat": "a_faire" },
+    { "nom": "Base desert",           "titulaires": [],         "etat": "a_faire" },
+    { "nom": "AFK farming",           "titulaires": ["Lapin"],  "etat": "a_faire" },
+    { "nom": "Hotel ?",               "titulaires": [],         "etat": "a_faire" },
+    { "nom": "Maison des portails",   "titulaires": ["Baby"],   "etat": "a_faire" },
+    { "nom": "Port + fonderie base",  "titulaires": ["Beny"],   "etat": "a_faire" },
+    { "nom": "Port + fonderie desert","titulaires": [],         "etat": "a_faire" },
+    { "nom": "Armurie",               "titulaires": ["Baby"],   "etat": "a_faire" }
+  ]
+}

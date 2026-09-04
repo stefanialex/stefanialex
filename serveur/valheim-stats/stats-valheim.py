@@ -16,6 +16,7 @@ BASE = os.environ.get("STATE_DIRECTORY", "/var/lib/valheim-stats") + "/valheim.d
 SAVEDIR = "/var/lib/valheim/donnees/worlds_local"
 OUTIL_MONDE = "/usr/local/bin/monde-valheim.py"
 OBJECTIFS = "/etc/valheim/objectifs.json"
+CHANTIERS = "/etc/valheim/chantiers.json"
 
 
 def metadonnees_monde(cx):
@@ -261,6 +262,26 @@ def objectifs():
         return None
 
 
+def chantiers():
+    """Fonctions et chantiers declares, tenus a la main.
+
+    Rien la-dedans n'est mesurable depuis le serveur : il ne voit ni la
+    cuisine, ni le bucheronnage, ni un port acheve. C'est renvoye sous une cle
+    distincte des KPI mesures, pour qu'un affichage ne puisse pas faire passer
+    un declaratif pour une mesure.
+    """
+    try:
+        with open(CHANTIERS, encoding="utf-8") as f:
+            d = json.load(f)
+    except (OSError, ValueError):
+        return None
+    total = len(d.get("chantiers", []))
+    faits = sum(1 for c in d.get("chantiers", []) if c.get("etat") == "fait")
+    d["avancement"] = {"faits": faits, "total": total,
+                       "part": round(faits / total, 3) if total else None}
+    return d
+
+
 def temps_cumule(sessions, jusqu_a=None):
     """Temps de jeu additionne de tout le groupe, eventuellement arrete a une date.
 
@@ -280,6 +301,10 @@ def temps_cumule(sessions, jusqu_a=None):
 def valeur_kpi(source, ident, sessions, morts, progression, agg):
     """Calcule un indicateur. Renvoie None si la donnee manque encore."""
     maintenant = datetime.now()
+
+    if source == "chantiers_faits":
+        c = chantiers()
+        return c["avancement"]["faits"] if c else None
 
     if source == "boss_vaincus":
         # Borne inferieure : on ne compte que les boss dont un raid a ete vu.
@@ -452,6 +477,17 @@ def texte(cx, monde=None):
         print("  %-44s %14s / %-12s %s %s" % (
             e["libelle"], fmt(e["valeur"]), fmt(e["cible"]), barre, etat))
 
+    c = chantiers()
+    if c:
+        a = c["avancement"]
+        print()
+        print("CHANTIERS DECLARES  %d/%d faits  (tenus a la main, pas mesures)"
+              % (a["faits"], a["total"]))
+        for ch in c["chantiers"]:
+            marque = {"fait": "x", "en_cours": "~", "a_faire": "."}[ch["etat"]]
+            print("  [%s] %-26s %s" % (marque, ch["nom"],
+                                       ", ".join(ch["titulaires"]) or "-"))
+
     if any(j["date"] for j in k["jalons"]):
         print()
         print("JALONS, en temps de jeu cumule du groupe")
@@ -482,6 +518,7 @@ def donnees(cx, monde=None):
         "defi_baby": defi_baby(morts, progression),
         "defis": defis(agg, morts, progression, sessions, ident),
         "kpi": kpis(cx, monde),
+        "chantiers": chantiers(),
         "genere": datetime.now().isoformat(timespec="seconds"),
     }
 

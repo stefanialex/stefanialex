@@ -77,6 +77,15 @@ def bilan(d):
                                    "✅" if j["tenu"] else "⏱️")
             for j in faits))
 
+    c = d.get("chantiers")
+    if c and c.get("avancement", {}).get("total"):
+        a = c["avancement"]
+        en_cours = [ch["nom"] for ch in c["chantiers"] if ch["etat"] == "en_cours"]
+        ligne = "**Chantiers** %d/%d faits" % (a["faits"], a["total"])
+        if en_cours:
+            ligne += " · en cours : " + ", ".join(en_cours[:4])
+        lignes.append(ligne)
+
     # Les meneurs de chaque defi : c'est ce qui se lit en premier dans un salon.
     # Un defi que personne ne tient ne doit pas designer de « meneur » : sur
     # « intact depuis l'Ancien », annoncer DjOsE en tete avec 2 morts laisserait
