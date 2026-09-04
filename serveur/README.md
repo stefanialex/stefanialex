@@ -798,6 +798,38 @@ code 200 sur chacune, aucune écoute au-delà du réseau local — et **revient 
 arrière tout seul** si l'un de ces contrôles échoue, en restaurant le fichier
 d'écoute sauvegardé dans `/var/backups/`.
 
+**Le filet s'est déclenché au premier lancement, sur une fausse alarme.** La
+bascule avait réussi — les deux adresses répondaient 200 — mais le contrôle
+« aucune écoute au-delà du réseau local » était écrit ainsi :
+
+```bash
+ss -tln | grep 9090 | grep -qE '0\.0\.0\.0|100\.'      # FAUX
+```
+
+`ss -tln` sort **deux** colonnes d'adresses, et la distante vaut toujours
+`0.0.0.0:*` sur une socket en écoute :
+
+```
+LISTEN 0 4096   192.168.1.120:9090        0.0.0.0:*
+                ^ adresse locale          ^ adresse distante, toujours ce joker
+```
+
+Le test ne pouvait donc jamais passer, même avec une écoute parfaitement bornée.
+Il lit maintenant la seule colonne qui compte :
+
+```bash
+ECOUTES=$(ss -Hltn 'sport = :9090' | awk '{ print $4 }')
+HORS=$(printf '%s\n' "$ECOUTES" | grep -vE '^192\.168\.1\.[0-9]+:9090$')
+```
+
+Vérifié sur les quatre cas qui comptent : `192.168.1.120 + .253` accepté,
+`0.0.0.0:9090`, `[::]:9090` et une adresse `100.x` du tailnet refusés.
+
+Second défaut du même lancement : `nmcli device reapply` rend la main **avant**
+que la nouvelle adresse soit effectivement posée. Le script affichait la liste
+trop tôt et n'y voyait que l'ancienne adresse. Il attend maintenant la preuve,
+quinze secondes au plus, et abandonne si l'adresse n'apparaît pas.
+
 ---
 
 ### Le jour J : `jour-j-valheim.sh`, le 2026-09-04

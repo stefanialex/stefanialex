@@ -76,7 +76,19 @@ echo "-- 1. deuxieme adresse sur la carte"
 nmcli connection modify "$UUID" \
     ipv4.addresses "$ANCIENNE/24,$NOUVELLE/24" ipv4.gateway "$PASSERELLE"
 nmcli device reapply "$CARTE"
+# reapply rend la main avant que la nouvelle adresse soit effectivement posee :
+# la premiere version affichait la liste trop tot et n'y voyait que l'ancienne
+# adresse. On attend la preuve plutot que de l'esperer.
+for _ in $(seq 15); do
+    ip -4 addr show "$CARTE" | grep -q "inet $NOUVELLE/" && break
+    sleep 1
+done
 ip -4 addr show "$CARTE" | grep inet
+if ! ip -4 addr show "$CARTE" | grep -q "inet $NOUVELLE/"; then
+    printf '\033[31m%s\033[0m\n' "$NOUVELLE non posee sur $CARTE" >&2
+    retour_arriere
+    exit 1
+fi
 
 echo "-- 2. ecoute de Cockpit sur les deux adresses"
 cat > "$DROPIN" <<'BLOC'
@@ -99,17 +111,23 @@ systemctl restart cockpit.socket
 echo "-- 3. verification"
 sleep 3
 ECHEC=""
-ss -tln | grep -q "$ANCIENNE:9090" || ECHEC="pas d'ecoute sur $ANCIENNE"
-ss -tln | grep -q "$NOUVELLE:9090" || ECHEC="${ECHEC:+$ECHEC ; }pas d'ecoute sur $NOUVELLE"
+# -H enleve l'en-tete, « sport = :9090 » filtre sur le port d'ecoute, et la
+# quatrieme colonne est l'adresse locale -- la seule qui nous interesse.
+ECOUTES=$(ss -Hltn 'sport = :9090' | awk '{ print $4 }')
+printf '  ecoutes : %s\n' "$(printf '%s ' $ECOUTES)"
+printf '%s\n' "$ECOUTES" | grep -q "^$ANCIENNE:9090$" || ECHEC="pas d'ecoute sur $ANCIENNE"
+printf '%s\n' "$ECOUTES" | grep -q "^$NOUVELLE:9090$" || ECHEC="${ECHEC:+$ECHEC ; }pas d'ecoute sur $NOUVELLE"
 for a in "$ANCIENNE" "$NOUVELLE"; do
     C=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 10 "https://$a:9090/" || echo 000)
     echo "  https://$a:9090/ -> $C"
     [ "$C" = "200" ] || ECHEC="${ECHEC:+$ECHEC ; }$a repond $C"
 done
 
-# L'ecoute doit rester liee : aucune adresse Tailscale dans la liste.
-if ss -tln | grep 9090 | grep -qE '0\.0\.0\.0|100\.'; then
-    ECHEC="${ECHEC:+$ECHEC ; }Cockpit ecoute au-dela du reseau local"
+# L'ecoute doit rester liee au reseau local : ni joker (0.0.0.0, [::]), ni
+# adresse Tailscale. On teste chaque adresse locale contre la forme attendue.
+HORS=$(printf '%s\n' "$ECOUTES" | grep -vE '^192\.168\.1\.[0-9]+:9090$' || true)
+if [ -n "$HORS" ]; then
+    ECHEC="${ECHEC:+$ECHEC ; }ecoute hors du reseau local : $(printf '%s ' $HORS)"
 fi
 
 if [ -n "$ECHEC" ]; then
