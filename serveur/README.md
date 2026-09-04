@@ -736,8 +736,19 @@ sudo install -o root -g root -m 644 valheim-discord/notifie-discord-valheim.{ser
 sudo systemctl daemon-reload && sudo systemctl enable --now notifie-discord-valheim.timer
 ```
 
-Arrivées, départs avec durée de session, morts avec le compte à jour, raids.
-Un passage par minute.
+Arrivées, morts avec le compte à jour, raids. Un passage par minute.
+
+**Les départs et leur durée de session ont été retirés le 2026-09-04**, à la
+demande du groupe : « je me sens fliqué, elle est où la pointeuse ? ». Le
+message était `👋 Beware repart après 52 min de jeu` — annoncer à tout le
+salon combien de temps chacun a joué, à chaque déconnexion, transformait un
+outil de jeu en pointeuse. Le grief était juste.
+
+**Les sessions restent mesurées en base** : les KPI de temps de jeu et le calcul
+des jalons en dépendent. Ce qui a changé, c'est la publication au fil de l'eau,
+pas la mesure. À noter que le bilan de 19 h mentionne encore le temps de jeu par
+joueur, indirectement, via le défi « le plus solide » (`5 morts en 39 h 26`) —
+à retirer aussi si ça gêne.
 
 **Le notifieur ne relit pas le journal : il consomme la base du collecteur.**
 Les deux morceaux restent indépendants — un seul code connaît le format des

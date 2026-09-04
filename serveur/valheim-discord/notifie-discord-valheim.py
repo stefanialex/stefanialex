@@ -18,7 +18,6 @@ import sqlite3
 import sys
 import urllib.error
 import urllib.request
-from datetime import datetime
 
 BASE = os.environ.get("STATE_DIRECTORY", "/var/lib/valheim-stats") + "/valheim.db"
 CONF = "/etc/valheim-discord.conf"
@@ -51,13 +50,6 @@ def config():
     return None
 
 
-def duree(secondes):
-    s = int(secondes)
-    if s < 3600:
-        return "%d min" % (s // 60)
-    return "%d h %02d" % (s // 3600, (s % 3600) // 60)
-
-
 def curseur(cx, valeur=None):
     cx.execute("CREATE TABLE IF NOT EXISTS reglages "
                "(cle TEXT PRIMARY KEY, valeur TEXT)")
@@ -80,13 +72,6 @@ def morts_de(cx, joueur, avant_id):
                       "AND joueur = ? AND id <= ?", (joueur, avant_id)).fetchone()[0]
 
 
-def debut_session(cx, steamid, avant_id):
-    r = cx.execute("SELECT horodatage FROM evenements WHERE type = 'connexion' "
-                   "AND steamid = ? AND id < ? ORDER BY id DESC LIMIT 1",
-                   (steamid, avant_id)).fetchone()
-    return r[0] if r else None
-
-
 def premier_raid(cx, detail, id_ev):
     """Vrai si c'est la premiere fois qu'on voit ce raid : donc un boss neuf."""
     r = cx.execute("SELECT min(id) FROM evenements WHERE type = 'raid' AND detail = ?",
@@ -99,13 +84,6 @@ def message(cx, ev):
     heure = ts[11:16]
     if typ == "connexion":
         return "🛡️  **%s** arrive sur le serveur. (%s)" % (pseudo_de(cx, steamid), heure)
-    if typ == "deconnexion":
-        p = pseudo_de(cx, steamid)
-        debut = debut_session(cx, steamid, id_ev)
-        if debut:
-            d = datetime.fromisoformat(ts) - datetime.fromisoformat(debut)
-            return "👋  **%s** repart apres %s de jeu." % (p, duree(d.total_seconds()))
-        return "👋  **%s** repart." % p
     if typ == "mort":
         n = morts_de(cx, joueur, id_ev)
         return "💀  **%s** est mort. Ça lui fait **%d mort%s** sur ce monde." % (
@@ -149,10 +127,14 @@ def main():
         print("premier demarrage, curseur cale sur l'evenement %d" % maxi)
         return 0
 
-    interessants = ("connexion", "deconnexion", "mort", "raid")
+    # Les departs ne sont plus publies, a la demande du groupe : « je me sens
+    # flique, elle est ou la pointeuse ? ». Les sessions restent mesurees en
+    # base -- les KPI de temps de jeu en dependent -- elles ne sont simplement
+    # plus annoncees au fil de l'eau.
+    interessants = ("connexion", "mort", "raid")
     lignes = cx.execute(
         "SELECT id, horodatage, monde, type, joueur, steamid, detail FROM evenements "
-        "WHERE id > ? AND type IN (?, ?, ?, ?) ORDER BY id",
+        "WHERE id > ? AND type IN (?, ?, ?) ORDER BY id",
         (dernier, *interessants)).fetchall()
     if not lignes:
         return 0
