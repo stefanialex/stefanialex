@@ -1,0 +1,12 @@
+[Unit]
+Description=Passage quotidien de Claude sur les questions du salon
+
+[Timer]
+# 18 h 30 : avant le bilan de 19 h, pour que les reponses arrivent avant le
+# point du soir plutot qu'apres.
+OnCalendar=*-*-* 18:30:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

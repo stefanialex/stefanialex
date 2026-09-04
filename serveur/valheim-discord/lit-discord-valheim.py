@@ -362,7 +362,40 @@ def change_objectif(cle, valeur):
     return "⚠️ cle inconnue. Celles qui existent : %s" % cles
 
 
+def publie_reponse(chemin):
+    """Publie une reponse preparee ailleurs, et solde les demandes traitees.
+
+    Le bot est le seul a detenir le token : la session qui redige la reponse
+    n'y a pas acces et ne peut donc pas publier elle-meme. Elle depose un
+    fichier, ce point d'entree le lit et l'envoie -- en passant, comme tout le
+    reste, par le filtre qui masque les secrets.
+    """
+    c = config()
+    if not c.get("TOKEN") or not c.get("SALON"):
+        return 1
+    with open(chemin, encoding="utf-8") as f:
+        d = json.load(f)
+    texte = (d.get("texte") or "").strip()
+    if not texte:
+        return 0
+    repond(c["SALON"], c["TOKEN"], {
+        "title": "💬  Réponse de Claude",
+        "color": VERT,
+        "description": texte[:4000],
+        "footer": {"text": "passage quotidien · `!claude <question>` pour la prochaine fois"},
+    })
+    cx = sqlite3.connect(BASE)
+    cx.executescript(SCHEMA)
+    for i in d.get("ids", []):
+        cx.execute("UPDATE discord_demandes SET etat = 'traite' WHERE id = ?", (str(i),))
+    cx.commit()
+    print("reponse publiee, %d demande(s) soldee(s)" % len(d.get("ids", [])))
+    return 0
+
+
 def main():
+    if len(sys.argv) == 3 and sys.argv[1] == "--repondre":
+        return publie_reponse(sys.argv[2])
     c = config()
     token, salon = c.get("TOKEN"), c.get("SALON")
     if not token or not salon:

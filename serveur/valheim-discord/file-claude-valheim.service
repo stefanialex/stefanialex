@@ -1,0 +1,15 @@
+[Unit]
+Description=Passage quotidien de Claude sur les questions du salon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Sous le compte d'Alexandre : c'est la que vivent les identifiants Claude.
+# La session ne recoit aucun outil, et n'a pas acces au token Discord --
+# elle redige, le bot publie.
+User=lapserv
+Group=lapserv
+Environment=HOME=/home/lapserv
+ExecStart=/usr/local/bin/file-claude-valheim.sh
+TimeoutStartSec=900
