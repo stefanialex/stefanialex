@@ -3,12 +3,12 @@
   "kpis": [
     {
       "cle": "boss",
-      "libelle": "Boss vus par leur raid",
+      "libelle": "Boss vaincus",
       "source": "boss_vaincus",
       "cible": 8,
       "sens": "plus",
       "unite": "boss",
-      "note": "borne inferieure : un boss peut etre tombe sans que son raid se declenche"
+      "note": "lu dans les clés globales du monde, relevées toutes les 5 minutes"
     },
     {
       "cle": "intacts",

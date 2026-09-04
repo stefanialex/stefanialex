@@ -1,0 +1,79 @@
+{
+  "_note": "Conseils du point de 19 h. Organises par etape, l'etape etant determinee par le prochain boss a abattre. Un conseil par jour, choisi de facon deterministe sur la date : chacun revient a intervalle regulier au lieu d'etre tire au sort, ce qui evite les repetitions et les oublis. Chiffres issus de la recherche sur la progression a quatre joueurs, a corriger si vous constatez autre chose en jeu.",
+  "etapes": {
+    "defeated_eikthyr": {
+      "biome": "Prairies",
+      "objectif": "Abattre Eikthyr. Deux trophees de cerf sur l'autel des Prairies.",
+      "preparer": "Arc court et fleches de silex. Viande de cerf cuite +35 PV, miel +8/+35 endurance, champignon +15/+15 : environ 58 PV et 62 d'endurance, largement assez.",
+      "conseils": [
+        "Eikthyr charge en ligne droite : combattez entre les souches, elles bloquent sa charge.",
+        "Ne partez jamais sans trois nourritures actives. Vos PV et votre endurance maximum en dependent entierement, et partir avec deux emplacements vides, c'est se battre a 60 %.",
+        "Le bonus « Repose » vient du confort : un feu, un toit, un lit, un banc. Partez toujours de la base pour en profiter.",
+        "Son pouvoir reduit de 60 % le cout en endurance de la course et du saut : gardez-le actif pour explorer."
+      ]
+    },
+    "defeated_gdking": {
+      "biome": "Foret Noire",
+      "objectif": "Abattre l'Ancien. Trois graines anciennes, trouvees dans les donjons de la Foret Noire.",
+      "preparer": "Armure de bronze et surtout des fleches de feu : l'Ancien y est vulnerable. Ragout de cerf, soupe de carotte, champignon : environ 75 PV et 75 d'endurance.",
+      "conseils": [
+        "L'Ancien lance des racines depuis le sol : bougez sans arret et restez a couvert derriere les piliers de pierre de l'autel.",
+        "Le bronze demande 2 cuivre pour 1 etain. Visez large : environ 150 cuivre et 78 etain par joueur pour l'essentiel de l'equipement.",
+        "Un etabli sans toit ne fonctionne pas. C'est l'erreur numero un, et elle coute une reconstruction complete.",
+        "Les portails ne transportent ni minerai, ni lingot. Fondez sur place, ou prevoyez le bateau : c'est ce qui structure l'emplacement de vos avant-postes.",
+        "Chaque joueur recoit sa propre cle des marais en tuant l'Ancien. A quatre, cela fait quatre cryptes ouvrables en parallele."
+      ]
+    },
+    "defeated_bonemass": {
+      "biome": "Marais",
+      "objectif": "Abattre Bonemass. Dix os fletris, dans les tombes du Marais.",
+      "preparer": "L'hydromel de resistance au poison est obligatoire, pas optionnel : son aura empoisonne en continu. Masse de fer amelioree, armure de fer complete. Ragout de serpent, ragout de navet, saucisses : environ 153 PV et 99 d'endurance.",
+      "conseils": [
+        "Bonemass a 5 000 PV et resiste au tranchant et au perforant. La masse est la seule arme qui vaille : contondant, il y est vulnerable.",
+        "Une crypte moyenne donne 30 a 60 ferraille. Comptez une quinzaine de cryptes pour equiper quatre joueurs correctement.",
+        "Emportez toujours de l'hydromel de soin en plus : le poison continue apres la fin du combat.",
+        "Gardez un portail pres du Marais. Mourir loin avec une cargaison de fer, c'est une soiree perdue a courir nu."
+      ]
+    },
+    "defeated_dragon": {
+      "biome": "Montagnes",
+      "objectif": "Abattre Moder. Trois oeufs de dragon, dans les nids des Montagnes.",
+      "preparer": "Hydromel de resistance au givre obligatoire, sinon le froid vous tue seul. Arc Croc de Draugr et bonnes fleches. Ragout de serpent, Eyescream, brochette de loup : environ 166 PV et 112 d'endurance.",
+      "conseils": [
+        "Les oeufs de dragon pesent 200 chacun : sans la ceinture Megingjord d'Haldor, vous n'en portez qu'un a la fois.",
+        "Moder alterne vol et sol. Gardez vos fleches pour les phases au sol, ou elle encaisse bien plus.",
+        "C'est ici que tombe le golem de pierre, et son trophee est le plus rare du jeu. Les golems ne reapparaissent pas au meme endroit : couvrez du terrain plutot que de camper.",
+        "Son pouvoir donne un vent portant permanent : il change completement les traversees en bateau."
+      ]
+    },
+    "defeated_goblinking": {
+      "biome": "Plaines",
+      "objectif": "Abattre Yagluth. Cinq totems Fuling, dans les camps des Plaines.",
+      "preparer": "Vin d'orge de resistance au feu obligatoire : ses meteores tuent en un coup sans elle. Armure rembourree, armes en metal noir. Ragout de serpent, pudding de sang, tourte au lox : environ 180 PV et 125 d'endurance.",
+      "conseils": [
+        "Les deathsquitos tuent un joueur non prepare en une piqure. Ne traversez jamais les Plaines sans armure complete.",
+        "Yagluth a environ 8 000 PV : le combat est long, prevoyez de quoi reparer et manger avant, pas pendant.",
+        "Les camps Fuling se nettoient a l'arc depuis une hauteur. Les affronter au corps a corps a quatre, c'est jouable ; seul, non."
+      ]
+    },
+    "defeated_queen": {
+      "biome": "Mistlands",
+      "objectif": "Abattre la Reine. Neuf cheveux de roi geant et un fragment de Sealbreaker.",
+      "preparer": "Nourriture a Eitr pour les builds magiques. Misthare supreme, poisson-pain, aspic de traqueur : environ 143 PV, 132 d'endurance et 85 d'Eitr.",
+      "conseils": [
+        "La Reine a environ 18 000 PV : c'est un autre ordre de grandeur. Un combat rate coute une soiree entiere de preparation.",
+        "Les Mistlands se traversent au Wisplight, sinon vous ne voyez rien a trois metres.",
+        "Les cristaux et le soft tissue viennent des veines et des chambres Dvergr : reperez-les avant de vous engager."
+      ]
+    }
+  },
+  "generaux": [
+    "Reparez et videz votre inventaire avant chaque expedition. En faire une habitude evite l'arme cassee en pleine crypte.",
+    "Un reseau de portails en etoile depuis la base coute quelques fer et fait gagner des heures. Un portail par biome exploite, et un pres de chaque arene de boss.",
+    "Construisez sur une cote : la navigation est obligatoire pour decouvrir les biomes, et un quai a la base fait gagner enormement de temps cumule.",
+    "La competence Arc atteint +623 % de degats au niveau maximum, avec 83 % d'endurance en moins par tir. C'est de loin la competence qui rapporte le plus.",
+    "Deux nourritures « sante » et une « endurance » pour un boss ; l'inverse pour explorer et miner.",
+    "Le monde s'alourdit avec l'exploration, pas avec le desordre : environ 85 objets par zone exploree. Ne culpabilisez pas pour vos constructions.",
+    "Les raids se declenchent selon le boss precedent, pas le prochain. Un nouveau type de raid signifie que vous avez franchi une etape."
+  ]
+}

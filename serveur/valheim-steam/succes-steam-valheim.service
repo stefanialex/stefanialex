@@ -1,0 +1,15 @@
+[Unit]
+Description=Releve des succes Steam des joueurs Valheim
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=valheim
+Group=valheim
+StateDirectory=valheim-stats
+ExecStart=/usr/local/bin/succes-steam-valheim.py
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes

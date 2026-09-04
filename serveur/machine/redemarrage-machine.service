@@ -1,0 +1,7 @@
+[Unit]
+Description=Redemarrage mensuel de la machine pour les mises a jour systeme
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/redemarrage-machine.sh
+TimeoutStartSec=600

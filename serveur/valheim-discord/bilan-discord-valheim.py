@@ -7,7 +7,9 @@ lui-meme et appelle stats-valheim.py --json, pour qu'il n'existe qu'une seule
 definition de chaque indicateur.
 """
 
+import datetime
 import json
+import sqlite3
 import subprocess
 import sys
 import urllib.error
@@ -15,6 +17,8 @@ import urllib.request
 
 CONF = "/etc/valheim-discord.conf"
 STATS = "/usr/local/bin/stats-valheim.py"
+CONSEILS = "/etc/valheim/conseils.json"
+BASE = "/var/lib/valheim-stats/valheim.db"
 # Discord passe par Cloudflare, qui refuse l'agent par defaut de Python.
 AGENT = "valheim-serveur/1.0 (bilan quotidien auto-heberge)"
 LIMITE = 1900  # Discord coupe a 2000 caracteres
@@ -43,6 +47,59 @@ def jauge(av):
         return "          "
     n = int(round(av * 10))
     return "#" * n + "." * (10 - n)
+
+
+# Les boss dans l'ordre : le prochain a abattre determine l'etape, donc les
+# conseils du jour.
+ORDRE_BOSS = ["defeated_eikthyr", "defeated_gdking", "defeated_bonemass",
+              "defeated_dragon", "defeated_goblinking", "defeated_queen",
+              "defeated_fader"]
+
+
+def point_du_soir(d):
+    """Le point meteo : ou en est le groupe, et un conseil du jour.
+
+    Le conseil tourne de facon deterministe sur la date plutot que d'etre tire
+    au sort : chacun revient a intervalle regulier, aucun n'est oublie, et deux
+    jours de suite ne se ressemblent pas.
+    """
+    try:
+        with open(CONSEILS, encoding="utf-8") as f:
+            conf = json.load(f)
+    except (OSError, ValueError):
+        return None
+
+    vaincus = {e.get("cle") for e in (d.get("progression") or [])}
+    prochain = next((c for c in ORDRE_BOSS if c not in vaincus), None)
+    etape = (conf.get("etapes") or {}).get(prochain)
+    if not etape:
+        return None
+
+    # Le vivier melange la preparation de l'etape, ses conseils propres et les
+    # conseils generaux : la preparation revient ainsi regulierement sans
+    # occuper le message tous les soirs.
+    vivier = [etape["preparer"]] + etape.get("conseils", []) + conf.get("generaux", [])
+    jour = datetime.date.today().toordinal()
+    conseil = vivier[jour % len(vivier)]
+
+    return ("🌤️  **Le point du soir — %s**\n%s\n💡 %s"
+            % (etape["biome"], etape["objectif"], conseil))
+
+
+def succes_du_jour():
+    """Une ligne sur les succes Steam, seulement s'il y en a."""
+    try:
+        cx = sqlite3.connect("file:%s?mode=ro" % BASE, uri=True)
+        lignes = list(cx.execute(
+            "SELECT j.pseudo, count(s.cle) FROM joueurs j "
+            "LEFT JOIN steam_succes s ON s.steamid = j.steamid "
+            "GROUP BY j.steamid ORDER BY count(s.cle) DESC"))
+    except sqlite3.Error:
+        return None
+    if not lignes or not any(n for _, n in lignes):
+        return None
+    return "🏅  **Succès Steam** — " + " · ".join(
+        "%s **%d**" % (p, n) for p, n in lignes if n)
 
 
 def bilan(d):
@@ -107,6 +164,15 @@ def bilan(d):
         else:
             lignes.append("**%s** — en tête : **%s** (%s)" % (
                 defi["nom"], premier["joueur"], v))
+
+    sc = succes_du_jour()
+    if sc:
+        lignes.append(sc)
+
+    pt = point_du_soir(d)
+    if pt:
+        lignes.append("")
+        lignes.append(pt)
 
     texte = "\n".join(lignes)
     return texte[:LIMITE]

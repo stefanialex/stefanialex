@@ -1238,6 +1238,56 @@ multiple.
 
 ---
 
+### Succès Steam, redémarrage mensuel, point du soir, le 2026-09-04
+
+**Succès Steam.** `succes-steam-valheim.py`, toutes les heures. La clé d'API
+vit dans `/etc/valheim-steam.conf`, en `640 root:valheim`, hors du dépôt. Les
+identifiants Steam ne sont pas saisis à la main : ils viennent du journal du
+serveur, relevés par le collecteur à chaque connexion.
+
+Deux constats au branchement, tous deux mesurés :
+
+- **Valheim ne définit encore aucun succès** — l'API renvoie une liste vide.
+  Ils arrivent avec la 1.0. Le script gère ce cas sans se plaindre : il relève
+  le temps de jeu, constate qu'il n'y a rien, et attend.
+- **Les quatre profils sont déjà lisibles.** La manip demandée dans le salon
+  était donc inutile : `GetOwnedGames` répond pour les quatre. Attention, la
+  visibilité du *profil* et celle des *détails du jeu* sont deux réglages
+  distincts — c'est le second qui compte, et c'est celui-là qu'il faut tester,
+  pas le premier.
+
+Temps de jeu Valheim toutes parties confondues, au 2026-09-04 : DjOsE 1035 h,
+Beware 664 h, Bab-y 622 h, Brewtmoiminou 421 h.
+
+Au premier relevé, rien n'est annoncé : tout ce qui est déjà obtenu sortirait
+d'un coup dans le salon.
+
+---
+
+**Redémarrage mensuel de la machine.** Premier dimanche du mois à 5 h 30, après
+le redémarrage quotidien du jeu. Les mises à jour de sécurité s'installent
+seules, mais un noyau ne prend effet qu'au redémarrage : sans lui, la machine
+tourne indéfiniment sur un noyau corrigé mais pas chargé.
+
+**Il se reporte si quelqu'un joue.** On ne coupe pas une partie en cours pour un
+redémarrage d'entretien ; il attendra le mois suivant. `Persistent=false` :
+un redémarrage manqué ne doit pas se déclencher au démarrage suivant, ce qui
+redémarrerait la machine juste après son démarrage.
+
+---
+
+**Le point du soir**, ajouté au bilan de 19 h. L'étape est déduite du **prochain
+boss à abattre**, et le conseil tourne de façon **déterministe sur la date**
+plutôt que d'être tiré au sort : chacun revient à intervalle régulier, aucun
+n'est oublié, et deux jours de suite ne se ressemblent pas.
+
+Le vivier mélange la préparation de l'étape, ses conseils propres et les
+conseils généraux — la préparation revient ainsi régulièrement sans occuper le
+message tous les soirs. Contenu dans `/etc/valheim/conseils.json`, six étapes,
+trente conseils, modifiable sans toucher au code.
+
+---
+
 ### Adresse IP fixée en statique, le 2026-09-04
 
 L'adresse `192.168.1.120` venait du DHCP de la box et n'était pas réservée.

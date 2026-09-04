@@ -1,0 +1,13 @@
+[Unit]
+Description=Redemarrage mensuel de la machine
+
+[Timer]
+# Premier dimanche du mois a 5 h 30, apres le redemarrage quotidien du jeu.
+OnCalendar=Sun *-*-01..07 05:30:00
+# Persistent=false : un redemarrage manque ne doit pas se declencher au
+# demarrage suivant, ce qui redemarrerait la machine juste apres son demarrage.
+Persistent=false
+RandomizedDelaySec=600
+
+[Install]
+WantedBy=timers.target

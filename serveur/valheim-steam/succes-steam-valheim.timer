@@ -1,0 +1,13 @@
+[Unit]
+Description=Releve des succes Steam, toutes les heures
+
+[Timer]
+# Les succes ne changent pas a la minute, et l'API Steam est limitee en debit :
+# une fois par heure suffit largement.
+OnBootSec=6min
+OnUnitActiveSec=1h
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target
