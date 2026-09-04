@@ -230,11 +230,11 @@ def defis(agg, morts, progression, sessions, ident, boss_vaincus):
             rangs.append({"joueur": pseudo, "valeur": len(apres),
                           "tient": not apres,
                           "note": "intact" if not apres
-                                  else "premiere mort le %s" % apres[0][:16]})
+                                  else "première mort le %s" % apres[0][:16]})
         liste.append({
             "nom": "Intact depuis %s" % boss,
-            "regle": "n'etre jamais mort depuis la chute de %s" % boss,
-            "metrique": "morts enregistrees apres le %s" % depuis[:16],
+            "regle": "n'être jamais mort depuis la chute de %s" % boss,
+            "metrique": "morts enregistrées après le %s" % depuis[:16],
             "sens": "moins", "rangs": sorted(rangs, key=lambda r: r["valeur"]),
         })
 
@@ -271,9 +271,9 @@ def defis(agg, morts, progression, sessions, ident, boss_vaincus):
                       "note": "depuis le %s" % depart.isoformat(sep=" ")[:16]})
     if rangs:
         liste.append({
-            "nom": "Serie en cours",
-            "regle": "le plus longtemps sans mourir, en temps reel",
-            "metrique": "temps ecoule depuis la derniere mort",
+            "nom": "Série en cours",
+            "regle": "le plus longtemps sans mourir, en temps réel",
+            "metrique": "temps écoulé depuis la dernière mort",
             "sens": "plus", "rangs": sorted(rangs, key=lambda r: -r["valeur"]),
             "unite": "duree",
         })
@@ -289,8 +289,8 @@ def defis(agg, morts, progression, sessions, ident, boss_vaincus):
                           "tient": None, "note": "du %s au %s" % (t1[:10], t2[:10])})
         liste.append({
             "nom": "Rythme du groupe",
-            "regle": "temps ecoule entre deux boss",
-            "metrique": "ecart entre les premiers raids de chaque boss",
+            "regle": "temps écoulé entre deux boss",
+            "metrique": "écart entre deux victoires consécutives",
             "sens": "moins", "rangs": rangs, "unite": "duree",
         })
 

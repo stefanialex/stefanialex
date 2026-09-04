@@ -21,7 +21,6 @@ CONSEILS = "/etc/valheim/conseils.json"
 BASE = "/var/lib/valheim-stats/valheim.db"
 # Discord passe par Cloudflare, qui refuse l'agent par defaut de Python.
 AGENT = "valheim-serveur/1.0 (bilan quotidien auto-heberge)"
-LIMITE = 1900  # Discord coupe a 2000 caracteres
 
 
 def config():
@@ -40,13 +39,6 @@ def duree(s):
     if s < 3600:
         return "%d min" % (s // 60)
     return "%d h %02d" % (s // 3600, (s % 3600) // 60)
-
-
-def jauge(av):
-    if av is None:
-        return "          "
-    n = int(round(av * 10))
-    return "#" * n + "." * (10 - n)
 
 
 # Les boss dans l'ordre : le prochain a abattre determine l'etape, donc les
@@ -82,8 +74,8 @@ def point_du_soir(d):
     jour = datetime.date.today().toordinal()
     conseil = vivier[jour % len(vivier)]
 
-    return ("🌤️  **Le point du soir — %s**\n%s\n💡 %s"
-            % (etape["biome"], etape["objectif"], conseil))
+    return {"name": "🌤️  Prochaine étape — %s" % etape["biome"], "inline": False,
+            "value": "%s\n\n💡  %s" % (etape["objectif"], conseil)}
 
 
 def succes_du_jour():
@@ -98,84 +90,83 @@ def succes_du_jour():
         return None
     if not lignes or not any(n for _, n in lignes):
         return None
-    return "🏅  **Succès Steam** — " + " · ".join(
-        "%s **%d**" % (p, n) for p, n in lignes if n)
+    return " · ".join("%s **%d**" % (p, n) for p, n in lignes if n)
+
+
+VERT = 0x3D7317
 
 
 def bilan(d):
-    lignes = []
-    tete = ["**Bilan du serveur**"]
+    """Construit l'embed du bilan.
+
+    Un embed plutot qu'un pave monospace : Discord aligne les colonnes
+    lui-meme, et le message reste lisible sur telephone -- ce que ne faisait
+    pas un tableau a chasse fixe de soixante-dix colonnes.
+
+    Le contenu est aussi degraisse : les jauges en croix, les doublons entre
+    objectifs et defis, et les classements qui repetaient la meme information
+    ont disparu. Un bilan quotidien doit se lire en dix secondes.
+    """
+    tete = []
     if d.get("monde"):
-        tete.append("monde *%s*" % d["monde"])
+        tete.append("**%s**" % d["monde"])
     if d.get("jour"):
         tete.append("jour %s" % d["jour"])
     if d.get("zdos"):
         tete.append("%s objets" % format(int(d["zdos"]), ",d").replace(",", " "))
-    lignes.append(" · ".join(tete))
+
+    # Classement : trois colonnes que Discord aligne seul.
+    series = {}
+    for defi in d.get("defis") or []:
+        if defi.get("nom") == "Série en cours":
+            series = {x["joueur"]: x["valeur"] for x in defi["rangs"]}
+    noms, morts, sans = [], [], []
+    for j in d.get("joueurs", []):
+        h = (j["temps"] or 0) / 3600.0
+        noms.append(j["pseudo"] + (" 🎮" if j.get("en_cours") else ""))
+        morts.append("%d%s" % (j["morts"], " · %.2f/h" % (j["morts"] / h) if h >= 1 else ""))
+        sans.append(duree(series[j["pseudo"]]) if j["pseudo"] in series else "—")
+
+    champs = [
+        {"name": "Joueur", "value": "\n".join(noms) or "—", "inline": True},
+        {"name": "Morts", "value": "\n".join(morts) or "—", "inline": True},
+        {"name": "Sans mourir", "value": "\n".join(sans) or "—", "inline": True},
+    ]
 
     k = d.get("kpi") or {}
     if k.get("kpis"):
-        lignes.append("```")
+        lignes = []
         for e in k["kpis"]:
             if e["valeur"] is None:
-                lignes.append("%-34s %14s" % (e["libelle"][:34], "pas mesurable"))
                 continue
             f = duree if e.get("unite") == "duree" else (lambda x: "%g" % x)
-            lignes.append("%-34s %9s /%9s  %s %s" % (
-                e["libelle"][:34], f(e["valeur"]), f(e["cible"]),
-                jauge(e["avancement"]), "OK" if e["tenu"] else "--"))
-        lignes.append("```")
+            lignes.append("%s **%s** / %s — %s" % (
+                "✅" if e["tenu"] else "🔸", f(e["valeur"]), f(e["cible"]), e["libelle"]))
+        if lignes:
+            champs.append({"name": "🎯  Objectifs", "inline": False,
+                           "value": "\n".join(lignes)[:1024]})
 
     faits = [j for j in k.get("jalons", []) if j.get("date")]
     if faits:
-        lignes.append("**Jalons**, en temps de jeu cumulé : " + " · ".join(
-            "%s %.1f h/%d h %s" % (j["boss"], j["heures_reelles"],
-                                   j["heures_cumulees"],
-                                   "✅" if j["tenu"] else "⏱️")
-            for j in faits))
-
-    c = d.get("chantiers")
-    if c and c.get("avancement", {}).get("total"):
-        a = c["avancement"]
-        en_cours = [ch["nom"] for ch in c["chantiers"] if ch["etat"] == "en_cours"]
-        ligne = "**Chantiers** %d/%d faits" % (a["faits"], a["total"])
-        if en_cours:
-            ligne += " · en cours : " + ", ".join(en_cours[:4])
-        lignes.append(ligne)
-
-    # Les meneurs de chaque defi : c'est ce qui se lit en premier dans un salon.
-    # Un defi que personne ne tient ne doit pas designer de « meneur » : sur
-    # « intact depuis l'Ancien », annoncer DjOsE en tete avec 2 morts laisserait
-    # croire qu'il le tient. On dit alors que personne ne le tient.
-    for defi in (d.get("defis") or [])[:4]:
-        rangs = defi.get("rangs") or []
-        if not rangs:
-            continue
-        premier = rangs[0]
-        v = duree(premier["valeur"]) if defi.get("unite") == "duree" \
-            else "%g" % premier["valeur"]
-        binaire = any(r.get("tient") is not None for r in rangs)
-        if binaire and not premier.get("tient"):
-            lignes.append("**%s** — personne ne le tient (au mieux **%s**, %s)" % (
-                defi["nom"], premier["joueur"], v))
-        elif premier.get("tient"):
-            lignes.append("**%s** — **%s** le tient toujours" % (
-                defi["nom"], premier["joueur"]))
-        else:
-            lignes.append("**%s** — en tête : **%s** (%s)" % (
-                defi["nom"], premier["joueur"], v))
-
-    sc = succes_du_jour()
-    if sc:
-        lignes.append(sc)
+        dernier = faits[-1]
+        champs.append({"name": "Dernier jalon", "inline": False,
+                       "value": "%s atteint à **%.1f h** de jeu cumulé (objectif %d h) %s"
+                                % (dernier["boss"], dernier["heures_reelles"],
+                                   dernier["heures_cumulees"],
+                                   "✅" if dernier["tenu"] else "⏱️")})
 
     pt = point_du_soir(d)
     if pt:
-        lignes.append("")
-        lignes.append(pt)
+        champs.append(pt)
 
-    texte = "\n".join(lignes)
-    return texte[:LIMITE]
+    sc = succes_du_jour()
+    if sc:
+        champs.append({"name": "🏅  Succès Steam", "value": sc, "inline": False})
+
+    return {"title": "🌙  Bilan du soir", "description": " · ".join(tete),
+            "color": VERT, "fields": champs,
+            "footer": {"text": "relevé à %s · `!stats` pour le détail"
+                               % (d.get("genere") or "")[11:16]}}
 
 
 def main():
@@ -189,7 +180,7 @@ def main():
     d = json.loads(r.stdout)
     if not (d.get("joueurs") or d.get("kpi")):
         return 0  # rien a dire
-    corps = json.dumps({"content": bilan(d),
+    corps = json.dumps({"embeds": [bilan(d)],
                         "allowed_mentions": {"parse": []}}).encode()
     req = urllib.request.Request(url, data=corps, headers={
         "Content-Type": "application/json", "User-Agent": AGENT})
