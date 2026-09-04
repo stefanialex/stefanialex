@@ -59,9 +59,13 @@ AIDE = """**Commandes du salon**
 `!chantier <nom> <a faire|en cours|fait>` — coche un chantier
 `!qui <nom> <Lapin|Beny|Djoose|Baby>` — affecte quelqu'un
 `!objectif <cle> <valeur>` — change une cible de KPI
-`!defi <votre idee>` — propose un defi ; Claude le traitera et dira s'il est
-mesurable, declaratif ou impossible
-`!demandes` — les propositions en attente"""
+`!defi <votre idée>` — propose un défi ; Claude dira s'il est mesurable,
+déclaratif ou impossible
+`!claude <votre question>` — pose une question ; réponse quand Claude passe
+`!demandes` — la file en attente
+
+*Les commandes ci-dessus sont les seules actions possibles depuis le salon.
+Un message ne peut rien exécuter d'autre.*"""
 
 ETATS = {"fait": "fait", "en cours": "en_cours", "en_cours": "en_cours",
          "a faire": "a_faire", "a_faire": "a_faire", "afaire": "a_faire"}
@@ -96,6 +100,47 @@ def appel(chemin, token, methode="GET", corps=None, params=None):
         return json.loads(brut) if brut else None
 
 
+# --- filtre de sortie ---------------------------------------------------
+# Rien de ce qui sort vers le salon ne doit contenir de secret. Ce n'est pas
+# une precaution theorique : le bot lit des messages ecrits par des personnes,
+# et une demande formulee pour obtenir « la configuration » ou « le contenu de
+# /etc » ne doit pas pouvoir aboutir. Le filtre agit en dernier, sur le message
+# construit, quel que soit le chemin qui l'a produit.
+MOTIF_WEBHOOK = re.compile(r"https://discord(?:app)?\.com/api/webhooks/\S+")
+
+
+def secrets_connus():
+    valeurs = []
+    for fichier, cles in ((CONF, ("WEBHOOK", "TOKEN")),
+                          ("/etc/valheim-steam.conf", ("CLE",))):
+        try:
+            with open(fichier) as f:
+                for l in f:
+                    for c in cles:
+                        if l.startswith(c + "="):
+                            v = l.split("=", 1)[1].strip().strip('"')
+                            if len(v) >= 16:
+                                valeurs.append(v)
+        except OSError:
+            pass
+    return valeurs
+
+
+def nettoie(valeur, secrets=None):
+    """Remplace tout secret par une mention neutre, recursivement."""
+    if secrets is None:
+        secrets = secrets_connus()
+    if isinstance(valeur, dict):
+        return {k: nettoie(v, secrets) for k, v in valeur.items()}
+    if isinstance(valeur, list):
+        return [nettoie(v, secrets) for v in valeur]
+    if not isinstance(valeur, str):
+        return valeur
+    for x in secrets:
+        valeur = valeur.replace(x, "‹masqué›")
+    return MOTIF_WEBHOOK.sub("‹masqué›", valeur)
+
+
 VERT = 0x3D7317      # le vert d'etat de Cockpit, pour que tout se ressemble
 GRIS = 0x4D4D4D
 
@@ -112,6 +157,7 @@ def repond(salon, token, contenu):
         corps["embeds"] = [contenu]
     else:
         corps["content"] = contenu[:MAX_REPONSE]
+    corps = nettoie(corps)
     try:
         appel("/channels/%s/messages" % salon, token, "POST", corps)
     except (urllib.error.URLError, OSError) as e:
@@ -262,6 +308,15 @@ def traite(contenu, cx):
                     "de la page des defis."), False
         return change_objectif(p[0], p[1]), False
 
+    if cmd == "claude":
+        if not reste:
+            return ("Pose ta question : `!claude comment on prépare Bonemass ?`\n"
+                    "Je ne suis pas en ligne en permanence — ta question part "
+                    "dans une file et reçoit une réponse quand je passe."), False
+        return ("💬  Question notée : « %s ».\nJe ne tourne pas en continu : "
+                "la réponse arrivera quand je passerai. `!demandes` pour voir "
+                "la file." % reste[:300]), True
+
     if cmd in ("defi", "objectifs", "demande"):
         if not reste:
             return "Dis-moi lequel : `!defi personne ne meurt avant Moder`.", False
@@ -271,7 +326,8 @@ def traite(contenu, cx):
     if cmd == "demandes":
         lignes = cx.execute(
             "SELECT horodatage, auteur, contenu FROM discord_demandes "
-            "WHERE etat = 'recu' AND commande = 'defi' ORDER BY id").fetchall()
+            "WHERE etat = 'recu' AND commande IN ('defi', 'claude') "
+            "ORDER BY id").fetchall()
         if not lignes:
             return "Aucune proposition en attente.", False
         return "**En attente de Claude**\n" + "\n".join(
@@ -365,7 +421,12 @@ def main():
         if not contenu.startswith("!"):
             continue  # on ne conserve que ce qui nous est adresse
         if autorises and str(msg["author"]["id"]) not in autorises:
-            repond(salon, token, "Je n'accepte les commandes que des comptes autorises.")
+            # Liste blanche d'auteurs : une commande n'est executee que si elle
+            # vient d'un compte connu. Le salon est prive, mais un salon prive
+            # peut s'ouvrir par erreur, et c'est la seule barriere qui ne
+            # depende pas des reglages Discord.
+            repond(salon, token,
+                   "Je n'accepte les commandes que des comptes autorisés.")
             continue
 
         reponse, differe = traite(contenu, cx)

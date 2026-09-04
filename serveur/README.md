@@ -1288,6 +1288,74 @@ trente conseils, modifiable sans toucher au code.
 
 ---
 
+### Le salon a servi de test grandeur nature, le 2026-09-04
+
+Beny : « trop de notifs de Claudio, genre là, toutes les morts de Djoose, ça va
+trop polluer le salon ». Il avait raison sur le bruit — mais **le bruit était
+un symptôme**, et filtrer l'affichage l'aurait masqué :
+
+```
+DjOsE            6 sessions,  3 de moins de 2 min, la plus courte 4 s
+Beware           2 sessions,  0 de moins de 2 min
+Brewtmoiminou    1 session
+Bab-y            1 session
+```
+
+Les cinq morts de la soirée sont **toutes** de DjOsE, dont le lien décroche en
+permanence — connexion à 19:42:46, déconnexion à 19:42:50. Les morts suivent
+probablement les coupures.
+
+Trois règles, et la troisième est celle qui compte :
+
+| | |
+|---|---|
+| Arrivée | pas de message si le joueur était déjà connecté dans la demi-heure |
+| Mort | une par quart d'heure au plus, par joueur |
+| **Lien instable** | au-delà de 4 reconnexions dans l'heure, **un seul** message de diagnostic, au plus une fois par 2 h |
+
+Rejoué sur la soirée : **17 événements donnent 8 messages** au lieu de 17, et
+les dix « DjOsE arrive » deviennent une ligne qui dit ce qui se passe
+réellement. Répéter un symptôme dix fois n'informe personne ; le compter et le
+nommer une fois, si.
+
+---
+
+### Modèle de confiance du bot Discord, le 2026-09-04
+
+Le salon est une **entrée non fiable** : les messages sont écrits par des
+personnes, et un message peut être rédigé pour obtenir autre chose que ce qu'il
+prétend demander. Quatre barrières, indépendantes les unes des autres.
+
+**1. Une grammaire fermée.** Une commande est reconnue par une expression
+régulière et exécutée par du code, jamais interprétée. Aucun shell n'est
+invoqué : les sous-processus reçoivent des **listes d'arguments**, si bien que
+le contenu d'un message ne peut pas s'en échapper. Ce qui n'est pas dans la
+liste des commandes ne fait rien.
+
+**2. Une liste blanche d'auteurs.** `AUTORISES=` dans
+`/etc/valheim-discord.conf` : seuls les quatre comptes du groupe voient leurs
+commandes exécutées. Le salon est privé, mais un salon privé peut s'ouvrir par
+erreur, et cette barrière-là ne dépend pas des réglages Discord.
+
+**3. Un filtre de sortie.** `nettoie()` s'applique **en dernier**, sur le
+message construit, quel que soit le chemin qui l'a produit : webhook, token du
+bot, clé Steam et toute URL de webhook sont remplacés par `‹masqué›`. Testé sur
+les quatre formes, et il laisse le texte ordinaire intact.
+
+**4. Le partage des pouvoirs, qui est la vraie protection.** Un message du
+salon ne peut **jamais autoriser une action** : il peut seulement déclencher
+une commande de la liste fermée, ou **se ranger dans une file**. `!defi` et
+`!claude` n'exécutent rien — ils enregistrent une demande, que Claude traitera
+en la lisant comme une **donnée**, pas comme une instruction.
+
+C'est ce qui distingue « le bot répond » de « le bot obéit au salon ». Les trois
+premières barrières sont techniques et vérifiables ; la quatrième est une règle
+de conception, et c'est elle qu'il ne faut jamais assouplir : le jour où une
+phrase du salon pourrait modifier la configuration hors de la grammaire fermée,
+les trois autres ne servent plus à rien.
+
+---
+
 ### Adresse IP fixée en statique, le 2026-09-04
 
 L'adresse `192.168.1.120` venait du DHCP de la box et n'était pas réservée.

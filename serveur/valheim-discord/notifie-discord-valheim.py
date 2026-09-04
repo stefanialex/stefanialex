@@ -18,6 +18,7 @@ import sqlite3
 import sys
 import urllib.error
 import urllib.request
+from datetime import datetime, timedelta
 
 BASE = os.environ.get("STATE_DIRECTORY", "/var/lib/valheim-stats") + "/valheim.db"
 CONF = "/etc/valheim-discord.conf"
@@ -79,12 +80,89 @@ def premier_raid(cx, detail, id_ev):
     return r and r[0] == id_ev
 
 
+# Fenetres d'etouffement. Le salon a servi de test grandeur nature : une
+# soiree ou un joueur s'est reconnecte six fois et est mort cinq fois a produit
+# une vingtaine de messages, et le groupe a demande qu'on calme ca.
+FENETRE_ARRIVEE = timedelta(minutes=30)
+FENETRE_MORT = timedelta(minutes=15)
+RECONNEXIONS_SUSPECTES = 4      # par heure
+FENETRE_INSTABLE = timedelta(hours=2)
+
+
+def recent(cx, requete, args, depuis):
+    """Vrai s'il existe un evenement du meme genre dans la fenetre."""
+    r = cx.execute(requete, args + (depuis.isoformat(sep=" ", timespec="seconds"),)
+                   ).fetchone()
+    return bool(r and r[0])
+
+
+def arrivee_a_annoncer(cx, ts, steamid, id_ev):
+    """Une reconnexion dans la demi-heure n'est pas une arrivee.
+
+    Sans ce filtre, un joueur dont le lien saute produit une ligne « arrive sur
+    le serveur » a chaque retour -- six en trente minutes, constate le
+    2026-09-04.
+    """
+    t = datetime.fromisoformat(ts)
+    return not recent(cx,
+        "SELECT 1 FROM evenements WHERE type = 'connexion' AND steamid = ? "
+        "AND id < ? AND horodatage > ? LIMIT 1",
+        (steamid, id_ev), t - FENETRE_ARRIVEE)
+
+
+def morts_recentes(cx, joueur, ts, id_ev):
+    """Nombre de morts du joueur dans le quart d'heure precedent."""
+    t = datetime.fromisoformat(ts)
+    return cx.execute(
+        "SELECT count(*) FROM evenements WHERE type = 'mort' AND joueur = ? "
+        "AND id < ? AND horodatage > ?",
+        (joueur, id_ev, (t - FENETRE_MORT).isoformat(sep=" ", timespec="seconds"))
+    ).fetchone()[0]
+
+
+def lien_instable(cx, ts, steamid, id_ev):
+    """Diagnostic plutot que symptome.
+
+    Repeter « untel arrive » dix fois ne dit rien a personne. Compter les
+    reconnexions et le dire une fois, si.
+    """
+    t = datetime.fromisoformat(ts)
+    n = cx.execute(
+        "SELECT count(*) FROM evenements WHERE type = 'connexion' AND steamid = ? "
+        "AND id <= ? AND horodatage > ?",
+        (steamid, id_ev, (t - timedelta(hours=1)).isoformat(sep=" ", timespec="seconds"))
+    ).fetchone()[0]
+    if n < RECONNEXIONS_SUSPECTES:
+        return None
+    cle = "instable_%s" % steamid
+    r = cx.execute("SELECT valeur FROM reglages WHERE cle = ?", (cle,)).fetchone()
+    if r and datetime.fromisoformat(r[0]) > t - FENETRE_INSTABLE:
+        return None
+    cx.execute("INSERT INTO reglages VALUES (?, ?) ON CONFLICT (cle) DO UPDATE SET "
+               "valeur = excluded.valeur", (cle, ts))
+    return n
+
+
 def message(cx, ev):
     id_ev, ts, _monde, typ, joueur, steamid, detail = ev
     heure = ts[11:16]
     if typ == "connexion":
-        return "🛡️  **%s** arrive sur le serveur. (%s)" % (pseudo_de(cx, steamid), heure)
+        p = pseudo_de(cx, steamid)
+        n = lien_instable(cx, ts, steamid, id_ev)
+        if n:
+            return ("📡  **%s** s'est reconnecté **%d fois en une heure**. Sa "
+                    "connexion décroche : à vérifier de son côté (câble plutôt "
+                    "que wifi, ou lien opérateur). Les morts qui suivent une "
+                    "coupure ne comptent pas vraiment." % (p, n))
+        if not arrivee_a_annoncer(cx, ts, steamid, id_ev):
+            return None
+        return "🛡️  **%s** arrive sur le serveur. (%s)" % (p, heure)
     if typ == "mort":
+        # Une mort par quart d'heure au plus : les series de morts rapprochees
+        # sont regroupees dans le message suivant plutot qu'annoncees une par une.
+        rapprochees = morts_recentes(cx, joueur, ts, id_ev)
+        if rapprochees:
+            return None
         n = morts_de(cx, joueur, id_ev)
         return "💀  **%s** est mort. Ça lui fait **%d mort%s** sur ce monde." % (
             joueur, n, "s" if n > 1 else "")
@@ -118,7 +196,7 @@ def main():
         return 0  # pas encore configure : ce n'est pas une erreur
 
     cx = sqlite3.connect(BASE)
-    dernier = curseur(cx)
+    dernier = curseur(cx)   # cree aussi la table reglages
     if dernier is None:
         # Premier demarrage : on se cale sur le present. Sans ca, tout
         # l'historique du monde partirait d'un coup dans le salon.
