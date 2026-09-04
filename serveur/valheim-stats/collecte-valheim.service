@@ -1,0 +1,34 @@
+[Unit]
+Description=Collecte des statistiques du serveur Valheim
+Documentation=file:///home/lapserv/stefanialex/serveur/README.md
+After=valheim.service
+Wants=valheim.service
+
+[Service]
+Type=simple
+# Le collecteur lit le journal : il lui faut le groupe systemd-journal, que
+# l'utilisateur valheim n'a pas par lui-meme.
+User=valheim
+Group=valheim
+SupplementaryGroups=systemd-journal
+# systemd cree et donne /var/lib/valheim-stats a l'utilisateur du service, et
+# fournit STATE_DIRECTORY que le script utilise pour trouver sa base.
+StateDirectory=valheim-stats
+ExecStart=/usr/local/bin/collecte-valheim.py
+Restart=always
+RestartSec=10
+
+# Le collecteur ne fait que lire le journal et ecrire dans sa base : rien
+# d'autre n'a besoin d'etre accessible en ecriture.
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target

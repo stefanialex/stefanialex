@@ -431,6 +431,253 @@ administrateur, sinon les cartes restent vides avec une erreur. La dispense
 
 ---
 
+### La page Cockpit était cassée, pas moche : la CSP, le 2026-09-04
+
+Symptôme : page en Times New Roman, boutons bruts du navigateur, `chargement…`
+figé, toutes les données affichées `…`. Diagnostiqué deux fois de travers avant
+d'être compris, ce qui vaut d'être écrit noir sur blanc.
+
+Cockpit sert les pages de modules avec cette politique de sécurité de contenu,
+lisible dans le binaire `cockpit-ws` :
+
+```
+default-src 'self'; connect-src 'self' ws: wss:; form-action 'self';
+base-uri 'self'; object-src 'none'; font-src 'self' data:; img-src 'self' data:
+```
+
+Pas de `'unsafe-inline'`. Or le module mettait tout son CSS dans un `<style>` et
+tout son JavaScript dans un `<script>` sans `src` : **le navigateur bloquait les
+deux**, sans que le serveur voie quoi que ce soit. D'où deux fausses pistes —
+d'abord un décalage PatternFly 5 / 6, ensuite l'empreinte de session de Cockpit
+qui aurait servi une vieille page depuis le cache. Ni l'une ni l'autre n'était la
+cause : la page n'avait jamais été affichée stylée une seule fois.
+
+Le signe qui aurait dû trancher tout de suite : **aucun module officiel de
+Cockpit n'utilise d'inline.** `systemd`, `storaged` et `networkmanager` chargent
+tous leur CSS par `<link rel="stylesheet">` et leur script par `<script src>`.
+Ce n'est pas une préférence de style, c'est imposé par la CSP.
+
+Le module est donc en trois fichiers :
+
+```
+/usr/share/cockpit/valheim/index.html     structure seule
+/usr/share/cockpit/valheim/valheim.css    <link rel="stylesheet" href="valheim.css">
+/usr/share/cockpit/valheim/valheim.js     <script src="valheim.js"></script>
+```
+
+Les chemins relatifs des `@font-face` (`../../static/fonts/`) restent valides :
+dans une feuille de style, ils se résolvent par rapport au fichier CSS, qui vit
+dans le même répertoire que la page.
+
+**À retenir pour tout ajout au module :** un `style=` ou un `onclick=` dans le
+HTML sera bloqué de la même façon, silencieusement. Tout passe par les fichiers
+externes.
+
+---
+
+### Redémarrage du jeu passé en quotidien, le 2026-09-04
+
+`redemarrage-valheim.timer` existait depuis le 2026-08-28 en hebdomadaire
+(lundi 5 h). Passé à tous les jours à 5 h, heure sans joueur connecté :
+
+```bash
+sudo mkdir -p /etc/systemd/system/redemarrage-valheim.timer.d
+sudo tee /etc/systemd/system/redemarrage-valheim.timer.d/quotidien.conf >/dev/null <<'FIN'
+[Timer]
+OnCalendar=
+OnCalendar=*-*-* 05:00:00
+FIN
+sudo systemctl daemon-reload
+```
+
+**Le `OnCalendar=` vide est indispensable**, exactement comme le `ListenStream=`
+vide de Cockpit : les valeurs de minuterie s'ajoutent au lieu de se remplacer.
+Sans cette ligne, le lundi 5 h resterait en plus du quotidien.
+
+Le service fait une sauvegarde avant de redémarrer, et l'arrêt propre
+(`KillSignal=SIGINT`, `TimeoutStopSec=120`) écrit le monde sur disque.
+Indisponibilité constatée : moins d'une minute.
+
+**Ce n'est pas un redémarrage de la machine**, seulement du service de jeu.
+C'est ce qui règle la dérive mémoire de Valheim ; un redémarrage système reste
+à ajouter si les mises à jour de noyau doivent être prises en compte
+automatiquement.
+
+---
+
+### Statistiques de joueurs, sans aucun mod, le 2026-09-04
+
+Le journal du serveur suffit à mesurer l'essentiel. Ce qu'il contient
+réellement, vérifié sur trois jours de journal de cette machine :
+
+| Ligne du journal | Ce qu'elle donne |
+|---|---|
+| `Got connection SteamID 765611980…` | arrivée d'un joueur, avec son identifiant Steam |
+| `Got character ZDOID from Beware : 2503316426:7` | apparition, avec le **pseudo** |
+| `Got character ZDOID from Beware : 0:0` | **mort** — le `0:0` est la signature |
+| `Closing socket 765611980…` | départ, appariable à l'arrivée par le SteamID |
+| `Random event set:army_theelder` | raid de l'Ancien, **donc l'Ancien est vaincu** |
+| `Saved 302321 ZDOs` | poids du monde |
+| `Time 12345,6, day:154 …` | jour dans le monde |
+
+Deux trouvailles portent tout le reste :
+
+**Les raids datent la progression.** Valheim ne déclenche le raid d'un boss
+qu'une fois ce boss vaincu. Le journal ne dit rien des *global keys*, qui vivent
+dans le fichier de monde sans horodatage — mais la première occurrence de
+`army_theelder` donne une borne haute datée de la victoire sur l'Ancien. C'est
+indirect et il faut le présenter comme tel : « vaincu avant le … ».
+
+**Le pseudo et le SteamID n'apparaissent jamais sur la même ligne.** Le pseudo
+n'est écrit que sur les lignes ZDOID, le SteamID que sur les connexions. Le
+rapprochement se fait par la séquence : une apparition suit toujours de quelques
+secondes la connexion qui l'a provoquée. L'association n'est retenue que si
+**une seule** connexion est en attente dans la fenêtre de 180 s — sinon deux
+joueurs entrant ensemble produiraient une correspondance fausse.
+
+Deux scripts et un service :
+
+```bash
+sudo install -o root -g root -m 755 valheim-stats/collecte-valheim.py \
+  valheim-stats/stats-valheim.py /usr/local/bin/
+sudo install -o root -g root -m 644 valheim-stats/collecte-valheim.service \
+  /etc/systemd/system/
+sudo systemctl daemon-reload && sudo systemctl enable --now collecte-valheim
+stats-valheim.py            # rapport texte
+stats-valheim.py --json     # même chose pour la page Cockpit
+```
+
+Le collecteur tourne sous l'utilisateur `valheim` avec
+`SupplementaryGroups=systemd-journal` — sans ce groupe il ne peut pas lire le
+journal — et `StateDirectory=valheim-stats`, qui crée `/var/lib/valheim-stats`
+au bon propriétaire et fournit `STATE_DIRECTORY` au script.
+
+**Le collecteur relit tout le journal à chaque démarrage** au lieu de suivre un
+curseur. C'est volontaire : l'insertion est idempotente, donc une relecture ne
+crée pas de doublon, et le service se répare seul après une coupure ou une base
+supprimée. Pas de curseur à maintenir, pas d'état qui puisse se désynchroniser.
+
+**Le piège qui a été attrapé au test.** L'idempotence reposait d'abord sur une
+contrainte `UNIQUE (horodatage, type, joueur, steamid, detail)`. Elle ne
+marchait pas : dans SQLite, **deux `NULL` ne sont jamais considérés égaux dans
+une contrainte d'unicité**, et la plupart des lignes ont des colonnes nulles
+(pas de pseudo sur une connexion, pas de SteamID sur une mort). Chaque relecture
+dupliquait donc tout le journal. Remplacée par un index sur expressions :
+
+```sql
+CREATE UNIQUE INDEX idx_ev_unique ON evenements (
+  horodatage, type, COALESCE(joueur, ''), COALESCE(steamid, ''), COALESCE(detail, '')
+);
+```
+
+Relancer `collecte-valheim.py --rattrapage-seul` deux fois de suite doit
+annoncer « 0 nouveaux » la seconde fois. C'est le test.
+
+**Ce que le serveur ne peut pas savoir.** Les fichiers de personnage (`.fch`)
+vivent chez le joueur : compétences, morts cumulées et succès Steam sont hors
+de portée. Tout ce qui est mesuré ici l'est à l'échelle du monde et des sessions.
+
+---
+
+### Lire et fabriquer la seed d'un monde, le 2026-09-04
+
+Le serveur dédié n'a **pas** de paramètre `-seed` : lancé sur un nom de monde
+inexistant, il tire une seed au hasard. La méthode répandue consiste à créer le
+monde sur un PC client puis à copier les fichiers, ce qui suppose un joueur
+disponible et sur la bonne version du jeu.
+
+`monde-valheim/monde-valheim.py` évite ce détour en écrivant directement le
+`.fwl`, qui ne contient que des métadonnées — 48 octets :
+
+```bash
+monde-valheim.py lire /var/lib/valheim/donnees/worlds_local/Midgard.fwl
+monde-valheim.py creer Nouveau.fwl --monde Nouveau --seed HHcLC5acQt
+```
+
+Le format est un « package » Unity : entier de longueur, version de format,
+nom du monde, nom de la seed, seed entière, identifiant unique, version du
+générateur de monde, **un booléen `besoin_db`, puis un compteur de clés
+globales initiales**.
+
+**Les deux derniers champs ont d'abord été oubliés, et le serveur a refusé le
+fichier** — `Failed to load world with name "Essai", data error LoadError`,
+suivi d'une régénération silencieuse du monde avec une seed au hasard. Le piège
+est que la lecture *semblait* réussir : les champs précédents tombaient juste, et
+il restait simplement 5 octets non lus en queue. D'où le champ
+`octets_restants` dans la sortie de `lire` : **il doit valoir 0**, c'est le seul
+contrôle qui attrape ce genre d'erreur.
+
+Vérifié en conditions réelles sur un serveur jetable, port 2466, répertoire de
+sauvegarde séparé :
+
+```
+Load world: Fabrique (Fabrique)      <- accepté, aucun LoadError
+Fabrique.db                          <- 89 Ko, monde généré par le serveur
+monde                Fabrique
+seed                 HHcLC5acQt      <- ma seed, conservée
+besoin_db            True            <- passé de False à True tout seul
+```
+
+Le serveur a donc chargé le fichier fabriqué, généré le monde correspondant, et
+mis à jour `besoin_db` de lui-même. **On peut imposer la seed entièrement côté
+serveur**, sans passer par un PC client — ce que la documentation communautaire
+donne pourtant comme impossible.
+
+**La seed entière doit concorder avec le nom de seed.** Valheim stocke les deux,
+et c'est l'entier que le générateur utilise. L'entier se calcule par
+`GetStableHashCode()`, réimplémentée dans le script et **vérifiée contre le
+monde en place** : `m24VpSVsVw` donne bien `2007084186`. Cette vérification est
+le test à refaire si le format change.
+
+Relevé du monde actuel, à conserver comme référence avant la 1.0 :
+
+| | |
+|---|---|
+| monde | `Midgard` |
+| seed | `m24VpSVsVw` |
+| version de format | 37 |
+| **version du générateur** | **2** |
+
+Le dernier champ est le plus intéressant à l'approche du 9 septembre : **s'il
+passe à 3 avec la 1.0, la génération de monde a changé** et aucune seed
+conseillée avant le lancement n'est fiable. C'est une vérification objective,
+faisable en une commande sur un monde créé par la 1.0, là où la documentation
+communautaire ne fait que spéculer.
+
+---
+
+### Page Cockpit « Valheim — défis », le 2026-09-04
+
+Deuxième page du même module, deuxième entrée de menu dans `manifest.json`.
+Elle affiche les joueurs (sessions, temps de jeu, morts, morts par heure), le
+monde avec sa seed, la progression des boss, et les défis calculés.
+
+**Les défis sont mesurés, pas déclarés.** Un défi qu'on ne peut pas vérifier
+automatiquement finit en dispute : « pas de portail » ou « pacifiste » restent
+donc volontairement dehors. Ce qui est calculé depuis le journal :
+
+| Défi | Métrique |
+|---|---|
+| Intact depuis *boss* | morts enregistrées après le premier raid de ce boss |
+| Le plus solide | morts par heure de session — plus juste qu'un total brut, qui ne punirait que celui qui joue le plus |
+| Série en cours | temps écoulé depuis la dernière mort, en direct |
+| Rythme du groupe | écart entre les premiers raids de deux boss consécutifs |
+
+Le défi proposé par Bab-y — n'être jamais mort après avoir battu l'Ancien —
+correspond à la première ligne, généralisée à chaque boss dont on a la date.
+
+**La page ne demande aucun privilège**, contrairement aux cartes de la page
+principale qui utilisent `superuser: "require"`. C'est délibéré : une page de
+consultation ne devrait pas exiger l'accès administrateur. C'est ce qui a
+décidé de l'endroit où la seed est relevée — voir plus haut, le collecteur
+l'inscrit en base parce que lui seul peut lire `/var/lib/valheim` (0750).
+
+**Aucun `innerHTML` dans `stats.js`** : les pseudos viennent du journal du
+serveur, donc d'une source non maîtrisée. Tout passe par `createElement` et
+`textContent`.
+
+---
+
 ### Adresse IP fixée en statique, le 2026-09-04
 
 L'adresse `192.168.1.120` venait du DHCP de la box et n'était pas réservée.

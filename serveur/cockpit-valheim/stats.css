@@ -1,0 +1,25 @@
+/* Complements de style pour la page des defis. Fichier separe et non un
+   <style> en ligne : la CSP de Cockpit bloque tout inline, silencieusement. */
+
+.titre-section { margin: 1.5rem 0 .5rem; font-size: 1.25rem; }
+
+/* Le classement : un rang par ligne, la valeur alignee a droite pour que les
+   chiffres se comparent d'un coup d'oeil sans lire les libelles. */
+.rang { display: flex; align-items: baseline; gap: .5rem; padding: .35rem 0;
+  border-bottom: 1px solid var(--bord); }
+.rang:last-child { border-bottom: none; }
+.rang .place { color: var(--doux); font-size: .75rem; min-width: 1.5rem; }
+.rang .qui { font-weight: 500; }
+.rang .valeur { margin-left: auto; font-variant-numeric: tabular-nums;
+  font-weight: 700; }
+.rang .apres { color: var(--doux); font-size: .75rem; }
+
+.rang.tient .qui { color: var(--ok); }
+.rang.tient .valeur { color: var(--ok); }
+
+.badge { display: inline-block; padding: .05rem .4rem; border-radius: 999px;
+  font-size: .7rem; font-weight: 500; background: var(--ok);
+  color: var(--sur-marque); }
+
+.regle { color: var(--doux); font-size: .8rem; margin-bottom: .5rem; }
+.seed { font-family: RedHatMono, ui-monospace, monospace; }

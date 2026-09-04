@@ -1,11 +1,39 @@
 {
   "version": 0,
-  "requires": { "cockpit": "266" },
+  "requires": {
+    "cockpit": "266"
+  },
   "menu": {
     "index": {
       "label": "Valheim",
       "order": 25,
-      "keywords": [ { "matches": [ "valheim", "jeu", "joueurs", "monde", "sauvegarde" ] } ]
+      "keywords": [
+        {
+          "matches": [
+            "valheim",
+            "jeu",
+            "joueurs",
+            "monde",
+            "sauvegarde"
+          ]
+        }
+      ]
+    },
+    "stats": {
+      "label": "Valheim — défis",
+      "order": 26,
+      "keywords": [
+        {
+          "matches": [
+            "valheim",
+            "defis",
+            "statistiques",
+            "morts",
+            "boss",
+            "progression"
+          ]
+        }
+      ]
     }
   }
 }

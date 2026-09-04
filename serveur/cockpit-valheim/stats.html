@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Valheim — défis</title>
+<script src="../base1/cockpit.js"></script>
+<link rel="stylesheet" href="valheim.css">
+<link rel="stylesheet" href="stats.css">
+</head>
+<body>
+
+<div class="entete">
+  <div>
+    <h1>Statistiques et défis</h1>
+    <div class="resume" id="resume"><span>chargement…</span></div>
+  </div>
+  <div class="actions">
+    <button class="second" id="btn-actualiser">Actualiser</button>
+  </div>
+</div>
+
+<div class="grille">
+  <div class="carte large">
+    <h2>Joueurs <span class="compte" id="compte-joueurs"></span></h2>
+    <table id="joueurs"><tbody><tr><td class="vide">…</td></tr></tbody></table>
+    <div class="note">Les morts sont comptées par le serveur, à partir de son
+      journal. Compétences, succès Steam et inventaire vivent dans le fichier
+      de personnage, chez le joueur : le serveur ne les voit pas.</div>
+  </div>
+
+  <div class="carte">
+    <h2>Le monde</h2>
+    <dl id="monde"><dd class="vide">…</dd></dl>
+    <div class="note" id="note-generateur"></div>
+  </div>
+
+  <div class="carte">
+    <h2>Progression</h2>
+    <table id="progression"><tbody><tr><td class="vide">…</td></tr></tbody></table>
+    <div class="note">Déduite des raids : Valheim ne déclenche le raid d'un boss
+      qu'une fois ce boss vaincu. La date est donc une borne haute — « vaincu
+      avant le… ».</div>
+  </div>
+</div>
+
+<h2 class="titre-section">Défis</h2>
+<div class="grille" id="defis"></div>
+<div class="erreur" id="erreur"></div>
+
+<script src="stats.js"></script>
+</body>
+</html>
