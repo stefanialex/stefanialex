@@ -1020,12 +1020,21 @@ pouvoir être opposés à quelqu'un.
 Le fichier écrit par renommage atomique : une interruption ne doit pas laisser
 une configuration tronquée que plus rien ne lirait.
 
-**Deux pseudos restent à confirmer.** La feuille nomme les joueurs Lapin, Beny,
-Djoose et Baby ; le serveur connaît Beware, Brewtmoiminou, DjOsE et Bab-y.
-`Djoose → DjOsE` et `Baby → Bab-y` sont évidents ; `Lapin` et `Beny` se
-partagent `Beware` et `Brewtmoiminou`, sans certitude — d'où le `?` dans le
-fichier plutôt qu'une supposition silencieuse, puisque toute l'attribution des
-KPI en dépend.
+**La correspondance des noms**, confirmée par Alexandre le 2026-09-04. La
+feuille nomme les joueurs par leur surnom, le serveur ne connaît que les
+pseudos en jeu, et rien ne les relie automatiquement :
+
+| feuille | pseudo en jeu | Discord |
+|---|---|---|
+| Lapin | `Brewtmoiminou` | aixlelapin |
+| Beny | `Beware` | BenXL |
+| Djoose | `DjOsE` | Djoose |
+| Baby | `Bab-y` | Baby |
+
+`Djoose` et `Baby` étaient évidents ; `Lapin` et `Beny` se partageaient `Beware`
+et `Brewtmoiminou` sans certitude. La question a été posée plutôt que tranchée
+au feeling : toute l'attribution des KPI en dépendait, et une erreur aurait
+attribué huit morts à la mauvaise personne.
 
 ---
 
