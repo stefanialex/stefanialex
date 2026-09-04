@@ -5,59 +5,93 @@
 <title>Valheim</title>
 <script src="../base1/cockpit.js"></script>
 <style>
+/* Polices de Cockpit. Servies par cockpit-ws sous /cockpit/static/ ;
+   depuis /cockpit/$hash/valheim/ le chemin remonte de deux crans. */
+@font-face { font-family: RedHatText; font-weight: 400; font-style: normal; font-display: fallback;
+  src: url(../../static/fonts/RedHatText-Regular.woff2) format("woff2"); }
+@font-face { font-family: RedHatText; font-weight: 500; font-style: normal; font-display: fallback;
+  src: url(../../static/fonts/RedHatText-Medium.woff2) format("woff2"); }
+@font-face { font-family: RedHatText; font-weight: 700; font-style: normal; font-display: fallback;
+  src: url(../../static/fonts/RedHatText-Bold.woff2) format("woff2"); }
+@font-face { font-family: RedHatDisplay; font-weight: 400; font-style: normal; font-display: fallback;
+  src: url(../../static/fonts/RedHatDisplay-Regular.woff2) format("woff2"); }
+@font-face { font-family: RedHatDisplay; font-weight: 500; font-style: normal; font-display: fallback;
+  src: url(../../static/fonts/RedHatDisplay-Medium.woff2) format("woff2"); }
+
+/* Valeurs relevées dans les jetons PatternFly 6 de cockpit-system 362.
+   Ne pas les retoucher a l'oeil : les reextraire du CSS compile si Cockpit change de version. */
 :root {
-  --fond: #f2f2f2; --carte: #fff; --bord: #d2d2d2; --texte: #151515;
-  --doux: #6a6e73; --accent: #0066cc; --ok: #3e8635; --alerte: #f0ab00; --grave: #c9190b;
+  --fond: #f2f2f2; --carte: #ffffff; --bord: #c7c7c7;
+  --texte: #151515; --doux: #4d4d4d;
+  --marque: #0066cc; --marque-survol: #004d99; --sur-marque: #ffffff;
+  --ok: #3d7317; --alerte: #dca614; --grave: #b1380b;
+  --survol-doux: rgba(199, 199, 199, .25);
 }
-@media (prefers-color-scheme: dark) {
-  :root:not(.pf-v5-theme-light) {
-    --fond: #1b1d21; --carte: #292929; --bord: #444548; --texte: #e0e0e0;
-    --doux: #aaabac; --accent: #73bcf7; --ok: #5ba352; --alerte: #f4c145; --grave: #fe5142;
-  }
+html.pf-v6-theme-dark {
+  --fond: #151515; --carte: #292929; --bord: #a3a3a3;
+  --texte: #ffffff; --doux: #c7c7c7;
+  --marque: #92c5f9; --marque-survol: #b9dafc; --sur-marque: #1f1f1f;
+  --ok: #87bb62; --alerte: #ffcc17; --grave: #f0561d;
+  --survol-doux: rgba(199, 199, 199, .15);
 }
-html.pf-v5-theme-dark {
-  --fond: #1b1d21; --carte: #292929; --bord: #444548; --texte: #e0e0e0;
-  --doux: #aaabac; --accent: #73bcf7; --ok: #5ba352; --alerte: #f4c145; --grave: #fe5142;
-}
+
 * { box-sizing: border-box; }
 body {
-  margin: 0; padding: 16px; background: var(--fond); color: var(--texte);
-  font: 14px/1.5 "RedHatText", "Open Sans", -apple-system, system-ui, sans-serif;
+  margin: 0; padding: 1.5rem; background: var(--fond); color: var(--texte);
+  font-family: "Red Hat Text", RedHatText, Helvetica, Arial, sans-serif;
+  font-size: .875rem; font-weight: 400; line-height: 1.5;
 }
-h1 { font-size: 20px; font-weight: 500; margin: 0 0 2px; }
-h2 { font-size: 15px; font-weight: 500; margin: 0 0 12px; display: flex;
-     justify-content: space-between; align-items: baseline; gap: 8px; }
-h2 .compte { font-size: 12px; color: var(--doux); font-weight: 400; }
-.entete { display: flex; justify-content: space-between; align-items: center;
-          flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
-.maj { font-size: 12px; color: var(--doux); }
-.grille { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
-.carte { background: var(--carte); border: 1px solid var(--bord); border-radius: 6px; padding: 16px; }
+h1, h2 {
+  font-family: "Red Hat Display", RedHatDisplay, Helvetica, Arial, sans-serif;
+  font-weight: 500; line-height: 1.3; margin: 0;
+}
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1rem; margin-bottom: 1rem; display: flex;
+     justify-content: space-between; align-items: baseline; gap: .5rem; }
+h2 .compte { font-family: "Red Hat Text", RedHatText, sans-serif;
+             font-size: .75rem; font-weight: 400; color: var(--doux); text-align: right; }
+
+.entete { display: flex; justify-content: space-between; align-items: flex-start;
+          flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; }
+.resume { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem;
+          color: var(--doux); margin-top: .25rem; }
+.resume > span:not(:last-child)::after { content: "·"; margin-left: 1rem; color: var(--bord); }
+
+.grille { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+.carte { background: var(--carte); border: 1px solid var(--bord); border-radius: 16px; padding: 1.5rem; }
 .carte.large { grid-column: 1 / -1; }
+
 table { width: 100%; border-collapse: collapse; }
-th, td { text-align: left; padding: 6px 8px 6px 0; border-bottom: 1px solid var(--bord); }
-th { font-size: 11px; text-transform: uppercase; letter-spacing: .4px; color: var(--doux); font-weight: 500; }
+th, td { text-align: left; padding: .5rem .75rem .5rem 0; border-bottom: 1px solid var(--bord); }
+th { color: var(--doux); font-weight: 500; }
 tr:last-child td { border-bottom: none; }
-td.num { text-align: right; font-variant-numeric: tabular-nums; }
-dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin: 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+dl { display: grid; grid-template-columns: auto 1fr; gap: .5rem 1rem; margin: 0; }
 dt { color: var(--doux); }
 dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
-.pastille { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; }
-.pastille::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+.pastille { display: inline-flex; align-items: center; gap: .5rem; font-weight: 500; white-space: nowrap; }
+.pastille::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%;
+                    background: currentColor; flex: none; }
 .ok { color: var(--ok); } .alerte { color: var(--alerte); } .grave { color: var(--grave); }
-.doux { color: var(--doux); }
+.doux { color: var(--doux); font-weight: 400; }
+
 button {
-  font: inherit; padding: 6px 14px; border-radius: 4px; cursor: pointer;
-  border: 1px solid var(--accent); background: var(--accent); color: #fff;
+  font: inherit; font-size: .875rem; padding: .5rem 1.5rem; border-radius: 999px;
+  cursor: pointer; border: 1px solid transparent;
+  background: var(--marque); color: var(--sur-marque);
 }
-button.second { background: transparent; color: var(--accent); }
+button:hover { background: var(--marque-survol); }
+button.second { background: transparent; color: var(--marque); border-color: var(--marque); }
+button.second:hover { background: var(--survol-doux); }
 button:disabled { opacity: .5; cursor: not-allowed; }
-.actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.note { font-size: 12px; color: var(--doux); margin-top: 12px; }
-.erreur { color: var(--grave); font-size: 12px; margin-top: 8px; white-space: pre-wrap; }
+.actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+.note { font-size: .75rem; color: var(--doux); margin-top: 1rem; }
+.erreur { color: var(--grave); font-size: .75rem; margin-top: .5rem; white-space: pre-wrap; }
 .vide { color: var(--doux); font-style: italic; }
-.barre { height: 4px; border-radius: 2px; background: var(--bord); overflow: hidden; margin-top: 4px; }
-.barre > i { display: block; height: 100%; background: var(--accent); }
+.ip { font-size: .75rem; color: var(--doux); }
 </style>
 </head>
 <body>
@@ -65,7 +99,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 <div class="entete">
   <div>
     <h1>Serveur Valheim</h1>
-    <div class="maj" id="maj">chargement…</div>
+    <div class="resume" id="resume"><span>chargement…</span></div>
   </div>
   <div class="actions">
     <button class="second" id="btn-sauver">Sauvegarder maintenant</button>
@@ -118,6 +152,20 @@ const lance = (argv, sudo = "require") =>
 
 const nf = (n, d = 0) => n.toLocaleString("fr-FR", { maximumFractionDigits: d });
 
+/* ---------- thème : suivre le shell ----------
+   Cockpit ne pose pas la classe sur les pages tierces. Il enregistre le choix
+   dans localStorage["shell:style"] (auto | light | dark), partagé avec cette
+   iframe puisqu'elle est de même origine, et notifie par l'événement storage. */
+function majTheme() {
+  const choix = localStorage.getItem("shell:style") || "auto";
+  const sombre = choix === "dark" ||
+    (choix === "auto" && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+  document.documentElement.classList.toggle("pf-v6-theme-dark", sombre);
+}
+majTheme();
+window.addEventListener("storage", (e) => { if (e.key === "shell:style") majTheme(); });
+window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener("change", majTheme);
+
 function duree(ms) {
   if (!isFinite(ms) || ms < 0) return "—";
   const s = Math.floor(ms / 1000);
@@ -136,6 +184,19 @@ function classeLatence(ms) {
   return "grave";
 }
 
+/* ---------- bandeau de résumé ---------- */
+const etat = { actif: null, joueurs: null, zdos: null, maj: null };
+function majResume() {
+  const p = [];
+  if (etat.actif !== null)
+    p.push(`<span class="pastille ${etat.actif ? "ok" : "grave"}">${etat.actif ? "en service" : "à l'arrêt"}</span>`);
+  if (etat.joueurs !== null)
+    p.push(`<span>${etat.joueurs} joueur${etat.joueurs > 1 ? "s" : ""} en jeu</span>`);
+  if (etat.zdos !== null) p.push(`<span>${nf(etat.zdos)} objets dans le monde</span>`);
+  if (etat.maj) p.push(`<span>actualisé à ${etat.maj}</span>`);
+  $("resume").innerHTML = p.join("");
+}
+
 /* ---------- état du service ---------- */
 async function majService() {
   try {
@@ -145,6 +206,7 @@ async function majService() {
     const p = {};
     t.trim().split("\n").forEach((l) => { const i = l.indexOf("="); p[l.slice(0, i)] = l.slice(i + 1); });
     const actif = p.ActiveState === "active";
+    etat.actif = actif;
     const depuis = p.ExecMainStartTimestamp ? new Date(p.ExecMainStartTimestamp.replace(/^\w+ /, "")) : null;
     $("service").innerHTML = `
       <dt>État</dt><dd><span class="pastille ${actif ? "ok" : "grave"}">${actif ? "en service" : p.ActiveState}</span></dd>
@@ -184,6 +246,7 @@ async function majJournal() {
     const t = await lance(["journalctl", "-u", "valheim", "--since", "-12h", "--no-pager", "-o", "short-iso"]);
     const d = analyseJournal(t);
     const enligne = d.joueurs.filter((j) => j.enligne);
+    etat.joueurs = enligne.length; etat.zdos = d.zdos;
     $("compte-joueurs").textContent = enligne.length ? `${enligne.length} connecté${enligne.length > 1 ? "s" : ""}` : "";
     const tb = $("joueurs").querySelector("tbody");
     if (!d.joueurs.length) {
@@ -249,7 +312,7 @@ async function majReseau() {
     tb.innerHTML = `<tr><th>Appareil</th><th>Latence</th><th>Chemin</th>
         <th class="num">Envoyé</th><th class="num">Reçu</th></tr>` +
       lignes.map((l) => `<tr>
-        <td>${l.nom}<br><span class="doux" style="font-size:11px">${l.ip}</span></td>
+        <td>${l.nom}<br><span class="ip">${l.ip}</span></td>
         <td><span class="pastille ${classeLatence(l.ms)}">${l.ms === null ? "sans réponse" : nf(l.ms) + " ms"}</span></td>
         <td>${l.direct ? '<span class="ok">direct</span>' : '<span class="alerte">relais DERP</span>'}</td>
         <td class="num">${l.env === null ? '<span class="doux">…</span>' : nf(l.env) + " ko/s"}</td>
@@ -276,9 +339,9 @@ async function majSauvegardes() {
       return { u, suiv: isFinite(s) && s > 0 ? s * 1000 : null };
     });
     $("minuteries").querySelector("tbody").innerHTML =
-      `<tr><th>Tâche</th><th>Dans</th></tr>` + res.map((r) => `<tr>
+      `<tr><th>Tâche</th><th class="num">Dans</th></tr>` + res.map((r) => `<tr>
         <td>${etiquettes[r.u] || r.u}</td>
-        <td>${r.suiv ? duree(r.suiv - Date.now()) : '<span class="doux">—</span>'}</td></tr>`).join("");
+        <td class="num">${r.suiv ? duree(r.suiv - Date.now()) : '<span class="doux">—</span>'}</td></tr>`).join("");
 
     const t = await lance(["/bin/sh", "-c",
       "ls -1t /srv/ia/sauvegardes-valheim/*.tar.gz 2>/dev/null | head -6 | xargs -r stat -c '%n|%s|%Y'"]);
@@ -288,7 +351,7 @@ async function majSauvegardes() {
     });
     $("archives").querySelector("tbody").innerHTML = arch.length
       ? `<tr><th>Archive</th><th class="num">Taille</th><th class="num">Âge</th></tr>` +
-        arch.map((a) => `<tr><td style="font-size:12px">${a.nom}</td>
+        arch.map((a) => `<tr><td>${a.nom}</td>
           <td class="num">${octets(a.taille)}</td>
           <td class="num">${duree(Date.now() - a.date)}</td></tr>`).join("")
       : `<tr><td class="vide">Aucune archive lisible.</td></tr>`;
@@ -317,7 +380,8 @@ $("btn-sauver").onclick = async () => {
 /* ---------- boucle ---------- */
 async function tout() {
   await Promise.all([majService(), majJournal(), majSauvegardes()]);
-  $("maj").textContent = "actualisé à " + new Date().toLocaleTimeString("fr-FR");
+  etat.maj = new Date().toLocaleTimeString("fr-FR");
+  majResume();
 }
 tout();
 majReseau();
