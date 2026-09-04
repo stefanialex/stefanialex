@@ -91,16 +91,39 @@ CREATE TABLE IF NOT EXISTS joueurs (
 
 
 def monde_courant():
-    """Nom du monde en cours, lu dans le repertoire de sauvegarde.
+    """Nom du monde reellement charge, lu sur la ligne de commande du serveur.
 
-    /etc/valheim.env contient le mot de passe du serveur et n'est lisible que
-    par root ; le collecteur ne tourne pas en root. Le nom du monde se deduit
-    donc du fichier .fwl actif, qui n'a pas de suffixe de sauvegarde auto.
+    /etc/valheim.env contient le mot de passe et n'est lisible que par root ;
+    le collecteur ne tourne pas en root. Mais il tourne sous le meme
+    utilisateur que le serveur de jeu, donc /proc lui est ouvert -- et
+    l'argument -world y figure deja developpe.
+
+    C'est plus sur que de lister les .fwl : des qu'un ancien monde traine a
+    cote du nouveau, le classement alphabetique designe n'importe lequel des
+    deux. La ligne de commande, elle, ne peut pas se tromper.
     """
+    for pid in os.listdir("/proc"):
+        if not pid.isdigit():
+            continue
+        try:
+            with open("/proc/%s/cmdline" % pid, "rb") as f:
+                args = f.read().decode("utf-8", "replace").split("\0")
+        except OSError:
+            continue
+        if not args or "valheim_server" not in args[0]:
+            continue
+        if "-world" in args:
+            i = args.index("-world")
+            if i + 1 < len(args) and args[i + 1]:
+                return args[i + 1]
+    # Repli si le serveur est arrete : le .fwl le plus recemment ecrit, hors
+    # sauvegardes automatiques.
     try:
-        for f in sorted(os.listdir(SAVEDIR)):
-            if f.endswith(".fwl") and "_backup_auto-" not in f:
-                return f[:-4]
+        actifs = [f for f in os.listdir(SAVEDIR)
+                  if f.endswith(".fwl") and "_backup_auto-" not in f]
+        if actifs:
+            actifs.sort(key=lambda f: os.path.getmtime(os.path.join(SAVEDIR, f)))
+            return actifs[-1][:-4]
     except OSError:
         pass
     return None

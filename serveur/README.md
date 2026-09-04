@@ -678,6 +678,128 @@ serveur, donc d'une source non maîtrisée. Tout passe par `createElement` et
 
 ---
 
+### Bascule vers un monde neuf, automatisée, le 2026-09-04
+
+Prévu pour la 1.0 du 9 septembre : monde neuf, personnages neufs, compteurs de
+défis remis à zéro. Une commande, avec simulation par défaut :
+
+```bash
+sudo nouveau-monde-valheim.sh --nom Nordheim --seed HHcLC5acQt     # simulation
+sudo nouveau-monde-valheim.sh --nom Nordheim --seed HHcLC5acQt --confirm
+```
+
+Sans `--seed`, dix caractères sont tirés au hasard comme le fait le jeu.
+
+Ce que le script enchaîne : sauvegarde complète et vérifiée sur trois disques,
+arrêt propre du serveur (qui écrit le monde en s'arrêtant), déplacement des
+fichiers de l'ancien monde vers `anciens-mondes/`, fabrication du `.fwl` avec
+la seed choisie, bascule de `NOM_MONDE` dans `/etc/valheim.env`, redémarrage,
+puis **attente d'une preuve dans le journal** — la ligne `Load world: <nom>`,
+ou l'erreur de format. Il ne se déclare pas satisfait sur un simple code de
+retour.
+
+**Il refuse de tourner si un joueur est en jeu** (`--force` outrepasse). Le
+garde-fou a servi dès le premier essai : DjOsE était connecté.
+
+**Le champ `--generateur` est la précaution pour le 9 septembre.** Le script
+inscrit par défaut la version du générateur du monde actuel (2). Si la 1.0
+change ce nombre, le serveur refusera le fichier fabriqué — et le message
+d'erreur dit quoi faire : lire le `.fwl` d'un monde créé par la 1.0, puis
+relancer avec la bonne valeur. L'ancien monde reste intact dans
+`anciens-mondes/` en attendant.
+
+Les joueurs, eux, créent leur personnage eux-mêmes : le fichier `.fch` vit chez
+eux, le serveur n'y touche jamais.
+
+---
+
+### Le nom du monde ne se devine plus, le 2026-09-04
+
+Le collecteur déduisait le monde courant en listant les `.fwl` du répertoire de
+sauvegarde. Ça marchait avec un seul monde ; dès que l'ancien traîne à côté du
+nouveau, le classement alphabétique désigne n'importe lequel des deux — et les
+statistiques du monde neuf se seraient retrouvées étiquetées au nom de l'ancien.
+
+Le nom est maintenant lu sur la **ligne de commande du serveur**, dans
+`/proc/<pid>/cmdline`, où l'argument `-world` figure déjà développé. Le
+collecteur tourne sous le même utilisateur que le jeu, donc `/proc` lui est
+ouvert — là où `/etc/valheim.env`, qui contient le mot de passe, ne l'est pas.
+Repli sur le `.fwl` le plus récemment écrit si le serveur est arrêté.
+
+---
+
+### Événements publiés sur Discord, le 2026-09-04
+
+```bash
+sudo install -o root -g root -m 755 valheim-discord/notifie-discord-valheim.py /usr/local/bin/
+sudo install -o root -g root -m 644 valheim-discord/notifie-discord-valheim.{service,timer} /etc/systemd/system/
+sudo systemctl daemon-reload && sudo systemctl enable --now notifie-discord-valheim.timer
+```
+
+Arrivées, départs avec durée de session, morts avec le compte à jour, raids.
+Un passage par minute.
+
+**Le notifieur ne relit pas le journal : il consomme la base du collecteur.**
+Les deux morceaux restent indépendants — un seul code connaît le format des
+logs — et surtout le curseur n'avance qu'**après** publication réussie, donc
+une coupure réseau chez Discord ne fait perdre aucun événement.
+
+**Au premier démarrage, le curseur se cale sur le présent** sans rien publier.
+Sans cette précaution, tout l'historique du monde partirait d'un coup dans le
+salon. Au-delà de dix événements en retard, un résumé remplace la rafale.
+
+L'adresse du webhook vit dans `/etc/valheim-discord.conf`, **hors du dépôt** :
+c'est un secret, quiconque l'a peut écrire dans le salon. Le fichier est en
+`640 root:valheim`. Sans adresse configurée, le script sort en succès sans rien
+faire — il peut donc être armé avant que l'adresse existe, ce qui est le cas
+ici.
+
+Testé de bout en bout contre un faux salon local sur `127.0.0.1:8899`, avec les
+vrais événements de la base, plutôt que sur Discord :
+
+```
+🛡️  **Beware** arrive sur le serveur. (13:42)
+⚔️  Raid : l'armee de Bonemass attaque la base. (13:57)
+👋  **Beware** repart apres 52 min de jeu.
+```
+
+---
+
+### Cockpit joignable même si la box change l'adresse, le 2026-09-04
+
+Écrit et installé, **pas encore exécuté** : `cockpit-adresse-stable.sh --confirm`.
+
+Le problème : Cockpit écoute sur `192.168.1.120` en dur, adresse venue du DHCP,
+et la box est inaccessible donc aucune réservation n'est possible. Avec
+`FreeBind=yes`, le socket se lierait quand même à une adresse absente — Cockpit
+démarrerait sans être joignable, sans erreur.
+
+La solution : une **deuxième adresse fixe sur la même carte**, `192.168.1.253`,
+vérifiée libre par sonde ARP, et Cockpit écoute sur les deux. L'ancienne reste
+en place pour la redirection de ports du jeu, que seule la box pourrait changer.
+
+**Pourquoi pas le pare-feu.** L'autre approche — faire écouter Cockpit partout
+et refuser le port 9090 sur `tailscale0` — a été écartée pour une raison de
+vérifiabilité : depuis la machine, un appel à sa propre adresse Tailscale passe
+par la boucle locale et non par l'interface, donc **aucune commande locale ne
+peut prouver** que les PC des autres joueurs, pour lesquels le pare-feu
+autorise tous les ports sur le tailnet, n'atteignent pas le formulaire de
+connexion. En gardant une écoute liée à des adresses précises, la preuve
+redevient locale : `ss -tln | grep 9090` doit ne montrer que du `192.168.1.x`.
+
+**Deux raisons pour lesquelles ce script existe au lieu d'avoir été lancé.**
+D'abord `cockpit.service` a `Requires=cockpit.socket` : redémarrer le socket
+arrête Cockpit, et la console web par laquelle passait le travail avec lui.
+Ensuite la modification réseau a été refusée par le garde-fou de sécurité de
+l'outil, à juste titre s'agissant de la connectivité de la machine.
+
+Le script se vérifie donc lui-même — écoute effective sur les deux adresses,
+code 200 sur chacune, aucune écoute au-delà du réseau local — et **revient en
+arrière tout seul** si l'un de ces contrôles échoue, en restaurant le fichier
+d'écoute sauvegardé dans `/var/backups/`.
+
+---
+
 ### Adresse IP fixée en statique, le 2026-09-04
 
 L'adresse `192.168.1.120` venait du DHCP de la box et n'était pas réservée.

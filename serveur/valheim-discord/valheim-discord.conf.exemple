@@ -1,0 +1,11 @@
+# Adresse du webhook Discord ou publier les evenements du serveur Valheim.
+#
+# A creer dans Discord : Parametres du serveur -> Integrations -> Webhooks ->
+# Nouveau webhook, choisir le salon, puis « Copier l'URL du webhook ».
+#
+# Ce fichier est un secret : quiconque possede cette adresse peut ecrire dans
+# le salon. Il vit hors du depot, en /etc/valheim-discord.conf, lisible
+# seulement par root et par l'utilisateur valheim.
+#
+# Decommenter et coller l'adresse :
+#WEBHOOK=https://discord.com/api/webhooks/.../...

@@ -1,0 +1,12 @@
+[Unit]
+Description=Publication des evenements Valheim sur Discord, chaque minute
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+# Le declenchement ne doit pas se decaler quand une execution traine : c'est un
+# rythme regulier qu'on veut, pas un intervalle depuis la fin.
+AccuracySec=15s
+
+[Install]
+WantedBy=timers.target
