@@ -73,6 +73,7 @@ import json
 import re
 import struct
 import sys
+import zlib
 
 SIGNATURES = {base64.b64encode(bytes([v, 0, 0]))[:4]: v for v in range(99, 112)}
 B64 = set(b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/')
@@ -119,6 +120,31 @@ def entete(d):
     zdos, = struct.unpack_from('<i', d, 24)
     return {"version_format": version, "temps_total": round(temps, 2),
             "session": session, "prochain_identifiant": suivant, "zdos": zdos}
+
+
+def charge(chemin):
+    """Les octets du monde, decompresses si le format l'exige.
+
+    Deux formats coexistent depuis le 2026-09-09 :
+
+      avant la 1.0   « Midgard.db », un seul fichier, en clair
+      depuis         « Midgard/_main.1.db2 », un flux gzip precede d'un
+                     en-tete de seize octets -- version en int32, temps du
+                     monde en double, longueur du flux en int32 -- et suivi de
+                     quarante octets de pied.
+
+    Renvoie aussi l'en-tete quand il est lisible : celui du format 1.0 ne
+    contient que trois champs, alors que l'ancien en portait cinq.
+    """
+    d = open(chemin, 'rb').read()
+    if not chemin.endswith('.db2'):
+        return d, entete(d)
+    version, = struct.unpack_from('<i', d, 0)
+    temps, = struct.unpack_from('<d', d, 4)
+    taille, = struct.unpack_from('<i', d, 12)
+    brut = zlib.decompressobj(31).decompress(d[16:16 + taille])
+    return brut, {"version_format": version, "temps_total": round(temps, 2),
+                  "flux_compresse": taille, "decompresse": len(brut)}
 
 
 def lit_inventaire(b):
@@ -181,7 +207,7 @@ def inventaires(d):
 
 
 def resume(chemin):
-    d = open(chemin, 'rb').read()
+    d, tete = charge(chemin)
     invs, rejets = inventaires(d)
     stock = collections.Counter()
     par_artisan = collections.Counter()
@@ -203,7 +229,7 @@ def resume(chemin):
                 plats[a] += 1
             if o["objet"].startswith("Arrow"):
                 fleches[a] += 1
-    return {"entete": entete(d),
+    return {"entete": tete,
             "inventaires_lus": len(invs), "blobs_rejetes": rejets,
             "stock": dict(stock.most_common()),
             "fabrique_par": dict(par_artisan.most_common()),
@@ -226,9 +252,17 @@ def main():
         print(json.dumps(r, ensure_ascii=False, indent=1))
         return 0
     e = r["entete"]
-    print("format %d · %d ZDOs · temps total %.0f s · %d inventaires lus "
-          "(%d blobs ecartes)" % (e["version_format"], e["zdos"], e["temps_total"],
-                                  r["inventaires_lus"], r["blobs_rejetes"]))
+    # L'en-tete de la 1.0 ne porte plus le nombre de ZDOs ni l'identifiant de
+    # session : on n'affiche que ce qui est present.
+    bouts = ["format %d" % e["version_format"]]
+    if e.get("zdos") is not None:
+        bouts.append("%d ZDOs" % e["zdos"])
+    if e.get("decompresse") is not None:
+        bouts.append("%d ko decompresses" % (e["decompresse"] // 1024))
+    bouts.append("temps total %.0f s" % e["temps_total"])
+    bouts.append("%d inventaires lus (%d blobs ecartes)"
+                 % (r["inventaires_lus"], r["blobs_rejetes"]))
+    print(" · ".join(bouts))
     for titre, cle in (("Objets fabriqués et encore stockés", "fabrique_par"),
                        ("Plats", "plats_par"), ("Flèches", "fleches_par")):
         if r[cle]:
