@@ -104,6 +104,9 @@ BANAL = {"Prairies": "Dégagé", "Forêt Noire": "Dégagé", "Plaines": "Dégag�
          "Ashlands": "Pluie de cendres", "Grand Nord": "Neige"}
 
 
+METEO_VALIDEE = False
+
+
 def champ_meteo(d):
     """Le bulletin : ce qu'il fait, puis ce qui sort de l'ordinaire ensuite.
 
@@ -113,6 +116,22 @@ def champ_meteo(d):
     vide. Annoncer « brouillard a 20h13 » serait faux d'une dizaine de minutes,
     comme constate le 2026-09-09. La sequence, elle, est exacte.
     """
+    # Coupe tant que la prevision n'est pas validee. Le 2026-09-09 a 19h02, le
+    # modele annoncait « degage » dans les Prairies pour les periodes 22, 23 et
+    # 24, sous chacune de ses trois variantes de generateur -- Alexandre y
+    # voyait de la pluie. Ce n'est pas un desaccord de detail : le generateur ne
+    # reproduit pas celui d'Unity. Le chiffre qui le prouve : a la periode 23 le
+    # tirage vaut 0,857 sur 29, et un tirage aussi bas selectionne forcement la
+    # PREMIERE entree de la liste du biome ; pour que ce soit la pluie, il
+    # faudrait qu'elle soit en tete d'une liste ou elle ne pese que 3 %. Aucun
+    # reordonnancement ne sauve le modele.
+    #
+    # Un bulletin faux publie a quatre personnes est pire que pas de bulletin :
+    # elles partiraient en mer sur une prevision de temps clair. On rallumera
+    # quand des observations auront permis de retrouver le vrai generateur --
+    # chaque couple (periode, biome, temps observe) le contraint.
+    if not METEO_VALIDEE:
+        return None
     monde = d.get("monde")
     if not monde:
         return None
