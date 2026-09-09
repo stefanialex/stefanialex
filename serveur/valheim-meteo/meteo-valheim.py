@@ -69,6 +69,15 @@ from datetime import datetime, timedelta
 
 DUREE = 666.0          # m_environmentDuration, en secondes de temps de monde
 
+# Ce programme est appelable par lapserv sous le compte valheim, via une regle
+# sudoers. Cette regle l'autorise avec n'importe quels arguments, parce que
+# borner un chemin par des jokers dans un fichier sudoers marche mal -- « * » y
+# traverse les « / », donc « .../worlds_local/../../../etc/shadow » passerait.
+# La limite est donc posee ici, ou elle peut etre exacte : le chemin demande
+# doit se resoudre a l'interieur du dossier des mondes. Le programme n'ecrit
+# rien et n'imprime que des noms de temps et des horaires.
+RACINE_AUTORISEE = "/var/lib/valheim/donnees/worlds_local"
+
 # Poids entiers reconstituees depuis les pourcentages publies. Le nom entre
 # parentheses est celui qu'affiche la console du jeu (« env <nom> »), pour
 # qu'on puisse verifier a la main.
@@ -203,6 +212,14 @@ def main():
     if o.temps is not None:
         temps, mesure = o.temps, datetime.now()
     elif o.monde:
+        vrai = os.path.realpath(o.monde)
+        racine = os.path.realpath(RACINE_AUTORISEE)
+        # Autorise aussi hors racine quand on n'est pas passe par sudo : lire
+        # une archive extraite pour verifier une sequence est legitime, et sans
+        # privilege il n'y a rien a proteger.
+        if os.environ.get("SUDO_USER") and not (
+                vrai == racine or vrai.startswith(racine + os.sep)):
+            sys.exit("sous sudo, --monde doit rester dans %s" % RACINE_AUTORISEE)
         temps, mesure = temps_du_monde(o.monde)
         if temps is None:
             sys.exit("aucun fichier de monde lisible dans %s" % o.monde)

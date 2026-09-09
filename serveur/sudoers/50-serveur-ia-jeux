@@ -178,7 +178,7 @@ Cmnd_Alias SRV_MINUTERIES = \
     /usr/bin/systemctl restart redemarrage-machine.timer
 
 # ---------------------------------------------------------------------------
-# Les deux appels « en tant que valheim » dont lapserv a besoin
+# Les trois appels « en tant que valheim » dont lapserv a besoin
 # ---------------------------------------------------------------------------
 # Partout ailleurs dans le projet, c'est systemd qui lance en root et sudo
 # n'intervient pas. Ces deux-la sont les exceptions, et la cible est « valheim »
@@ -221,11 +221,27 @@ Cmnd_Alias SRV_CHANTIERS = \
     /usr/local/bin/chantier-valheim.py qui *,  \
     /usr/local/bin/chantier-valheim.py pseudo *
 
+# 3. La lecture de la meteo sur le monde vivant.
+#
+# La meteo de Valheim ne depend que du temps ecoule du monde, qui est ecrit
+# dans l'en-tete du fichier de contenu. Ce fichier n'est lisible que par
+# valheim, et une archive ne convient pas : le temps du monde n'avance pas a la
+# vitesse du temps reel -- le serveur accelere la nuit quand il est vide --
+# donc une reference vieille de deux heures s'ecarte de plus de dix minutes.
+#
+# Le programme est autorise avec n'importe quel argument, et c'est delibere :
+# borner un chemin par des jokers dans un fichier sudoers marche mal, « * » y
+# traversant les « / ». La limite est posee DANS le programme, ou elle peut
+# etre exacte -- il refuse tout chemin qui ne se resout pas sous
+# /var/lib/valheim/donnees/worlds_local quand il est appele via sudo. Il
+# n'ecrit rien et n'imprime que des noms de temps et des horaires.
+Cmnd_Alias SRV_METEO = /usr/local/bin/meteo-valheim.py *
+
 # ---------------------------------------------------------------------------
 # Les regles
 # ---------------------------------------------------------------------------
 lapserv ALL=(root) NOPASSWD: SRV_DIAG, SRV_JOUR_J_AUDIT, SRV_UNITES, SRV_MINUTERIES
-lapserv ALL=(valheim) NOPASSWD: SRV_BOT_REPONSE, SRV_CHANTIERS
+lapserv ALL=(valheim) NOPASSWD: SRV_BOT_REPONSE, SRV_CHANTIERS, SRV_METEO
 
 # ---------------------------------------------------------------------------
 # Volontairement ABSENT, avec la raison
