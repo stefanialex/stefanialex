@@ -81,6 +81,12 @@ MOTIFS = [
     ("donjon", re.compile(r"^Generating (DG_\w+)\(Clone\), Seed: .*$"), "detail"),
 ]
 
+# « Load world: NordheimV1 (NordheimV1) » : le serveur annonce le monde qu'il
+# charge. Ce n'est pas un evenement de joueur, donc ce motif ne figure pas dans
+# MOTIFS -- il sert a savoir, en rejouant le journal, a quel monde appartient
+# chaque ligne.
+CHARGE_MONDE = re.compile(r"^Load world: (\S+)")
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS evenements (
   id          INTEGER PRIMARY KEY,
@@ -319,25 +325,67 @@ def relie_pseudos(cx):
 
 
 def enregistre(cx, monde, lot):
+    """Insere un lot. « monde » peut etre un nom, ou une liste parallele au lot.
+
+    La liste sert au rattrapage, qui rejoue un journal traversant plusieurs
+    mondes : chaque ligne doit porter le monde charge a ce moment-la, et non
+    celui d'aujourd'hui.
+    """
     avant = cx.execute("SELECT count(*) FROM evenements").fetchone()[0]
+    if isinstance(monde, (list, tuple)):
+        mondes = list(monde)
+    else:
+        mondes = [monde] * len(lot)
     cx.executemany(
         "INSERT OR IGNORE INTO evenements "
         "(horodatage, monde, type, joueur, steamid, detail) VALUES (?, ?, ?, ?, ?, ?)",
-        [(ts, monde, typ, j, sid, d) for (ts, typ, j, sid, d) in lot],
+        [(ts, m, typ, j, sid, d)
+         for (ts, typ, j, sid, d), m in zip(lot, mondes)],
     )
     cx.commit()
     return cx.execute("SELECT count(*) FROM evenements").fetchone()[0] - avant
 
 
 def rattrapage(cx, depuis):
+    """Rejoue le journal, en suivant les changements de monde qu'il annonce.
+
+    Etiqueter tout le lot avec le monde du jour etait faux, et le silence de
+    cette faute est instructif : tant qu'un motif existait deja, l'index unique
+    ecartait les doublons et les originaux gardaient leur bon monde. Mais le
+    jour ou l'on AJOUTE un motif -- les donjons, le 2026-09-09 -- tout
+    l'historique s'inserait sous le monde courant. 149 entrees de donjon de
+    Midgard se sont ainsi retrouvees attribuees a NordheimV1, cree le meme jour
+    a 15h19.
+
+    Les lignes qui precedent le premier « Load world » du journal recoivent ce
+    premier monde : un journal commence toujours par un demarrage de serveur,
+    et l'attribution la plus probable est celle du monde qu'il ouvre.
+    """
     monde = monde_courant()
     cmd = ["journalctl", "-u", "valheim", "-o", "cat", "--no-pager"]
     if depuis:
         cmd += ["--since", depuis]
     sortie = subprocess.run(cmd, capture_output=True, text=True, errors="replace")
-    lot = [e for e in (analyse(l) for l in sortie.stdout.splitlines()) if e]
+
+    lot, mondes = [], []
+    courant = None
+    for ligne in sortie.stdout.splitlines():
+        m = PREFIXE.match(ligne.rstrip())
+        if m:
+            c = CHARGE_MONDE.match(m.group(7))
+            if c:
+                courant = c.group(1)
+                continue
+        e = analyse(ligne)
+        if e:
+            lot.append(e)
+            mondes.append(courant)
+    # Les lignes d'avant le premier « Load world » heritent de celui-ci.
+    premier = next((m for m in mondes if m), monde)
+    mondes = [m or premier for m in mondes]
+
     releve_monde(cx, monde)
-    return len(lot), enregistre(cx, monde, lot)
+    return len(lot), enregistre(cx, mondes, lot)
 
 
 def suit(cx):
