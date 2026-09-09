@@ -163,7 +163,13 @@ def bilan(d):
     if sc:
         champs.append({"name": "🏅  Succès Steam", "value": sc, "inline": False})
 
-    return {"title": "🌙  Bilan du soir", "description": " · ".join(tete),
+    # Le titre suivait l'usage et non l'heure : un bilan republie a midi par
+    # « !bilan » s'annoncait « du soir ». Il y en a eu un le 2026-09-09 a 12h11.
+    h = datetime.datetime.now().hour
+    quand = ("🌙  Bilan du soir" if h >= 17 else
+             "🌅  Bilan du matin" if h < 12 else
+             "☀️  Bilan de la journée")
+    return {"title": quand, "description": " · ".join(tete),
             "color": VERT, "fields": champs,
             "footer": {"text": "relevé à %s · `!stats` pour le détail"
                                % (d.get("genere") or "")[11:16]}}
@@ -180,7 +186,7 @@ def main():
     d = json.loads(r.stdout)
     if not (d.get("joueurs") or d.get("kpi")):
         return 0  # rien a dire
-    corps = json.dumps({"embeds": [bilan(d)],
+    corps = json.dumps({"embeds": [bilan(d)], "username": "Claudo Le Viking",
                         "allowed_mentions": {"parse": []}}).encode()
     req = urllib.request.Request(url, data=corps, headers={
         "Content-Type": "application/json", "User-Agent": AGENT})

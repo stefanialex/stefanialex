@@ -182,8 +182,18 @@ def message(cx, ev):
 AGENT = "valheim-serveur/1.0 (collecteur de statistiques auto-heberge)"
 
 
+# Le webhook affiche par defaut le nom configure cote Discord (« Claudio »),
+# alors que les reponses aux commandes arrivent sous celui de l'application bot
+# (« Claudo Le Viking »). Deux noms pour le meme interlocuteur, ce qui n'aide
+# personne. On force donc celui du bot, seul choix possible sans passer par le
+# portail developpeur Discord -- le nom de l'application, lui, ne se change
+# que la-bas.
+NOM_AFFICHE = "Claudo Le Viking"
+
+
 def publie(url, texte):
-    corps = json.dumps({"content": texte, "allowed_mentions": {"parse": []}}).encode()
+    corps = json.dumps({"content": texte, "username": NOM_AFFICHE,
+                        "allowed_mentions": {"parse": []}}).encode()
     requete = urllib.request.Request(url, data=corps, headers={
         "Content-Type": "application/json", "User-Agent": AGENT})
     with urllib.request.urlopen(requete, timeout=15) as r:
