@@ -265,15 +265,42 @@ faux.
 
 ### Le piège permanent de cette machine
 
-> **Levé le 2026-08-28.** `/etc/sudoers.d/99-lapserv-nopasswd` accorde
-> `lapserv ALL=(ALL) NOPASSWD: ALL` : `sudo -n` fonctionne désormais depuis un
-> contexte non interactif, et `pkexec` n'est plus nécessaire. La raison est
-> l'usage, pas le confort — chaque `pkexec` ouvrait une fenêtre polkit sur
-> l'écran physique, à valider au mot de passe, une par commande. Le revers est
-> assumé : tout processus tournant sous `lapserv` peut devenir root sans
-> authentification. Pour revenir en arrière,
-> `sudo rm /etc/sudoers.d/99-lapserv-nopasswd`, et le paragraphe ci-dessous
-> redevient vrai.
+> **Levé le 2026-08-28, puis resserré le 2026-09-09.** Ce piège a connu trois
+> états, et seul le troisième est vrai aujourd'hui.
+>
+> 1. À l'origine, `sudo` exigeait un tty : tout passait par `pkexec`, une
+>    fenêtre polkit à valider sur l'écran physique par commande. Le paragraphe
+>    ci-dessous décrit cet état.
+> 2. Le 2026-08-28, `/etc/sudoers.d/99-lapserv-nopasswd` a accordé
+>    `lapserv ALL=(ALL) NOPASSWD: ALL`. `pkexec` a cessé d'être nécessaire, au
+>    prix assumé que tout processus tournant sous `lapserv` devenait root sans
+>    authentification.
+> 3. Le 2026-09-09, ce `NOPASSWD: ALL` a été désactivé au profit d'une liste
+>    blanche, [`sudoers/50-serveur-ia-jeux`](sudoers/50-serveur-ia-jeux). Le
+>    fichier de l'étape 2 est conservé sous
+>    `/etc/sudoers.d/99-lapserv-nopasswd.desactive-2026-09-09` — `sudo` ignore
+>    les noms contenant un point, donc il est inerte tout en restant lisible.
+>
+> **Ce qui marche sans mot de passe depuis l'étape 3 :** démarrer, arrêter,
+> relancer les unités du projet nommées une par une, l'audit de la bascule 1.0
+> (`--verifier`, `--controle`), et quatre diagnostics matériels qui exigent
+> vraiment root (`ufw status`, `smartctl`, `dmidecode`, `blkid`).
+>
+> **Ce qui demande le mot de passe :** tout le reste, dont `install`, `tee`,
+> `cp`, `apt`, `systemctl daemon-reload`/`enable`, le redémarrage de la
+> machine, la bascule réelle du monde, et la lecture des fichiers de secrets.
+> `lapserv` reste dans le groupe `sudo`, donc rien n'est devenu impossible :
+> c'est un humain qui l'autorise, depuis un terminal ou depuis Cockpit.
+>
+> **Trois conséquences pratiques**, à connaître avant d'être surpris :
+> `journalctl` et `systemctl status` n'ont jamais eu besoin de sudo ici
+> (`lapserv` est dans le groupe `adm`), donc rien n'y change ; dans Cockpit,
+> activer « accès administrateur » demande maintenant le mot de passe une fois
+> par session ; et l'installation d'une nouvelle unité du projet demande le mot
+> de passe, puis l'ajout de son nom à la liste blanche.
+>
+> **Pour revenir en arrière**, avec le mot de passe :
+> `sudo mv /etc/sudoers.d/99-lapserv-nopasswd.desactive-2026-09-09 /etc/sudoers.d/99-lapserv-nopasswd`
 
 **`sudo` était inutilisable sans terminal** : il exige un tty pour son mot de
 passe. Toute commande privilégiée lancée depuis un contexte non interactif devait

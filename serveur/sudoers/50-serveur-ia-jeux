@@ -1,0 +1,204 @@
+# /etc/sudoers.d/50-serveur-ia-jeux
+#
+# Ce que lapserv peut faire en root SANS mot de passe. Tout le reste passe par
+# « %sudo ALL=(ALL:ALL) ALL » du sudoers principal, donc reste possible avec le
+# mot de passe, depuis un terminal ou l'interface Cockpit.
+#
+# Pourquoi cette liste existe : Claude Code n'a pas de terminal interactif et
+# ne peut pas repondre a une invite de mot de passe. Sans dispense, il ne peut
+# pas exploiter le serveur. Avec « NOPASSWD: ALL » (l'ancien
+# 99-lapserv-nopasswd), n'importe quel processus tournant sous lapserv devenait
+# root sans rien demander a personne. Cette liste est le juste milieu :
+# l'exploitation courante est automatisable, l'installation et la destruction
+# demandent un humain devant la machine.
+#
+# Installer :
+#   sudo install -m 0440 -o root -g root <ce fichier> /etc/sudoers.d/50-serveur-ia-jeux
+# Verifier AVANT de fermer le terminal :
+#   sudo visudo -c
+#
+# ---------------------------------------------------------------------------
+# Ce qui n'a PAS besoin de regle, et qu'il ne faut donc pas rajouter
+# ---------------------------------------------------------------------------
+# journalctl        lapserv est dans le groupe « adm » : il lit deja tout le
+#                   journal sans sudo. Une regle ici serait du bruit.
+# systemctl status / is-active / is-enabled / show / list-units / list-timers
+#                   ne demandent aucun privilege.
+# ss, lsblk, nvidia-smi, tailscale status
+#                   fonctionnent deja sans root sur cette machine (verifie).
+# stats-valheim.py  lit /var/lib/valheim-stats, accessible a lapserv. C'est
+#                   d'ailleurs comme ca que la page Cockpit l'appelle.
+
+# ---------------------------------------------------------------------------
+# Diagnostic materiel qui, lui, exige vraiment root
+# ---------------------------------------------------------------------------
+Cmnd_Alias SRV_DIAG = \
+    /usr/sbin/ufw status, \
+    /usr/sbin/ufw status *, \
+    /usr/sbin/dmidecode, \
+    /usr/sbin/dmidecode *, \
+    /usr/sbin/blkid, \
+    /usr/sbin/blkid *, \
+    /usr/sbin/smartctl -H *, \
+    /usr/sbin/smartctl -i *, \
+    /usr/sbin/smartctl -a *, \
+    /usr/sbin/smartctl -x *, \
+    /usr/sbin/smartctl --scan
+
+# ---------------------------------------------------------------------------
+# Bascule Valheim 1.0 : l'audit seulement
+# ---------------------------------------------------------------------------
+# --verifier ne modifie rien, --controle compare les buildid. La bascule reelle
+# (--maj, --monde, --tout, --retour-arriere, --confirm) n'est PAS ici : elle se
+# declenche toute seule via guette-valheim-1.0.timer, qui tourne en root sous
+# systemd et n'a donc que faire de sudo. La lancer a la main est un acte
+# delibere : qu'elle demande le mot de passe est exactement ce qu'on veut.
+# Note : sudo compare la ligne de commande entiere. « --verifier --confirm »
+# ne correspond a aucune entree ci-dessous, donc sera refuse.
+Cmnd_Alias SRV_JOUR_J_AUDIT = \
+    /usr/local/bin/jour-j-valheim.sh --verifier, \
+    /usr/local/bin/jour-j-valheim.sh --controle
+
+# ---------------------------------------------------------------------------
+# Les unites du projet, nommees une par une
+# ---------------------------------------------------------------------------
+# Pas de « systemctl start * » : le joker autoriserait n'importe quelle unite.
+# Un « systemctl start <unite>.service » suffit pour relancer une sauvegarde,
+# republier le bilan ou forcer un releve, ce qui couvre l'exploitation courante
+# sans jamais executer de code arbitraire.
+Cmnd_Alias SRV_UNITES = \
+    /usr/bin/systemctl start valheim.service, \
+    /usr/bin/systemctl stop valheim.service, \
+    /usr/bin/systemctl restart valheim.service, \
+    /usr/bin/systemctl reset-failed valheim.service, \
+    /usr/bin/systemctl start collecte-valheim.service, \
+    /usr/bin/systemctl stop collecte-valheim.service, \
+    /usr/bin/systemctl restart collecte-valheim.service, \
+    /usr/bin/systemctl reset-failed collecte-valheim.service, \
+    /usr/bin/systemctl start sauvegarde-valheim.service, \
+    /usr/bin/systemctl stop sauvegarde-valheim.service, \
+    /usr/bin/systemctl restart sauvegarde-valheim.service, \
+    /usr/bin/systemctl reset-failed sauvegarde-valheim.service, \
+    /usr/bin/systemctl start sauvegarde-valheim-hors-site.service, \
+    /usr/bin/systemctl stop sauvegarde-valheim-hors-site.service, \
+    /usr/bin/systemctl restart sauvegarde-valheim-hors-site.service, \
+    /usr/bin/systemctl reset-failed sauvegarde-valheim-hors-site.service, \
+    /usr/bin/systemctl start bilan-discord-valheim.service, \
+    /usr/bin/systemctl stop bilan-discord-valheim.service, \
+    /usr/bin/systemctl restart bilan-discord-valheim.service, \
+    /usr/bin/systemctl reset-failed bilan-discord-valheim.service, \
+    /usr/bin/systemctl start notifie-discord-valheim.service, \
+    /usr/bin/systemctl stop notifie-discord-valheim.service, \
+    /usr/bin/systemctl restart notifie-discord-valheim.service, \
+    /usr/bin/systemctl reset-failed notifie-discord-valheim.service, \
+    /usr/bin/systemctl start lit-discord-valheim.service, \
+    /usr/bin/systemctl stop lit-discord-valheim.service, \
+    /usr/bin/systemctl restart lit-discord-valheim.service, \
+    /usr/bin/systemctl reset-failed lit-discord-valheim.service, \
+    /usr/bin/systemctl start file-claude-valheim.service, \
+    /usr/bin/systemctl stop file-claude-valheim.service, \
+    /usr/bin/systemctl restart file-claude-valheim.service, \
+    /usr/bin/systemctl reset-failed file-claude-valheim.service, \
+    /usr/bin/systemctl start cles-monde-valheim.service, \
+    /usr/bin/systemctl stop cles-monde-valheim.service, \
+    /usr/bin/systemctl restart cles-monde-valheim.service, \
+    /usr/bin/systemctl reset-failed cles-monde-valheim.service, \
+    /usr/bin/systemctl start succes-steam-valheim.service, \
+    /usr/bin/systemctl stop succes-steam-valheim.service, \
+    /usr/bin/systemctl restart succes-steam-valheim.service, \
+    /usr/bin/systemctl reset-failed succes-steam-valheim.service, \
+    /usr/bin/systemctl start guette-valheim-1.0.service, \
+    /usr/bin/systemctl stop guette-valheim-1.0.service, \
+    /usr/bin/systemctl restart guette-valheim-1.0.service, \
+    /usr/bin/systemctl reset-failed guette-valheim-1.0.service, \
+    /usr/bin/systemctl start redemarrage-valheim.service, \
+    /usr/bin/systemctl stop redemarrage-valheim.service, \
+    /usr/bin/systemctl restart redemarrage-valheim.service, \
+    /usr/bin/systemctl reset-failed redemarrage-valheim.service
+
+# Les minuteries : demarrer, arreter, relancer. Pas « enable » ni « disable »,
+# qui relevent de l'installation et modifient l'etat au prochain demarrage.
+Cmnd_Alias SRV_MINUTERIES = \
+    /usr/bin/systemctl start sauvegarde-valheim.timer, \
+    /usr/bin/systemctl stop sauvegarde-valheim.timer, \
+    /usr/bin/systemctl restart sauvegarde-valheim.timer, \
+    /usr/bin/systemctl start sauvegarde-valheim-hors-site.timer, \
+    /usr/bin/systemctl stop sauvegarde-valheim-hors-site.timer, \
+    /usr/bin/systemctl restart sauvegarde-valheim-hors-site.timer, \
+    /usr/bin/systemctl start bilan-discord-valheim.timer, \
+    /usr/bin/systemctl stop bilan-discord-valheim.timer, \
+    /usr/bin/systemctl restart bilan-discord-valheim.timer, \
+    /usr/bin/systemctl start notifie-discord-valheim.timer, \
+    /usr/bin/systemctl stop notifie-discord-valheim.timer, \
+    /usr/bin/systemctl restart notifie-discord-valheim.timer, \
+    /usr/bin/systemctl start lit-discord-valheim.timer, \
+    /usr/bin/systemctl stop lit-discord-valheim.timer, \
+    /usr/bin/systemctl restart lit-discord-valheim.timer, \
+    /usr/bin/systemctl start file-claude-valheim.timer, \
+    /usr/bin/systemctl stop file-claude-valheim.timer, \
+    /usr/bin/systemctl restart file-claude-valheim.timer, \
+    /usr/bin/systemctl start cles-monde-valheim.timer, \
+    /usr/bin/systemctl stop cles-monde-valheim.timer, \
+    /usr/bin/systemctl restart cles-monde-valheim.timer, \
+    /usr/bin/systemctl start succes-steam-valheim.timer, \
+    /usr/bin/systemctl stop succes-steam-valheim.timer, \
+    /usr/bin/systemctl restart succes-steam-valheim.timer, \
+    /usr/bin/systemctl start guette-valheim-1.0.timer, \
+    /usr/bin/systemctl stop guette-valheim-1.0.timer, \
+    /usr/bin/systemctl restart guette-valheim-1.0.timer, \
+    /usr/bin/systemctl start redemarrage-valheim.timer, \
+    /usr/bin/systemctl stop redemarrage-valheim.timer, \
+    /usr/bin/systemctl restart redemarrage-valheim.timer, \
+    /usr/bin/systemctl start redemarrage-machine.timer, \
+    /usr/bin/systemctl stop redemarrage-machine.timer, \
+    /usr/bin/systemctl restart redemarrage-machine.timer
+
+# ---------------------------------------------------------------------------
+# La regle
+# ---------------------------------------------------------------------------
+lapserv ALL=(root) NOPASSWD: SRV_DIAG, SRV_JOUR_J_AUDIT, SRV_UNITES, SRV_MINUTERIES
+
+# ---------------------------------------------------------------------------
+# Volontairement ABSENT, avec la raison
+# ---------------------------------------------------------------------------
+# install, tee, cp, mv, ln, chown, chmod, sed -i, dd
+#   Ecriture arbitraire en root : autoriser l'un d'eux revient a NOPASSWD:ALL,
+#   puisqu'il suffit d'ecrire dans /etc/sudoers.d. C'est le piege principal.
+#
+# apt, apt-get, dpkg, snap
+#   Un paquet execute ses propres scripts de post-installation en root. Meme
+#   conclusion.
+#
+# bash, sh, python3, awk, find -exec, systemd-run, nice, ionice, env
+#   Tous permettent de lancer autre chose. « env » et « nice » sont les moins
+#   evidents et les plus tentants : ils etaient dans la liste des permissions
+#   Claude Code, ils en ont ete retires le 2026-09-04 pour cette raison.
+#
+# systemctl daemon-reload, enable, disable, link, edit, mask
+#   Installation, pas exploitation. « edit » et « link » permettent en plus de
+#   faire executer un fichier arbitraire par systemd, donc en root.
+#
+# systemctl start redemarrage-machine.service
+#   Redemarre la machine. Le redemarrage mensuel se declenche seul via sa
+#   minuterie ; a la main, qu'il demande le mot de passe est sain.
+#
+# cockpit-bridge --privileged
+#   C'est le canal root de Cockpit : l'autoriser rend inutile toute cette
+#   liste. Consequence assumee : dans Cockpit, activer « acces administrateur »
+#   demande maintenant le mot de passe une fois par session. L'humain est
+#   devant son navigateur a ce moment-la, il peut le taper.
+#
+# usermod -aG valheim lapserv (ce n'est pas une regle sudo, mais la tentation
+#   est voisine : ca donnerait a lapserv la lecture de /var/lib/valheim sans
+#   sudo). A NE PAS FAIRE en l'etat : /etc/valheim-discord.conf et
+#   /etc/valheim-steam.conf sont en root:valheim 640. Rejoindre ce groupe,
+#   c'est lire le token du bot Discord et la cle Steam. Il faudrait d'abord
+#   basculer ces deux fichiers en root:root 600 et passer les services par
+#   LoadCredential ou un DynamicUser dedie.
+#
+# Les scripts du depot (serveur/*.sh)
+#   lapserv peut les modifier : les autoriser en NOPASSWD equivaut a
+#   NOPASSWD:ALL, un processus sous lapserv n'ayant qu'a reecrire le script
+#   avant de l'appeler. Seules leurs copies installees dans /usr/local/bin,
+#   propriete de root et non modifiables par lapserv, peuvent l'etre — et
+#   uniquement celles dont l'effet est borne, cf. SRV_JOUR_J_AUDIT.
