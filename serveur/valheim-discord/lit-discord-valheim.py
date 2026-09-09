@@ -27,6 +27,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime
 
 CONF = "/etc/valheim-discord.conf"
 BASE = os.environ.get("STATE_DIRECTORY", "/var/lib/valheim-stats") + "/valheim.db"
@@ -49,6 +50,20 @@ CREATE TABLE IF NOT EXISTS discord_demandes (
   reponse    TEXT
 );
 CREATE TABLE IF NOT EXISTS reglages (cle TEXT PRIMARY KEY, valeur TEXT);
+
+-- Ce que le bot a publie, garde en clair. La colonne « reponse » de
+-- discord_demandes ne suffisait pas : elle n'existe que s'il y avait une
+-- demande, alors qu'une partie des messages -- un bilan de soiree, une annonce
+-- -- n'en solde aucune. Le 2026-09-09 il a fallu demander a Alexandre de relire
+-- le salon pour savoir ce que le bot avait raconte, et c'est ce jour-la qu'il a
+-- affirme qu'un boss etait tombe alors qu'il etait vivant. On ne peut pas
+-- corriger ce qu'on ne peut pas relire.
+CREATE TABLE IF NOT EXISTS reponses (
+  id         INTEGER PRIMARY KEY,
+  horodatage TEXT NOT NULL,
+  demandes   TEXT,
+  texte      TEXT NOT NULL
+);
 """
 
 AIDE = """**Commandes du salon**
@@ -386,8 +401,14 @@ def publie_reponse(chemin):
     })
     cx = sqlite3.connect(BASE)
     cx.executescript(SCHEMA)
-    for i in d.get("ids", []):
-        cx.execute("UPDATE discord_demandes SET etat = 'traite' WHERE id = ?", (str(i),))
+    ids = [str(i) for i in d.get("ids", [])]
+    cx.execute(
+        "INSERT INTO reponses (horodatage, demandes, texte) VALUES (?, ?, ?)",
+        (datetime.now().isoformat(sep=" ", timespec="seconds"),
+         ",".join(ids) or None, texte))
+    for i in ids:
+        cx.execute("UPDATE discord_demandes SET etat = 'traite', reponse = ? "
+                   "WHERE id = ?", (texte, i))
     cx.commit()
     print("reponse publiee, %d demande(s) soldee(s)" % len(d.get("ids", [])))
     return 0
