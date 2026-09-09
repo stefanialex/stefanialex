@@ -14,9 +14,15 @@ relevant regulierement, on date le passage d'absente a presente.
 
 Le fichier fait 14 Mo et son format complet exige de parcourir tous les ZDO.
 On ne le parcourt pas : on cherche les chaines connues sous leur forme Unity,
-un octet de longueur suivi du texte. Verifie sur le monde en place -- chaque
-cle presente apparait exactement une fois, a 97,7 % du fichier, la ou vivent
-les global keys.
+un octet de longueur suivi du texte. Verifie sur le monde en place avant la
+1.0 -- chaque cle presente apparaissait exactement une fois, a 97,7 % du
+fichier, la ou vivent les global keys.
+
+Depuis la 1.0 (2026-09-09), le contenu du monde est un flux **gzip** dans un
+fichier « _main.N.db2 » range dans le dossier du monde. La recherche se fait
+donc sur les octets decompresses, et la remarque sur les 97,7 % ne vaut plus
+que pour les archives d'avant la mise a jour. Les deux formats restent lus,
+pour pouvoir relire une archive ancienne.
 """
 
 import argparse
@@ -24,8 +30,10 @@ import json
 import os
 import re
 import sqlite3
+import struct
 import subprocess
 import sys
+import zlib
 import urllib.error
 import urllib.request
 from datetime import datetime
@@ -79,14 +87,35 @@ def monde_actif():
 
 
 def fichier_monde(monde):
-    """Le .db a lire.
+    """Le fichier de contenu a lire, dans l'un ou l'autre format.
 
-    On prefere « .db.old », la sauvegarde precedente : elle est complete par
-    construction, alors que le fichier actif peut etre en cours d'ecriture au
-    moment ou on le copie -- 14 Mo ne s'ecrivent pas instantanement. Le retard
-    vaut au plus un intervalle de sauvegarde, dix minutes ici, ce qui est sans
-    consequence pour detecter la chute d'un boss.
+    On prefere la sauvegarde precedente : elle est complete par construction,
+    alors que le fichier actif peut etre en cours d'ecriture au moment ou on le
+    lit -- 14 Mo ne s'ecrivent pas instantanement. Le retard vaut au plus un
+    intervalle de sauvegarde, dix minutes ici, ce qui est sans consequence pour
+    detecter la chute d'un boss.
+
+    Avant la 1.0 cette sauvegarde s'appelait « Midgard.db.old ». Depuis, un
+    monde vit dans son dossier et ses fichiers sont numerotes :
+    « NordheimV1/_main.1.db2 ». Quand plusieurs generations coexistent, on
+    prend l'avant-derniere, pour la meme raison qu'on preferait « .db.old ».
     """
+    dossier = os.path.join(SAVEDIR, monde)
+    if os.path.isdir(dossier):
+        generations = []
+        try:
+            for f in os.listdir(dossier):
+                if f.startswith("_main.") and f.endswith(".db2"):
+                    try:
+                        generations.append((int(f.split(".")[1]),
+                                            os.path.join(dossier, f)))
+                    except ValueError:
+                        pass
+        except OSError:
+            generations = []
+        if generations:
+            generations.sort()
+            return generations[-2][1] if len(generations) > 1 else generations[-1][1]
     for nom in ("%s.db.old" % monde, "%s.db" % monde):
         chemin = os.path.join(SAVEDIR, nom)
         if os.path.exists(chemin):
@@ -94,10 +123,27 @@ def fichier_monde(monde):
     return None
 
 
-def cles_presentes(chemin):
-    """Cles trouvees dans le fichier, sous leur forme Unity."""
+def contenu(chemin):
+    """Les octets a fouiller, decompresses si le format l'exige.
+
+    Le .db2 de la 1.0 est un flux gzip precede d'un en-tete de seize octets --
+    version en int32, temps du monde en double, longueur du flux en int32 --
+    et suivi de quarante octets de pied. Chercher une cle dans le fichier brut
+    ne renvoie donc plus jamais rien, et **sans erreur** : la detection des
+    boss s'arreterait en silence, ce qui est exactement le genre de panne
+    qu'on ne remarque qu'apres des semaines de statistiques fausses.
+    """
     with open(chemin, "rb") as f:
         d = f.read()
+    if not chemin.endswith(".db2"):
+        return d
+    taille = struct.unpack_from("<i", d, 12)[0]
+    return zlib.decompressobj(31).decompress(d[16:16 + taille])
+
+
+def cles_presentes(chemin):
+    """Cles trouvees dans le fichier, sous leur forme Unity."""
+    d = contenu(chemin)
     trouvees = []
     for cle in [c for c, _ in BOSS] + AUTRES:
         b = cle.encode()
