@@ -56,6 +56,17 @@ MOTIFS = [
     # mesure de l'exploration reelle, celle que le temps de jeu ne dit pas.
     ("zone", re.compile(r"^Placed locations in zone (\S+)\s+duration [\d,.]+ ms$"),
      "detail"),
+    # La 1.0 a change la formulation, et en mieux : elle nomme ce qu'elle pose.
+    #   avant  « Placed locations in zone 14,-82  duration 67,63 ms »
+    #   1.0    « Placed location Dolmen1 in zone 5,-3  duration 12 ms »
+    # On garde la coordonnee de zone comme detail, pour que la mesure reste
+    # comparable entre les deux formats. Consequence a ne pas oublier : il y a
+    # desormais PLUSIEURS lignes par zone, une par lieu pose, donc compter les
+    # evenements ne compte plus les zones -- il faut les dedoublonner sur le
+    # detail. Le nom du lieu (Dolmen, Runestone, Crypt...) est une richesse
+    # nouvelle, pas encore exploitee.
+    ("zone", re.compile(r"^Placed location \S+ in zone (\S+)\s+duration [\d,.]+ ms$"),
+     "detail"),
     # « Generating DG_SunkenCrypt(Clone), Seed: 1234 ... » : un donjon est
     # peuple a la premiere entree d'un joueur. Le type dit le biome -- crypte
     # de Foret Noire, crypte de marais, camp de gobelins, grotte gelee -- donc

@@ -167,10 +167,22 @@ def attribue_par_presence(cx, monde, ident, sessions):
                                   "raids_tenus": 0})
 
     orphelins = {"zone": 0, "donjon": 0, "raid": 0}
+    # Les zones sont dedoublonnees sur leur coordonnee et datees a leur premiere
+    # apparition : depuis la 1.0, le serveur ecrit une ligne par lieu pose et
+    # non une par zone, donc compter les evenements gonflerait le chiffre d'un
+    # facteur variable. La premiere apparition est aussi la bonne date : c'est
+    # l'instant de la decouverte.
+    # Les donjons, eux, ne sont PAS dedoublonnes : leur detail est le type
+    # (DG_ForestCrypt), donc regrouper reduirait toutes les cryptes a une.
+    requetes = {
+        "zone": ("SELECT min(horodatage) FROM evenements WHERE type = 'zone'"
+                 + ou + " GROUP BY detail", arg),
+        "donjon": ("SELECT horodatage FROM evenements WHERE type = 'donjon'"
+                   + ou, arg),
+    }
     for typ in ("zone", "donjon"):
-        for (h,) in cx.execute(
-                "SELECT horodatage FROM evenements WHERE type = ?" + ou,
-                (typ,) + arg):
+        requete, parametres = requetes[typ]
+        for (h,) in cx.execute(requete, parametres):
             qui = presents(datetime.fromisoformat(h))
             if not qui:
                 orphelins[typ] += 1
@@ -272,8 +284,11 @@ def roles(cx, monde, ident, sessions):
             # personnage neuf change de nom. Plutot que d'annoncer « le
             # titulaire n'est pas en tete » -- une accusation fausse -- on dit
             # qu'on ne sait pas, et lequel des pseudos manque a l'appel.
-            tetes = {pseudo_de.get(t, t) for t in titulaires}
-            mesures = {p for p, _v, _r, _h in classement}
+            # Comparaison sur des noms nettoyes des deux cotes : « Bab-y » est
+            # enregistre avec une espace finale par le jeu, ce qui l'avait deja
+            # fait disparaitre d'un releve le 2026-09-09.
+            tetes = {(pseudo_de.get(t, t) or "").strip() for t in titulaires}
+            mesures = {(p or "").strip() for p, _v, _r, _h in classement}
             manquants = sorted(tetes - mesures)
             entree["pseudos_inconnus"] = manquants or None
             # On ne tranche que si TOUS les titulaires sont identifiables. Avec
@@ -282,7 +297,7 @@ def roles(cx, monde, ident, sessions):
             # Lapin jouait LapInV, et le script annoncait que le titulaire
             # n'etait pas en tete alors qu'il menait de quatre longueurs.
             if classement and not manquants:
-                entree["titulaire_en_tete"] = classement[0][0] in tetes
+                entree["titulaire_en_tete"] = classement[0][0].strip() in tetes
         sortie.append(entree)
     return {"roles": sortie, "presence": presence}
 
