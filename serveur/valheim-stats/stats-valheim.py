@@ -55,7 +55,12 @@ NOM_BOSS = dict(BOSS)
 # Verifie sur ce serveur : army_bonemass s'etait declenche alors que
 # defeated_bonemass est absent du fichier de monde.
 RAID_EXIGE = {
-    "army_eikthyr": "defeated_eikthyr",
+    # « army_eikthyr » n'exige RIEN : c'est le premier raid, disponible des le
+    # depart. La table le faisait dependre de defeated_eikthyr, ce qui
+    # contredisait la regle enoncee juste au-dessus -- un raid se debloque avec
+    # le boss PRECEDENT, et il n'y a pas de boss avant Eikthyr. Observe le
+    # 2026-09-09 sur NordheimV2 : un army_eikthyr s'est declenche a 22h33 alors
+    # que le monde ne portait aucune cle globale.
     "army_theelder": "defeated_eikthyr",
     "army_bonemass": "defeated_gdking",
     "army_moder": "defeated_bonemass",     # deduit du meme motif
