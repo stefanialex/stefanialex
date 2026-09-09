@@ -43,6 +43,19 @@ MOTIFS = [
     ("raid", re.compile(r"^Random event set:(\S+)$"), "detail"),
     ("sauvegarde", re.compile(r"^Saved (\d+) ZDOs$"), "detail"),
     ("jour", re.compile(r"^Time [\d,.]+, day:(\d+) .*$"), "detail"),
+    # « Found location of type Dragonqueen » : le serveur localise l'autel d'un
+    # boss, ce qui precede la chasse de plusieurs heures. Verifie sur Moder :
+    # deux localisations le 08/09 a 22h03 et 22h42, mise a mort le 09/09 a
+    # 01h28. C'est la seule source qui annonce une intention et non un fait.
+    ("autel", re.compile(r"^Found location of type (\S+)$"), "detail"),
+    # « Placed locations in zone 14,-82  duration 67,63 ms » : Valheim peuple
+    # une zone la premiere fois qu'un joueur en approche. Donc du terrain neuf,
+    # et non du terrain recharge -- verifie le 2026-09-09 : zero ligne dans les
+    # 20 minutes suivant les redemarrages de 5h01 du 08 et du 09, alors que la
+    # soiree du 08 en compte 56 a 18h, 90 a 19h et 65 a 21h. C'est la seule
+    # mesure de l'exploration reelle, celle que le temps de jeu ne dit pas.
+    ("zone", re.compile(r"^Placed locations in zone (\S+)\s+duration [\d,.]+ ms$"),
+     "detail"),
 ]
 
 SCHEMA = """
