@@ -9,6 +9,7 @@ definition de chaque indicateur.
 
 import datetime
 import json
+import os
 import sqlite3
 import subprocess
 import sys
@@ -91,6 +92,63 @@ def succes_du_jour():
     if not lignes or not any(n for _, n in lignes):
         return None
     return " · ".join("%s **%d**" % (p, n) for p, n in lignes if n)
+
+
+METEO = "/usr/local/bin/meteo-valheim.py"
+MONDES = "/var/lib/valheim/donnees/worlds_local"
+# Le temps par defaut de chaque biome : celui qui sort dans la grande majorite
+# des periodes. On n'annonce que ce qui s'en ecarte -- annoncer « degage » huit
+# fois sur dix serait du bruit.
+BANAL = {"Prairies": "Dégagé", "Forêt Noire": "Dégagé", "Plaines": "Dégagé",
+         "Mistlands": "Dégagé", "Océan": "Dégagé", "Montagnes": "Neige",
+         "Ashlands": "Pluie de cendres", "Grand Nord": "Neige"}
+
+
+def champ_meteo(d):
+    """Le bulletin : ce qu'il fait, puis ce qui sort de l'ordinaire ensuite.
+
+    Les heures ne sont volontairement pas affichees. Le temps de Valheim change
+    toutes les 666 secondes de TEMPS DE MONDE, et le temps de monde n'avance
+    pas a la vitesse du temps reel : le serveur accelere la nuit quand il est
+    vide. Annoncer « brouillard a 20h13 » serait faux d'une dizaine de minutes,
+    comme constate le 2026-09-09. La sequence, elle, est exacte.
+    """
+    monde = d.get("monde")
+    if not monde:
+        return None
+    try:
+        r = subprocess.run([METEO, "--monde", os.path.join(MONDES, monde),
+                            "--heures", "2", "--json"],
+                           capture_output=True, text=True, timeout=20)
+        if r.returncode != 0:
+            return None
+        prev = json.loads(r.stdout)["previsions"]
+    except (OSError, ValueError, subprocess.SubprocessError, KeyError):
+        return None
+    if not prev:
+        return None
+
+    maintenant = prev[0]["biomes"]
+    lignes = ["**Maintenant** — " + " · ".join(
+        "%s %s" % (b, t.lower()) for b, t in maintenant.items()
+        if b != "Marais" and t != BANAL.get(b))
+        or "**Maintenant** — rien de notable, temps ordinaire partout"]
+
+    # Groupe par periode : un ciel qui se couvre partout a la fois donnait six
+    # fois « dans 3 periodes », ce qui se lit mal.
+    a_venir = []
+    for i, p in enumerate(prev[1:], start=1):
+        notables = ["**%s** sur %s" % (t.lower(), b)
+                    for b, t in p["biomes"].items()
+                    if b != "Marais" and t != BANAL.get(b)]
+        if notables:
+            a_venir.append("dans %d période%s — %s"
+                           % (i, "s" if i > 1 else "", ", ".join(notables)))
+    if a_venir:
+        lignes.append("**Ensuite** — " + "\n".join(a_venir[:4]))
+    lignes.append("_Une période dure 666 s de temps de monde ; le serveur "
+                  "l'accélère quand il est vide, donc pas d'heure fixe._")
+    return {"name": "🌦️  Météo", "value": "\n".join(lignes)[:1024], "inline": False}
 
 
 def champs_roles(d):
@@ -204,6 +262,10 @@ def bilan(d):
 
     for champ in champs_roles(d):
         champs.append(champ)
+
+    mt = champ_meteo(d)
+    if mt:
+        champs.append(mt)
 
     sc = succes_du_jour()
     if sc:
