@@ -1,0 +1,41 @@
+{
+  "_note": "Etat de Midgard juste avant le passage a Valheim 1.0, releve le 2026-09-09 vers 14h40 sur l'archive de 14h00, conservee hors purge dans ~/archives-valheim. Sert de point de comparaison pour NordheimV1, dont les compteurs repartent de zero.",
+  "_methode": "Les objets fabriques portent le nom de leur artisan, et les inventaires de coffres sont encodes en base64 dans le fichier de monde. Ce releve est fait par expressions regulieres et pairage au plus proche : il comporte du bruit (un lingot n'a pas d'artisan). A refaire avec le lecteur binaire du week-end.",
+  "_limites": [
+    "mesure le stock restant, pas la production : un plat mange ne laisse aucune trace",
+    "les objets portes par les joueurs sont invisibles, ils vivent sur leurs machines",
+    "Bab-y n'apparait pas : cela signifie sans doute qu'elle garde ses affaires sur elle, pas qu'elle ne fabrique rien"
+  ],
+  "monde": "Midgard",
+  "seed": "m24VpSVsVw",
+  "jour": 312,
+  "zdos": 447562,
+  "boss_vaincus": [
+    "Eikthyr",
+    "l'Ancien",
+    "Bonemass",
+    "Moder"
+  ],
+  "objets_fabriques_en_coffre": {
+    "DjOsE": 55,
+    "Beware": 33,
+    "Brewtmoiminou": 22
+  },
+  "plats_fabriques_en_coffre": {
+    "DjOsE": 26,
+    "Beware": 18
+  },
+  "morts": {
+    "DjOsE": 29,
+    "Beware": 16,
+    "Bab-y": 16,
+    "Brewtmoiminou": 15
+  },
+  "tresorerie": {
+    "Coins": 298,
+    "Amber": 269,
+    "Ruby": 216,
+    "AmberPearl": 59
+  },
+  "_note_morts": "Les morts sont indexees par pseudo et non par SteamID : une jointure sur steamid renvoie tout sous '?'. Fenetre du 28/08 au 09/09 seulement, la sonde n'existait pas avant."
+}
