@@ -129,31 +129,88 @@ def monde_courant():
             i = args.index("-world")
             if i + 1 < len(args) and args[i + 1]:
                 return args[i + 1]
-    # Repli si le serveur est arrete : le .fwl le plus recemment ecrit, hors
-    # sauvegardes automatiques.
+    # Repli si le serveur est arrete : le monde ecrit le plus recemment, hors
+    # sauvegardes automatiques. Les deux formats coexistent sur le disque apres
+    # une mise a jour vers la 1.0 -- l'ancien « Midgard.fwl » reste a cote du
+    # nouveau dossier « Midgard/ », fige et trompeur. On les datte donc tous
+    # les deux et on garde le plus recent, ce qui designe naturellement le
+    # format vivant.
+    candidats = []
     try:
-        actifs = [f for f in os.listdir(SAVEDIR)
-                  if f.endswith(".fwl") and "_backup_auto-" not in f]
-        if actifs:
-            actifs.sort(key=lambda f: os.path.getmtime(os.path.join(SAVEDIR, f)))
-            return actifs[-1][:-4]
+        for f in os.listdir(SAVEDIR):
+            if "_backup_auto-" in f:
+                continue
+            chemin = os.path.join(SAVEDIR, f)
+            if f.endswith(".fwl"):
+                candidats.append((f[:-4], chemin))
+            elif os.path.isdir(chemin):
+                meta = chemin_metadonnees(f)
+                if meta:
+                    candidats.append((f, meta))
     except OSError:
-        pass
-    return None
+        return None
+    if not candidats:
+        return None
+    try:
+        candidats.sort(key=lambda c: os.path.getmtime(c[1]))
+    except OSError:
+        return candidats[-1][0]
+    return candidats[-1][0]
 
 
 OUTIL_MONDE = "/usr/local/bin/monde-valheim.py"
 
 
+def chemin_metadonnees(monde):
+    """Le fichier de metadonnees d'un monde, dans l'un ou l'autre format.
+
+    Jusqu'a la 0.221, un monde etait deux fichiers cote a cote :
+    « Midgard.fwl » et « Midgard.db ». La 1.0 range chaque monde dans son
+    propre dossier et numerote ses fichiers :
+
+        worlds_local/NordheimV1/_main.1.fwl2     metadonnees
+        worlds_local/NordheimV1/_main.1.db2      contenu, compresse en gzip
+        worlds_local/NordheimV1/_main.1.chunks   index des troncons
+
+    Le numero n'est pas decoratif : c'est un compteur, donc on prend le plus
+    grand plutot que d'ecrire « 1 » en dur et de decouvrir le probleme dans
+    six mois.
+
+    Les deux formats sont acceptes : le nouveau d'abord, l'ancien en repli,
+    pour que ce programme reste capable de relire une archive d'avant la 1.0.
+    """
+    dossier = os.path.join(SAVEDIR, monde)
+    if os.path.isdir(dossier):
+        try:
+            noms = [f for f in os.listdir(dossier)
+                    if f.startswith("_main.") and f.endswith(".fwl2")]
+        except OSError:
+            noms = []
+        if noms:
+            def rang(f):
+                try:
+                    return int(f.split(".")[1])
+                except (IndexError, ValueError):
+                    return -1
+            return os.path.join(dossier, max(noms, key=rang))
+    ancien = os.path.join(SAVEDIR, monde + ".fwl")
+    return ancien if os.path.exists(ancien) else None
+
+
 def releve_monde(cx, monde):
     """Note la seed et les versions du monde actif.
 
-    Le format du .fwl n'est connu que de monde-valheim.py, appele en
-    sous-processus : un seul endroit dans le depot sait decoder ce fichier.
+    Le format du fichier de metadonnees n'est connu que de monde-valheim.py,
+    appele en sous-processus : un seul endroit dans le depot sait le decoder.
+    Il lit les deux versions sans modification -- la structure n'a pas change
+    avec la 1.0, seuls le numero de version, le nom et l'emplacement du
+    fichier ont bouge.
     """
     if not monde:
         return
-    chemin = os.path.join(SAVEDIR, monde + ".fwl")
+    chemin = chemin_metadonnees(monde)
+    if not chemin:
+        return
     try:
         r = subprocess.run([OUTIL_MONDE, "lire", "--json", chemin],
                            capture_output=True, text=True, timeout=10)
