@@ -11,15 +11,32 @@ Le mecanisme, etabli le 2026-09-09 :
     Random.InitState(periode)                   generateur d'Unity
     environnement = tirage pondere dans la table du biome
 
-Soit un changement toutes les 666 secondes de temps de monde -- et le temps de
-monde avance a la meme vitesse que le temps reel, donc toutes les 11 min 06 s
-de vraie vie.
+Soit un changement toutes les 666 secondes de TEMPS DE MONDE. Et c'est la que
+se trouve la difficulte, decouverte le 2026-09-09 apres l'avoir d'abord niee :
+
+    le temps de monde n'avance PAS a la vitesse du temps reel.
+
+Mesure sur NordheimV1, sur cinq points du journal : le rapport vaut 1,30 puis
+1,09 puis 1,29 puis 0,67 selon les intervalles. Le journal affiche un champ
+« skipspeed » de 25 a 45 -- le serveur accelere la nuit quand personne n'est
+connecte, et le temps parait se figer quand le serveur est vide.
+
+Consequence a assumer : convertir une periode en heure de montre n'est pas
+fiable. Une premiere version annoncait un changement a 20h13 en extrapolant
+depuis une reference de deux heures ; la reference fraiche donnait 20h00. Ce
+qui reste exact, c'est la SEQUENCE : quel temps a quelle periode, et dans quel
+ordre. Les heures affichees sont donnees a titre indicatif et le programme dit
+sur quelle reference il s'appuie et de quand elle date.
+
+Corollaire pratique : lire le fichier de monde VIVANT, dont la fraicheur est
+d'au plus un intervalle de sauvegarde. Une archive de deux heures ne vaut rien
+pour l'heure, meme si elle vaut toujours pour la sequence.
 
 Deux choses sont sures et une reste a calibrer.
 
-SUR : la periode de 666 secondes et l'instant des changements. Ils ne dependent
-que de l'arithmetique, donc les heures de bascule annoncees par ce programme
-sont exactes meme si le nom du temps est faux.
+SUR : la periode de 666 secondes de temps de monde, et donc la sequence des
+temps. Elle ne depend que de l'arithmetique. L'heure de montre, elle, depend du
+rapport entre temps de monde et temps reel, qui varie -- voir plus haut.
 
 SUR : les tables par biome, reconstituees a partir des pourcentages publies.
 Les poids entiers les reproduisent exactement -- Prairies 25/1/1/1/1 donne bien
@@ -214,8 +231,12 @@ def main():
     print("temps du monde %.0f s (mesure %.0f s a %s) · periode %d · "
           "changement toutes les 11 min 06 s"
           % (actuel, temps, mesure.strftime("%H:%M"), prev[0]["periode"]))
-    print("(les heures sont sures ; les noms dependent de la variante %d, non "
-          "encore calibree)\n" % o.variante)
+    age = (datetime.now() - mesure).total_seconds() / 60.0
+    print("reference : %s, il y a %.0f min. Les heures sont INDICATIVES -- le "
+          "temps du monde n'avance pas a la vitesse du temps reel (le serveur "
+          "accelere la nuit quand il est vide). La sequence, elle, est exacte."
+          % (mesure.strftime("%H:%M:%S"), age))
+    print("noms selon la variante %d, non encore calibree\n" % o.variante)
     biomes = [b for b in TABLES if b not in CONSTANTS]
     print("%-9s " % "" + " ".join("%-16s" % b for b in biomes))
     for p in prev:
