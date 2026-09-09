@@ -324,6 +324,63 @@ def relie_pseudos(cx):
     cx.commit()
 
 
+# Delai en deca duquel une « mort » suivant la premiere apparition d'un
+# personnage est tenue pour un artefact de creation, et non pour une mort.
+NAISSANCE = timedelta(seconds=90)
+
+
+def morts_de_naissance(cx, lot, mondes):
+    """Ecarte les fausses morts dues a la creation d'un personnage.
+
+    Le journal ecrit « Got character ZDOID from X : 0:0 » a la mort, mais aussi
+    quand le serveur relache le personnage provisoire d'un joueur qui vient
+    d'entrer avec un perso neuf. La sequence est reconnaissable :
+
+        21:11:38  apparition  Lapvin  ZDO :5
+        21:11:43  mort        Lapvin           <- 5 secondes plus tard
+        21:11:44  apparition  Lapvin  ZDO :7
+
+    Le 2026-09-09, le groupe a recree quatre personnages sur un monde neuf et le
+    salon a annonce quatre morts qui n'avaient pas eu lieu. C'est aussi ce que
+    le groupe a tranche : recreer un personnage ne doit pas casser une serie.
+
+    Le critere est le delai depuis la PREMIERE apparition de ce personnage sur
+    ce monde, et non depuis la connexion : quelqu'un peut creer un second
+    personnage en cours de session -- c'est arrive le soir meme -- et le pseudo
+    suffit, sans avoir a le relier a un compte Steam, lien fragile des qu'un
+    joueur enchaine plusieurs persos.
+
+    Le prix a payer, assume : une vraie mort dans les 90 premieres secondes
+    d'un personnage neuf est perdue. Mieux vaut manquer une mort au spawn que
+    d'en inventer quatre.
+    """
+    premieres = {}
+    for (ts, typ, j, _sid, _d), m in zip(lot, mondes):
+        if typ == "apparition" and j:
+            cle = (m, j)
+            if cle not in premieres or ts < premieres[cle]:
+                premieres[cle] = ts
+    for (m, j) in list(premieres):
+        r = cx.execute(
+            "SELECT min(horodatage) FROM evenements "
+            "WHERE type = 'apparition' AND joueur = ? AND monde IS ?",
+            (j, m)).fetchone()
+        if r and r[0] and r[0] < premieres[(m, j)]:
+            premieres[(m, j)] = r[0]
+
+    lot2, mondes2 = [], []
+    for e, m in zip(lot, mondes):
+        ts, typ, j = e[0], e[1], e[2]
+        if typ == "mort" and j:
+            debut = premieres.get((m, j))
+            if debut and (datetime.fromisoformat(ts)
+                          - datetime.fromisoformat(debut)) < NAISSANCE:
+                continue
+        lot2.append(e)
+        mondes2.append(m)
+    return lot2, mondes2
+
+
 def enregistre(cx, monde, lot):
     """Insere un lot. « monde » peut etre un nom, ou une liste parallele au lot.
 
@@ -384,6 +441,7 @@ def rattrapage(cx, depuis):
     premier = next((m for m in mondes if m), monde)
     mondes = [m or premier for m in mondes]
 
+    lot, mondes = morts_de_naissance(cx, lot, mondes)
     releve_monde(cx, monde)
     return len(lot), enregistre(cx, mondes, lot)
 
@@ -406,6 +464,15 @@ def suit(cx):
             if neuf and neuf != monde:
                 monde = neuf
                 releve_monde(cx, monde)
+        # Meme filtre qu'au rattrapage, mais sur un seul evenement : la
+        # premiere apparition du personnage est deja en base a cet instant,
+        # puisqu'elle precede la fausse mort de quelques secondes.
+        e_lot, _m = morts_de_naissance(cx, [e], [monde])
+        if not e_lot:
+            sys.stdout.write("%s mort ecartee (creation de perso) %s\n"
+                             % (e[0], e[2] or ""))
+            sys.stdout.flush()
+            continue
         enregistre(cx, monde, [e])
         if e[1] in ("connexion", "apparition"):
             relie_pseudos(cx)
