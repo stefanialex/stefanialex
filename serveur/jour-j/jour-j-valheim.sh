@@ -167,9 +167,15 @@ action_verifier() {
     local monde
     monde=$(grep -oP '(?<=^NOM_MONDE=).*' /etc/valheim.env 2>/dev/null | tr -d '"' || true)
     echo "monde en cours          ${monde:-inconnu}"
-    if [ -f "$MONDES/$monde.fwl" ]; then
-        "$OUTIL" lire "$MONDES/$monde.fwl" \
+    # Le chemin des metadonnees depend du format : « Midgard.fwl » avant la
+    # 1.0, « NordheimV1/_main.1.fwl2 » depuis. C'est monde-valheim.py qui
+    # tranche, pour que la regle ne soit ecrite qu'a un seul endroit.
+    local meta
+    if meta=$("$OUTIL" chemin "$MONDES" "$monde" 2>/dev/null); then
+        "$OUTIL" lire "$meta" \
             | awk '/^(seed|version_format|version_generateur) / { printf "%-24s%s\n", $1, $2 }'
+    else
+        echo "metadonnees            introuvables pour ${monde:-?}"
     fi
 
     for s in valheim.service collecte-valheim.service; do
@@ -273,7 +279,7 @@ action_automatique() {
         echo "rien a faire (installe=${bi:-?} publie=${bd:-?})"
         return 0
     fi
-    if [ -e "$MONDES/$NOM_AUTO.fwl" ]; then
+    if "$OUTIL" chemin "$MONDES" "$NOM_AUTO" >/dev/null 2>&1; then
         echo "$NOM_AUTO existe deja : la bascule a deja eu lieu"
         return 0
     fi

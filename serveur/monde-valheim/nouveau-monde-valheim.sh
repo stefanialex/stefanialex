@@ -73,13 +73,41 @@ fi
 # Version du generateur : celle du monde actuel, sauf indication contraire. Un
 # monde cree avec la mauvaise valeur est refuse au chargement.
 ACTUEL=$(grep -oP '(?<=^NOM_MONDE=).*' "$ENV" | tr -d '"' || true)
-if [ -z "$GENERATEUR" ] && [ -f "$MONDES/$ACTUEL.fwl" ]; then
-    GENERATEUR=$("$OUTIL" lire "$MONDES/$ACTUEL.fwl" \
-        | awk '/^version_generateur/ { print $2 }')
+if [ -z "$GENERATEUR" ]; then
+    # Les deux formats sont possibles ; monde-valheim.py sait lequel est vivant.
+    META_ACTUEL=$("$OUTIL" chemin "$MONDES" "$ACTUEL" 2>/dev/null || true)
+    if [ -n "$META_ACTUEL" ]; then
+        GENERATEUR=$("$OUTIL" lire "$META_ACTUEL" \
+            | awk '/^version_generateur/ { print $2 }')
+    fi
 fi
 GENERATEUR="${GENERATEUR:-2}"
 
-[ -e "$MONDES/$NOM.fwl" ] && mourir "$MONDES/$NOM.fwl existe deja ; choisis un autre nom"
+# Depuis la 1.0 (format 41), un monde est un dossier et son fichier de
+# metadonnees porte quatre octets de queue dont le sens n'est pas etabli.
+# Ecrire quand meme produirait un fichier que le serveur refuse : il le
+# signale par un « data error LoadError » noye dans son journal, puis genere
+# un monde a la seed au hasard. On aurait donc un monde neuf, sans la seed
+# demandee, et rien pour le dire. Mieux vaut s'arreter ici.
+if [ -n "${META_ACTUEL:-}" ]; then
+    FORMAT_ACTUEL=$("$OUTIL" lire "$META_ACTUEL" \
+        | awk '/^version_format/ { print $2 }')
+    if [ "${FORMAT_ACTUEL:-0}" -ge 41 ]; then
+        mourir "le serveur est en 1.0 (format $FORMAT_ACTUEL) et ce script ne
+sait pas encore y imposer une seed.
+
+Pour un monde neuf a seed ALEATOIRE, il n'y a rien a faire ici : mettre son
+nom dans NOM_MONDE de $ENV puis redemarrer valheim.service suffit, le serveur
+le genere lui-meme. Verifie le 2026-09-09 avec NordheimV1.
+
+Pour imposer une seed, il faut d'abord identifier les quatre octets de queue
+du format 41 sur un monde cree par la 1.0."
+    fi
+fi
+
+if META_EXISTANT=$("$OUTIL" chemin "$MONDES" "$NOM" 2>/dev/null); then
+    mourir "$META_EXISTANT existe deja ; choisis un autre nom"
+fi
 
 # Personne ne doit etre en jeu : l'arret deconnecte tout le monde, et une
 # bascule de monde pendant qu'on joue perd la session en cours.

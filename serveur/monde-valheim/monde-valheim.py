@@ -78,6 +78,37 @@ def ecrit_chaine(f, texte):
     f.write(b)
 
 
+def chemin_metadonnees(racine, monde):
+    """Ou vivent les metadonnees d'un monde, dans l'un ou l'autre format.
+
+    Ce programme est le seul du depot a connaitre ce format ; les scripts shell
+    passent donc par lui plutot que de recopier la regle chacun de leur cote.
+
+    Jusqu'a la 0.221 :  worlds_local/Midgard.fwl
+    Depuis la 1.0    :  worlds_local/NordheimV1/_main.1.fwl2
+
+    Le nombre est un compteur de generation, pas une decoration : on prend le
+    plus grand. Et le nouveau format est teste avant l'ancien, parce qu'apres
+    une mise a jour les deux coexistent -- l'ancien fichier reste sur le
+    disque, fige, et le lire donnerait des chiffres d'avant sans rien signaler.
+    """
+    dossier = os.path.join(racine, monde)
+    if os.path.isdir(dossier):
+        rangs = []
+        try:
+            for f in os.listdir(dossier):
+                if f.startswith("_main.") and f.endswith(".fwl2"):
+                    milieu = f[len("_main."):-len(".fwl2")]
+                    rangs.append((int(milieu) if milieu.isdigit() else -1,
+                                  os.path.join(dossier, f)))
+        except OSError:
+            rangs = []
+        if rangs:
+            return max(rangs)[1]
+    ancien = os.path.join(racine, monde + ".fwl")
+    return ancien if os.path.exists(ancien) else None
+
+
 def lire(chemin):
     d = open(chemin, "rb").read()
     f = io.BytesIO(d)
@@ -141,7 +172,18 @@ def main():
     c = sous.add_parser("hash", help="seed entiere correspondant a un nom de seed")
     c.add_argument("seed")
 
+    e = sous.add_parser("chemin", help="ou vivent les metadonnees d'un monde")
+    e.add_argument("racine", help="le dossier worlds_local")
+    e.add_argument("monde", help="nom du monde")
+
     o = ap.parse_args()
+
+    if o.action == "chemin":
+        chemin = chemin_metadonnees(o.racine, o.monde)
+        if not chemin:
+            sys.exit(1)
+        print(chemin)
+        return
 
     if o.action == "lire":
         infos = lire(o.fichier)
@@ -158,6 +200,28 @@ def main():
 
     if os.path.exists(o.fichier) and not o.ecraser:
         sys.exit("%s existe deja ; --ecraser pour le remplacer" % o.fichier)
+
+    # Refus explicite plutot qu'un fichier que le serveur rejettera. La 1.0
+    # (format 41) ajoute quatre octets de queue dont on ne connait pas encore le
+    # sens : ecrire sans eux reproduirait la panne notee dans lire() -- le
+    # serveur refuse le fichier, le signale par un « data error LoadError »
+    # noye dans son journal, et regenere un monde a la seed au hasard. Le
+    # dernier etat serait donc « un monde neuf existe » sans que la seed
+    # demandee ait ete respectee : le pire des echecs, celui qui ressemble a
+    # une reussite.
+    if o.fichier.endswith(".fwl2") or o.version_format >= 41:
+        motif = ("le nom du fichier finit par .fwl2"
+                 if o.fichier.endswith(".fwl2")
+                 else "version de format demandee : %d" % o.version_format)
+        sys.exit(
+            "ce programme ne sait pas encore ecrire le format de la 1.0 "
+            "(%s).\n" % motif +
+            "Pour un monde neuf a seed ALEATOIRE, rien de tout ceci n'est "
+            "necessaire : mettre son nom dans NOM_MONDE et redemarrer le "
+            "serveur suffit, il le genere lui-meme -- verifie le 2026-09-09 "
+            "avec NordheimV1.\n"
+            "Pour imposer une seed, il faut d'abord identifier les quatre "
+            "octets de queue du format 41.")
     n = creer(o.fichier, o.monde, o.seed, o.version_format, o.version_generateur)
     print("%s ecrit, %d octets : monde « %s », seed « %s » (%d)" % (
         o.fichier, n, o.monde, o.seed, hash_stable(o.seed)))
