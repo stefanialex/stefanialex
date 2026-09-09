@@ -56,6 +56,18 @@ MOTIFS = [
     # mesure de l'exploration reelle, celle que le temps de jeu ne dit pas.
     ("zone", re.compile(r"^Placed locations in zone (\S+)\s+duration [\d,.]+ ms$"),
      "detail"),
+    # « Generating DG_SunkenCrypt(Clone), Seed: 1234 ... » : un donjon est
+    # peuple a la premiere entree d'un joueur. Le type dit le biome -- crypte
+    # de Foret Noire, crypte de marais, camp de gobelins, grotte gelee -- donc
+    # la courbe raconte ce que le groupe farme. Sur Midgard, la semaine du 09
+    # septembre : une centaine d'entrees, dominees par les cryptes de Foret
+    # Noire puis celles de marais, avec une pointe de cryptes de marais la
+    # veille de la chute de Bonemass -- la razzia de fer.
+    #
+    # Les comptes exacts ne se reproduisent pas d'une heure sur l'autre : le
+    # journal systemd a une profondeur limitee, donc la fenetre glisse. Ce qui
+    # est stable, c'est ce qu'on met en base au fur et a mesure.
+    ("donjon", re.compile(r"^Generating (DG_\w+)\(Clone\), Seed: .*$"), "detail"),
 ]
 
 SCHEMA = """
