@@ -43,7 +43,23 @@ Cmnd_Alias SRV_DIAG = \
     /usr/sbin/smartctl -i *, \
     /usr/sbin/smartctl -a *, \
     /usr/sbin/smartctl -x *, \
-    /usr/sbin/smartctl --scan
+    /usr/sbin/smartctl --scan, \
+    /usr/bin/dmesg, \
+    /usr/bin/dmesg *, \
+    /usr/bin/cpupower frequency-info, \
+    /usr/bin/cpupower frequency-info *
+
+# Deux precisions sur les deux dernieres entrees, verifiees le 2026-09-09 apres
+# les avoir retirees a tort en croyant qu'elles marchaient sans privilege :
+#
+# dmesg exige bien root ici, « kernel.dmesg_restrict » valant 1. Le joker
+# couvre aussi « dmesg -C », qui vide le tampon du noyau : c'est une gene pour
+# le diagnostic, pas une escalade, et l'enumerer flag par flag reviendrait a
+# deviner ceux qu'on utilisera demain.
+#
+# cpupower : seul le sous-commande « frequency-info » est ici, en lecture.
+# « frequency-set » en est volontairement absent — il change la politique de
+# frequence du processeur.
 
 # ---------------------------------------------------------------------------
 # Bascule Valheim 1.0 : l'audit seulement
