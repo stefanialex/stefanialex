@@ -1,0 +1,37 @@
+{
+  "_note": "Observations de meteo en jeu, pour retrouver le generateur qu'utilise Valheim. Chaque ligne contraint le modele : elle dit dans quelle bande de la table du biome tombe le tirage de cette periode. Les periodes sont lues sur le monde vivant au moment du signalement ; « certaine » vaut faux quand l'observation tombe pres d'une frontiere de periode ou quand le message a pu etre envoye quelques minutes apres coup.",
+  "_pourquoi": "Le modele du 2026-09-09 est refute : il annoncait degage a la periode 23 alors qu'il pleuvait. La periode de 666 s, la lecture du temps du monde et les neuf tables tiennent ; c'est la fonction periode -> tirage qui est fausse.",
+  "_utile": "Les observations les plus informatives sont celles d'un temps RARE : pluie ou orage en Prairies (3 % chacun), blizzard en Montagnes (17 %). Un « degage » en Prairies n'elimine qu'un quatorzieme des tirages possibles.",
+  "monde": "NordheimV1",
+  "observations": [
+    {
+      "periode": 20,
+      "biome": "Prairies",
+      "temps": "Dégagé",
+      "vers": "2026-09-09 18:29",
+      "certaine": true
+    },
+    {
+      "periode": 21,
+      "biome": "Prairies",
+      "temps": "Dégagé",
+      "vers": "2026-09-09 18:38",
+      "certaine": true
+    },
+    {
+      "periode": 23,
+      "biome": "Prairies",
+      "temps": "Pluie",
+      "vers": "2026-09-09 19:02",
+      "certaine": true
+    },
+    {
+      "periode": 25,
+      "biome": "Prairies",
+      "temps": "Dégagé",
+      "vers": "2026-09-09 19:23",
+      "certaine": false,
+      "reserve": "mesure a 24,68 periode : peut relever de la 24"
+    }
+  ]
+}
