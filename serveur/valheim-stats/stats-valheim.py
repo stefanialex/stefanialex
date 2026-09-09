@@ -130,6 +130,163 @@ def charge(cx, monde=None):
     return ident, sessions, morts, progression, infos, jour
 
 
+def attribue_par_presence(cx, monde, ident, sessions):
+    """Credite les evenements de groupe aux joueurs en ligne a cet instant.
+
+    Les zones neuves, les entrees de donjon et les raids ne portent aucun nom :
+    le serveur ne dit pas qui les a declenches. Mais il dit qui etait connecte,
+    a la seconde. Croiser les deux rend ces mesures nominatives -- et
+    indiscutables quand un seul joueur etait en ligne.
+
+    Le credit est partage entre les presents plutot que donne a chacun en
+    entier. Sans ce partage, une soiree a quatre vaudrait quatre fois une
+    soiree en solo pour la meme exploration, et le classement mesurerait la
+    taille du groupe au lieu du travail fourni. Le compte « solo » est garde a
+    part : c'est le seul chiffre que personne ne peut contester.
+
+    Verifie sur Midgard le 2026-09-09 : 1096 zones creditees, aucune orpheline
+    -- toutes ont ete generees avec au moins un joueur connecte, ce qui
+    confirme que la ligne du journal marque bien une decouverte et non un
+    rechargement de terrain par le serveur.
+    """
+    ou, arg = "", ()
+    if monde:
+        ou, arg = " AND monde = ?", (monde,)
+
+    intervalles = [(ident.get(sid, sid), debut, fin)
+                   for sid, debut, fin, _en_cours in sessions]
+
+    def presents(quand):
+        return sorted({p for p, a, b in intervalles if a <= quand <= b})
+
+    res = {}
+
+    def entree(p):
+        return res.setdefault(p, {"zones": 0.0, "zones_solo": 0, "donjons": 0.0,
+                                  "donjons_solo": 0, "raids_vus": 0,
+                                  "raids_tenus": 0})
+
+    orphelins = {"zone": 0, "donjon": 0, "raid": 0}
+    for typ in ("zone", "donjon"):
+        for (h,) in cx.execute(
+                "SELECT horodatage FROM evenements WHERE type = ?" + ou,
+                (typ,) + arg):
+            qui = presents(datetime.fromisoformat(h))
+            if not qui:
+                orphelins[typ] += 1
+                continue
+            cle = "zones" if typ == "zone" else "donjons"
+            for p in qui:
+                entree(p)[cle] += 1.0 / len(qui)
+            if len(qui) == 1:
+                entree(qui[0])[cle + "_solo"] += 1
+
+    # Un raid est « tenu » si personne ne meurt dans les cinq minutes qui
+    # suivent : meme fenetre que le KPI d'equipe, pour que les deux chiffres
+    # racontent la meme histoire.
+    morts_h = [datetime.fromisoformat(h) for (h,) in cx.execute(
+        "SELECT horodatage FROM evenements WHERE type = 'mort'" + ou, arg)]
+    for (h,) in cx.execute(
+            "SELECT horodatage FROM evenements WHERE type = 'raid'" + ou, arg):
+        d = datetime.fromisoformat(h)
+        qui = presents(d)
+        if not qui:
+            orphelins["raid"] += 1
+            continue
+        perdu = any(d <= m <= d + timedelta(minutes=5) for m in morts_h)
+        for p in qui:
+            e = entree(p)
+            e["raids_vus"] += 1
+            if not perdu:
+                e["raids_tenus"] += 1
+
+    # Ramene au temps de jeu, parce que le brut ne mesure pas le talent mais la
+    # presence. Constate sur Midgard : Bab-y finissait derniere de tout avec 17
+    # sessions quand Beny en avait 81. Un classement qui met toujours la meme
+    # personne au dernier rang ne donne envie a personne, et il est faux.
+    heures = {}
+    for p, a_, b_ in intervalles:
+        heures[p] = heures.get(p, 0.0) + max(0.0, (b_ - a_).total_seconds()) / 3600.0
+
+    for p, e in res.items():
+        h = heures.get(p, 0.0)
+        e["heures"] = round(h, 1)
+        e["zones"] = round(e["zones"], 1)
+        e["donjons"] = round(e["donjons"], 1)
+        # Sous une heure de jeu, un rapport a l'heure raconte n'importe quoi :
+        # une zone en dix minutes ferait six zones par heure.
+        e["zones_par_heure"] = round(e["zones"] / h, 1) if h >= 1 else None
+        e["donjons_par_heure"] = round(e["donjons"] / h, 2) if h >= 1 else None
+        e["raids_taux"] = (round(100 * e["raids_tenus"] / e["raids_vus"])
+                           if e["raids_vus"] else None)
+    return {"joueurs": res, "sans_personne_en_ligne": orphelins}
+
+
+# Les roles de la feuille de Baby, et la mesure qui leur correspond quand elle
+# existe. Trois seulement sont mesurables aujourd'hui ; les autres restent
+# declaratifs et c'est dit tel quel, plutot que de bricoler un chiffre qui n'en
+# est pas un. « Happynes manager » est un role de vanne, il le reste.
+ROLES_MESURES = {
+    "Explorateur": ("zones", "zones neuves", "zones_par_heure"),
+}
+# Les donjons et les raids ne correspondent a aucun role de la feuille : ils
+# sont publies comme mesures de groupe, par joueur, sans pretendre arbitrer un
+# titre. Forcer « Capitaine de navire » sur les donjons aurait donne un chiffre
+# qui ne veut rien dire -- essaye, puis retire.
+
+
+def roles(cx, monde, ident, sessions):
+    """Chaque role declare, confronte a la mesure quand il y en a une."""
+    c = chantiers()
+    if not c:
+        return None
+    presence = attribue_par_presence(cx, monde, ident, sessions)
+    par = presence["joueurs"]
+    # La feuille nomme les joueurs « Lapin, Beny, Djoose, Baby » ; les mesures
+    # les nomment par leur pseudo en jeu. La table des joueurs de chantiers.json
+    # fait le pont.
+    pseudo_de = {n: (d.get("pseudo") or n) for n, d in (c.get("joueurs") or {}).items()}
+
+    sortie = []
+    for f in c.get("fonctions") or []:
+        nom = f.get("nom", "")
+        titulaires = f.get("titulaires") or []
+        mesure = ROLES_MESURES.get(nom)
+        entree = {"role": nom, "titulaires": titulaires,
+                  "mesure": mesure[1] if mesure else None,
+                  "classement": None, "titulaire_en_tete": None,
+                  "pseudos_inconnus": None}
+        if mesure:
+            cle, _libelle, cle_rendement = mesure
+            classement = sorted(
+                ((p, e.get(cle) or 0, e.get(cle_rendement), e.get("heures"))
+                 for p, e in par.items() if e.get(cle)),
+                # Au rendement quand il est calculable pour tout le monde,
+                # sinon au brut : c'est la demande d'Alexandre du 2026-09-09,
+                # « adapter les chiffres en fonction du temps de jeu ».
+                key=lambda t: -(t[2] if t[2] is not None else 0))
+            entree["classement"] = [
+                {"joueur": p, "valeur": v, "par_heure": r, "heures": h}
+                for p, v, r, h in classement]
+            # La feuille nomme les personnages, pas les personnes, et un
+            # personnage neuf change de nom. Plutot que d'annoncer « le
+            # titulaire n'est pas en tete » -- une accusation fausse -- on dit
+            # qu'on ne sait pas, et lequel des pseudos manque a l'appel.
+            tetes = {pseudo_de.get(t, t) for t in titulaires}
+            mesures = {p for p, _v, _r, _h in classement}
+            manquants = sorted(tetes - mesures)
+            entree["pseudos_inconnus"] = manquants or None
+            # On ne tranche que si TOUS les titulaires sont identifiables. Avec
+            # un seul pseudo perime, le verdict serait une accusation fausse :
+            # le 2026-09-09 la feuille disait « Lapin -> Brewtmoiminou », or
+            # Lapin jouait LapInV, et le script annoncait que le titulaire
+            # n'etait pas en tete alors qu'il menait de quatre longueurs.
+            if classement and not manquants:
+                entree["titulaire_en_tete"] = classement[0][0] in tetes
+        sortie.append(entree)
+    return {"roles": sortie, "presence": presence}
+
+
 def par_joueur(ident, sessions, morts):
     """Agrege sessions et morts par joueur, indexe par pseudo."""
     res = {}
@@ -615,6 +772,7 @@ def donnees(cx, monde=None):
         "defi_baby": defi_baby(morts, boss_vaincus),
         "defis": defis(agg, morts, progression, sessions, ident, boss_vaincus),
         "kpi": kpis(cx, monde),
+        "roles": roles(cx, monde, ident, sessions),
         "chantiers": chantiers(),
         "genere": datetime.now().isoformat(timespec="seconds"),
     }

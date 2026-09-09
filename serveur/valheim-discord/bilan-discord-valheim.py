@@ -93,6 +93,49 @@ def succes_du_jour():
     return " · ".join("%s **%d**" % (p, n) for p, n in lignes if n)
 
 
+def champs_roles(d):
+    """Les roles confrontes a la mesure, plus les raids par joueur.
+
+    Deux chiffres pour chaque joueur : le brut et le rapport a l'heure de jeu.
+    Le brut seul mesurerait la presence et non le travail -- Bab-y finissait
+    derniere de tout avec trois fois moins d'heures que Beny, alors qu'a
+    l'heure elle explore autant que Djoose.
+    """
+    r = d.get("roles") or {}
+    champs = []
+
+    for x in r.get("roles") or []:
+        if not x.get("mesure") or not x.get("classement"):
+            continue
+        lignes = []
+        for c in x["classement"][:4]:
+            ph = c.get("par_heure")
+            lignes.append("`%-14s` **%s** %s%s" % (
+                c["joueur"], c["valeur"], x["mesure"],
+                "  ·  %s/h" % ph if ph is not None else ""))
+        marque = {True: " ✅", False: " ❌", None: ""}[x.get("titulaire_en_tete")]
+        titre = "🎭  %s — %s%s" % (x["role"], ", ".join(x["titulaires"]), marque)
+        valeur = "\n".join(lignes)
+        if x.get("pseudos_inconnus"):
+            # Sans le bon pseudo on ne peut pas dire si le titulaire tient son
+            # role : on le dit, avec la commande qui repare.
+            valeur += ("\n_Verdict impossible : le personnage `%s` n'a pas joué "
+                       "sur ce monde. `!pseudo <joueur> <nom en jeu>` pour "
+                       "corriger._" % "`, `".join(x["pseudos_inconnus"]))
+        champs.append({"name": titre, "value": valeur, "inline": False})
+
+    joueurs = (r.get("presence") or {}).get("joueurs") or {}
+    duels = sorted(((p, e) for p, e in joueurs.items() if e.get("raids_vus")),
+                   key=lambda kv: -(kv[1].get("raids_taux") or 0))
+    if duels:
+        champs.append({"name": "⚔️  Raids tenus, par joueur", "inline": False,
+                       "value": "  ·  ".join(
+                           "`%s` **%d %%** (%d/%d)" % (p, e["raids_taux"],
+                                                       e["raids_tenus"], e["raids_vus"])
+                           for p, e in duels)})
+    return champs
+
+
 VERT = 0x3D7317
 
 
@@ -158,6 +201,9 @@ def bilan(d):
     pt = point_du_soir(d)
     if pt:
         champs.append(pt)
+
+    for champ in champs_roles(d):
+        champs.append(champ)
 
     sc = succes_du_jour()
     if sc:
