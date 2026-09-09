@@ -34,9 +34,14 @@ pour l'heure, meme si elle vaut toujours pour la sequence.
 
 Deux choses sont sures et une reste a calibrer.
 
-SUR : la periode de 666 secondes de temps de monde, et donc la sequence des
-temps. Elle ne depend que de l'arithmetique. L'heure de montre, elle, depend du
-rapport entre temps de monde et temps reel, qui varie -- voir plus haut.
+PAS SUR, ET C'ETAIT PRESENTE COMME SUR : que la periode se calcule sur le
+temps ecoule DU MONDE. Les sources disent « la meteo evolue de la meme facon
+dans tous les mondes », ce qui peut vouloir dire deux choses -- que la sequence
+est commune et parcourue selon le temps de chaque monde, ou que tous les mondes
+montrent le meme ciel au meme instant reel. J'ai retenu la premiere sans la
+tester, et la seconde expliquerait la refutation du 2026-09-09 mieux que ma
+theorie d'un generateur defaillant. Test prevu : charger deux mondes d'ages
+differents et comparer leur ciel a la meme minute. Voir observations.json.
 
 SUR : les tables par biome, reconstituees a partir des pourcentages publies.
 Les poids entiers les reproduisent exactement -- Prairies 25/1/1/1/1 donne bien

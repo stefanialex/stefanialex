@@ -33,5 +33,13 @@
       "certaine": false,
       "reserve": "mesure a 24,68 periode : peut relever de la 24"
     }
-  ]
+  ],
+  "_hypothese_ouverte": {
+    "question": "La sequence meteo est-elle indexee sur le temps ecoule DU MONDE, ou sur quelque chose de global ? Les sources disent « la meteo evolue de la meme facon dans tous les mondes », phrase ambigue que j'ai lue dans un sens sans le tester.",
+    "lecture_A": "c'est la SEQUENCE qui est commune, et chaque monde la parcourt selon son propre temps ecoule. Deux mondes d'ages differents voient des ciels differents au meme instant reel. C'est l'hypothese sur laquelle meteo-valheim.py est bati : periode = temps_du_monde / 666.",
+    "lecture_B": "tous les mondes voient le MEME ciel au meme instant reel, quel que soit leur age. Alors l'index ne depend pas du temps du monde et tout mon calcul est a refaire -- ce qui expliquerait la refutation du 2026-09-09 mieux que ma theorie d'un generateur defaillant.",
+    "test": "charger NordheimV1 en solo pendant que NordheimV2 tourne, et comparer le ciel des Prairies a la meme minute. Ciels differents : lecture A, l'index est bon et le defaut est dans le tirage. Ciels identiques : lecture B, l'index est a refaire. Une seule observation elimine la moitie du probleme, ce qui vaut mieux que d'accumuler des orages.",
+    "prevu": "2026-09-10, par le groupe",
+    "note": "Souleve par Alexandre le 2026-09-09 au soir. Je n'avais pas teste cette ambiguite : j'ai retenu la lecture qui m'arrangeait et je l'ai presentee comme etablie -- « SUR : la periode de 666 secondes »."
+  }
 }
