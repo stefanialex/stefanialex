@@ -350,9 +350,50 @@ def temps_cumule(sessions, jusqu_a=None):
     return total
 
 
-def valeur_kpi(source, ident, sessions, morts, progression, agg, boss_vaincus):
+def raids_tenus(cx, monde, fenetre=timedelta(minutes=5)):
+    """Les raids traverses sans une seule mort.
+
+    Un raid dure environ deux minutes en jeu, plus le temps d'achever les
+    derniers assaillants : on regarde donc les cinq minutes qui suivent son
+    apparition. La fenetre est genereuse a dessein -- mieux vaut refuser un
+    raid tenu de justesse que d'en compter un ou quelqu'un est mort.
+
+    C'est le seul defi qui recompense la coordination plutot que la
+    performance individuelle : une seule mort et le raid ne compte pas, quel
+    que soit le joueur. Le filtre par monde suit la meme regle que charge() --
+    les 26 raids de Midgard n'ont pas a nourrir les defis de NordheimV1.
+    """
+    ou, arg = "", ()
+    if monde:
+        ou, arg = " AND monde = ?", (monde,)
+    raids = [datetime.fromisoformat(d) for (d,) in cx.execute(
+        "SELECT horodatage FROM evenements WHERE type = 'raid'" + ou
+        + " ORDER BY horodatage", arg)]
+    morts = [datetime.fromisoformat(d) for (d,) in cx.execute(
+        "SELECT horodatage FROM evenements WHERE type = 'mort'" + ou, arg)]
+    tenus = serie = record = 0
+    for debut in raids:
+        if any(debut <= m <= debut + fenetre for m in morts):
+            serie = 0
+        else:
+            tenus += 1
+            serie += 1
+            record = max(record, serie)
+    return {"tenus": tenus, "total": len(raids), "serie": serie, "record": record}
+
+
+def valeur_kpi(source, ident, sessions, morts, progression, agg, boss_vaincus,
+               raids=None):
     """Calcule un indicateur. Renvoie None si la donnee manque encore."""
     maintenant = datetime.now()
+
+    if source in ("raids_sans_perte", "raids_serie", "raids_record"):
+        # Avant le premier raid il n'y a rien a afficher : sur un monde neuf,
+        # ils n'apparaissent qu'apres l'Ancien.
+        if not raids or not raids["total"]:
+            return None
+        return raids[{"raids_sans_perte": "tenus", "raids_serie": "serie",
+                      "raids_record": "record"}[source]]
 
     if source == "chantiers_faits":
         c = chantiers()
@@ -420,11 +461,12 @@ def kpis(cx, monde):
     ident, sessions, morts, progression, _i, _j = charge(cx, monde)
     agg = par_joueur(ident, sessions, morts)
     boss_vaincus = progression_boss(cx, monde, progression)
+    raids = raids_tenus(cx, monde)
 
     resultat = {"kpis": [], "jalons": []}
     for k in conf.get("kpis", []):
         v = valeur_kpi(k["source"], ident, sessions, morts, progression, agg,
-                       boss_vaincus)
+                       boss_vaincus, raids)
         cible = k.get("cible")
         entree = dict(k)
         entree["valeur"] = v

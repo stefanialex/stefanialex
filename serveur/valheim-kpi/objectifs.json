@@ -78,6 +78,15 @@
       "sens": "plus",
       "unite": "chantiers",
       "note": "déclaratif : mis à jour par chantier-valheim.py, pas mesuré"
+    },
+    {
+      "cle": "raids_serie",
+      "libelle": "Série de raids sans perte",
+      "source": "raids_record",
+      "cible": 14,
+      "sens": "plus",
+      "unite": "raids",
+      "note": "la plus longue série de raids d'affilée sans une seule mort dans les 5 min qui suivent. Le record sur Midgard est de 13, sur 26 raids dont 23 tenus : la cible est de le battre. Les 3 raids perdus l'ont été le 30/08 à 23h37, le 04/09 à 23h10 et le 06/09 à 11h14 — deux des trois en pleine nuit."
     }
   ],
   "jalons": [
