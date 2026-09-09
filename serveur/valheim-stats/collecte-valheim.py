@@ -381,6 +381,96 @@ def morts_de_naissance(cx, lot, mondes):
     return lot2, mondes2
 
 
+# Delai maximal entre l'abandon d'un personnage et la creation du suivant pour
+# que les morts de l'abandonne soient effacees.
+REROLL = timedelta(minutes=10)
+
+
+def comptes_par_pseudo(cx):
+    """Quel compte Steam a joue quel personnage, et depuis quand.
+
+    Meme technique que relie_pseudos -- une apparition suit de quelques
+    secondes la connexion qui l'a provoquee, et on refuse de deviner quand
+    plusieurs connexions sont en attente -- mais on garde ici TOUT l'historique
+    au lieu du seul dernier pseudo : c'est ce qui permet de voir qu'un compte a
+    change de personnage.
+    """
+    lignes = cx.execute(
+        "SELECT horodatage, type, joueur, steamid, monde FROM evenements "
+        "WHERE type IN ('connexion', 'apparition') ORDER BY horodatage, id"
+    ).fetchall()
+    attente, vus = [], {}
+    for ts, typ, joueur, steamid, monde in lignes:
+        t = datetime.fromisoformat(ts)
+        attente = [(a, sid) for (a, sid) in attente if t - a <= timedelta(seconds=180)]
+        if typ == "connexion":
+            attente.append((t, steamid))
+            continue
+        if len(attente) != 1:
+            continue
+        _, sid = attente.pop()
+        vus.setdefault((monde, joueur), (sid, ts))
+    return vus
+
+
+def purge_morts_abandonnees(cx):
+    """Efface les morts d'un personnage abandonne aussitot pour un neuf.
+
+    Decide par le groupe le 2026-09-09 : Baby est morte a 21h28 sur un
+    personnage cree onze minutes plus tot, s'est deconnectee dans la minute et
+    est revenue avec un autre. Les morts d'un personnage qui n'existe plus ne
+    disent rien du joueur d'aujourd'hui.
+
+    Ce n'est pas l'echappatoire qu'on pourrait craindre : pour effacer une mort
+    il faut supprimer son personnage, donc perdre ses competences, son
+    inventaire et sa progression. Le prix est sans commune mesure avec l'enjeu.
+
+    La regle est RETROSPECTIVE -- au moment de la mort on ignore que le
+    personnage sera abandonne -- donc elle ne peut pas empecher l'annonce dans
+    le salon, seulement corriger la statistique. Elle s'applique a chaque
+    demarrage du collecteur, apres le rattrapage.
+    """
+    comptes = comptes_par_pseudo(cx)
+    # Derniere trace de chaque personnage, et debut de chacun.
+    derniere = {}
+    for monde, joueur, ts in cx.execute(
+            "SELECT monde, joueur, max(horodatage) FROM evenements "
+            "WHERE joueur IS NOT NULL GROUP BY monde, joueur"):
+        derniere[(monde, joueur)] = datetime.fromisoformat(ts)
+
+    efface = 0
+    for monde, joueur, ts in cx.execute(
+            "SELECT monde, joueur, horodatage FROM evenements "
+            "WHERE type = 'mort' AND joueur IS NOT NULL"):
+        cle = (monde, joueur)
+        compte = comptes.get(cle)
+        fin = derniere.get(cle)
+        if not compte or not fin:
+            continue
+        sid, _debut = compte
+        mort = datetime.fromisoformat(ts)
+        # Le personnage doit avoir ete abandonne juste apres la mort.
+        if fin - mort > REROLL:
+            continue
+        # ... et le meme compte doit avoir repris un AUTRE personnage peu apres.
+        suivant = None
+        for (m2, j2), (sid2, debut2) in comptes.items():
+            if m2 != monde or j2 == joueur or sid2 != sid:
+                continue
+            d2 = datetime.fromisoformat(debut2)
+            if fin < d2 <= fin + REROLL:
+                suivant = j2
+                break
+        if not suivant:
+            continue
+        efface += cx.execute(
+            "DELETE FROM evenements WHERE type = 'mort' AND monde IS ? "
+            "AND joueur = ? AND horodatage = ?", (monde, joueur, ts)).rowcount
+    if efface:
+        cx.commit()
+    return efface
+
+
 def enregistre(cx, monde, lot):
     """Insere un lot. « monde » peut etre un nom, ou une liste parallele au lot.
 
@@ -443,7 +533,14 @@ def rattrapage(cx, depuis):
 
     lot, mondes = morts_de_naissance(cx, lot, mondes)
     releve_monde(cx, monde)
-    return len(lot), enregistre(cx, mondes, lot)
+    nb = enregistre(cx, mondes, lot)
+    # Apres coup seulement : la regle du personnage abandonne a besoin de
+    # connaitre la suite de l'histoire.
+    relie_pseudos(cx)
+    purgees = purge_morts_abandonnees(cx)
+    if purgees:
+        print("%d mort(s) effacee(s) : personnage abandonne pour un neuf" % purgees)
+    return len(lot), nb
 
 
 def suit(cx):
