@@ -132,12 +132,52 @@ sudo tee /etc/valheim.env >/dev/null <<'FIN'
 NOM_SERVEUR=Serveur des Vikings
 NOM_MONDE=Midgard
 MOT_DE_PASSE=change-moi-vraiment
+MODIFICATEURS=
 FIN
 sudo chmod 600 /etc/valheim.env
 sudo nano /etc/valheim.env
 ```
 
 Mets un vrai mot de passe dans `nano`, puis `Ctrl+O`, `Entrée`, `Ctrl+X`.
+
+### Les modificateurs de monde, et pourquoi ils passent par une variable
+
+`MODIFICATEURS` est vide par défaut et porte les options de difficulté que
+Valheim accepte en ligne de commande, sous la forme
+`-modifier <categorie> <valeur>`, autant de fois qu'on veut :
+
+| Catégorie | Valeurs |
+|---|---|
+| `combat` | `veryeasy` `easy` `hard` `veryhard` |
+| `deathpenalty` | `casual` `veryeasy` `easy` `hard` `hardcore` |
+| `resources` | `muchless` `less` `more` `muchmore` `most` |
+| `raids` | `none` `muchless` `less` `more` `muchmore` |
+| `portals` | `casual` `hard` `veryhard` |
+
+Exemple, demandé par Alexandre le 2026-09-09 parce qu'il aime se faire
+attaquer par les sangliers pour le butin :
+
+```bash
+MODIFICATEURS=-modifier raids muchmore
+```
+
+**Le `$` est sans accolades, et ce n'est pas une faute de frappe.** systemd
+découpe `$VARIABLE` en plusieurs arguments sur les espaces, mais **pas**
+`${VARIABLE}`, qui reste un argument unique. Avec des accolades, le serveur
+recevrait `-modifier raids muchmore` comme un seul mot et l'ignorerait — sans
+message d'erreur. C'est aussi pourquoi les autres variables du fichier gardent
+leurs accolades **et** leurs guillemets : un nom de serveur avec un espace doit
+rester un seul argument.
+
+Changer un modificateur ne demande donc que d'éditer `/etc/valheim.env` puis
+`systemctl restart valheim` — pas de `daemon-reload`, l'unité ne bouge pas.
+
+Deux choses à savoir avant de monter les raids. Les événements sont **liés à la
+progression** : le raid des sangliers est celui d'Eikthyr, donc il n'arrive
+rien avant qu'il soit tombé, et monter la fréquence n'y change rien. Et ça
+frotte avec le défi d'équipe « série de raids sans perte » : plus de raids veut
+dire plus d'occasions d'allonger la série, mais aussi plus d'occasions de la
+casser.
 
 ---
 
@@ -177,6 +217,7 @@ ExecStart=/srv/jeux/valheim/serveur/valheim_server.x86_64 \
   -world "${NOM_MONDE}" \
   -password "${MOT_DE_PASSE}" \
   -savedir /var/lib/valheim/donnees \
+  $MODIFICATEURS \
   -public 0 \
   -saveinterval 600 \
   -backups 4 -backupshort 7200 -backuplong 43200
