@@ -424,7 +424,13 @@ GRAIN_FIN_JOURS=3
 NOM="valheim-$(date +%Y%m%d-%H%M%S).tar.gz"
 
 mkdir -p "$PRIMAIRE"
-tar czf "$PRIMAIRE/$NOM.partiel" -C "$SOURCE" .
+CODE_TAR=0
+tar czf "$PRIMAIRE/$NOM.partiel" -C "$SOURCE" --exclude='*.new' . || CODE_TAR=$?
+if (( CODE_TAR >= 2 )); then
+    echo "tar a echoue (code $CODE_TAR), archive abandonnee" >&2
+    rm -f "$PRIMAIRE/$NOM.partiel"
+    exit 1
+fi
 
 gzip -t "$PRIMAIRE/$NOM.partiel"
 tar tzf "$PRIMAIRE/$NOM.partiel" >/dev/null
@@ -468,6 +474,24 @@ aucune panne matérielle unique n'emporte l'ensemble.
 **L'éclaircissage.** Passé trois jours, une seule archive par jour est
 conservée. Sans ça, 24 archives quotidiennes finissent par saturer le disque
 quand le monde grossit — un monde longuement exploré dépasse facilement 100 Mio.
+
+**La tolérance au code de sortie 1 de `tar`.** Le jeu sauvegarde toutes les
+10 minutes : une fois sur deux, l'archivage tombe pendant une sauvegarde. `tar`
+signale alors « fichier modifié pendant sa lecture » et sort en 1 — un
+avertissement, pas une erreur, mais `set -e` tuait le script et le service
+partait en échec alors que l'archive était bonne. Seul le code 2, l'erreur
+fatale, doit arrêter la sauvegarde ; l'archive reste de toute façon vérifiée
+avant publication.
+
+`Midgard.db` n'est jamais réécrit sur place — le jeu écrit `Midgard.db.new`
+puis le renomme par dessus — donc ce que `tar` lit est toujours un monde
+complet et cohérent, même si le renommage survient en cours d'archivage. Le
+`.new`, lui, est exclu : à moitié écrit, il n'a aucune valeur, et c'est lui qui
+disparaissait sous le nez de `tar`.
+
+Ce détail n'était pas cosmétique : `jour-j-valheim.sh` et
+`redemarrage-machine.sh` appellent ce script sous `set -e` avant de basculer le
+monde ou de redémarrer la machine. Un échec ici les aurait arrêtés net.
 
 ### La minuterie horaire
 
