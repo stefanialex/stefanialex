@@ -1,5 +1,5 @@
 {
-  "_note": "Liste des KPI et de leurs objectifs. Modifiable sans toucher au code : stats-valheim.py --kpi lit ce fichier. Les valeurs ci-dessous sont des reperes issus de la recherche sur la progression a 4 joueurs, a remplacer par le tableau du groupe.",
+  "_note": "Cibles recalibrees le 2026-09-09 sur les chiffres mesures de Midgard (fenetre du 28/08 au 09/09), et non plus sur des reperes de recherche : chaque KPI porte sa base de calcul dans sa note. Les jalons ci-dessous, eux, restent des estimations — Midgard ne peut pas les mesurer, ses deux premiers boss etant tombes avant la pose de la sonde. NordheimV1 donnera la vraie courbe depuis le jour 0 : les recalibrer alors.",
   "kpis": [
     {
       "cle": "boss",
@@ -8,7 +8,7 @@
       "cible": 8,
       "sens": "plus",
       "unite": "boss",
-      "note": "lu dans les clés globales du monde, relevées toutes les 5 minutes"
+      "note": "8 boss attendus en 1.0 avec le Grand Nord. Non verifie : c'est le seul repere que je n'ai pas pu confirmer, a corriger le 9 au soir."
     },
     {
       "cle": "intacts",
@@ -17,58 +17,61 @@
       "cible": 1,
       "sens": "plus",
       "unite": "joueurs",
-      "note": "le defi de Bab-y : il en faut au moins un"
+      "note": "defi de Bab-y, binaire : il faut au moins un joueur intact."
     },
     {
       "cle": "morts_heure",
       "libelle": "Morts par heure (groupe)",
       "source": "morts_par_heure",
-      "cible": 0.15,
+      "cible": 0.28,
       "sens": "moins",
-      "unite": "morts/h"
+      "unite": "morts/h",
+      "note": "mesure sur Midgard : 0,328 mort par heure de groupe (76 morts pour 232 h). Cible a 0,28, soit 15 % mieux — une marge reelle mais atteignable, la fenetre mesuree couvrant Bonemass et Moder, du contenu difficile."
     },
     {
       "cle": "morts_total",
       "libelle": "Morts cumulées du groupe",
       "source": "morts_total",
-      "cible": 40,
+      "cible": 250,
       "sens": "moins",
-      "unite": "morts"
+      "unite": "morts",
+      "note": "le moins fiable des reperes, et il faut le savoir. Base : 76 morts pour les deux seuls paliers a date certaine (Bonemass, Moder), soit 38 par boss. A ce rythme, 8 boss coutent 300 morts ; les premiers paliers etant moins chers, la cible est posee a 250 pour la course entiere."
     },
     {
       "cle": "serie",
       "libelle": "Plus longue série sans mourir",
       "source": "serie_max",
-      "cible": 86400,
+      "cible": 345600,
       "sens": "plus",
-      "unite": "duree"
+      "unite": "duree",
+      "note": "record mesure sur Midgard : 3,48 jours sans qu'aucun joueur ne meure. Cible a 4 jours pleins, soit le battre."
     },
     {
       "cle": "temps",
       "libelle": "Temps de jeu du groupe",
       "source": "temps_groupe",
-      "cible": 396000,
+      "cible": 835200,
       "sens": "plus",
       "unite": "duree",
-      "note": "110 h : le repere pour atteindre la Reine a 4 joueurs"
+      "note": "232 h de temps de groupe en 12 jours sur Midgard. La cible reprend ce chiffre : investir autant sur NordheimV1. Les sessions simultanees s'additionnent, donc 4 joueurs une heure ensemble valent 4 h."
     },
     {
       "cle": "rythme",
       "libelle": "Dernier palier de boss (jeu)",
       "source": "dernier_palier",
-      "cible": 90000,
+      "cible": 216000,
       "sens": "moins",
       "unite": "duree",
-      "note": "25 h entre deux boss"
+      "note": "85,6 h de temps de groupe entre Bonemass et Moder, le seul ecart entre deux boss dont les deux dates sont certaines. Cible a 60 h, soit 30 % plus vite."
     },
     {
       "cle": "regularite",
       "libelle": "Sessions sur 7 jours",
       "source": "sessions_7j",
-      "cible": 40,
+      "cible": 100,
       "sens": "plus",
       "unite": "sessions",
-      "note": "a recaler sur le tableau du groupe"
+      "note": "134 sessions sur les 7 derniers jours, a quatre. La cible est un plancher a 100 et non un defi : elle dit « le groupe vient encore », avec de quoi absorber une semaine de vacances sans tomber en echec."
     },
     {
       "cle": "chantiers",
@@ -77,7 +80,7 @@
       "cible": 12,
       "sens": "plus",
       "unite": "chantiers",
-      "note": "déclaratif : mis à jour par chantier-valheim.py, pas mesuré"
+      "note": "les 12 chantiers de la feuille de Baby. Structurel, pas statistique."
     },
     {
       "cle": "raids_serie",
