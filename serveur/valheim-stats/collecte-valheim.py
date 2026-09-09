@@ -353,6 +353,19 @@ def morts_de_naissance(cx, lot, mondes):
     Le prix a payer, assume : une vraie mort dans les 90 premieres secondes
     d'un personnage neuf est perdue. Mieux vaut manquer une mort au spawn que
     d'en inventer quatre.
+
+    Portee reelle, mesuree le 2026-09-09 en reconstruisant deux fois le journal
+    entier, avec et sans le filtre : 92 morts brutes, 84 retenues. Le filtre en
+    ecarte donc 7 et la regle du personnage abandonne 1. Les 7 sont a 2, 5, 8,
+    10, 20, 24 et 58 secondes de la premiere apparition de leur personnage --
+    toutes des creations de perso, dont trois anterieures au monde neuf du
+    soir, le groupe ayant deja refait des personnages dans l'apres-midi.
+
+    Cette mesure corrige une affirmation fausse : j'avais d'abord annonce que le
+    filtre ne retirait rien de l'historique, en comparant la base reconstruite
+    filtree a la base de production... deja filtree. Une comparaison circulaire,
+    donc un test incapable d'echouer. Alexandre a demande de creuser, et il
+    avait raison.
     """
     premieres = {}
     for (ts, typ, j, _sid, _d), m in zip(lot, mondes):
