@@ -154,9 +154,26 @@ Cmnd_Alias SRV_MINUTERIES = \
     /usr/bin/systemctl restart redemarrage-machine.timer
 
 # ---------------------------------------------------------------------------
-# La regle
+# Le seul appel « en tant que valheim » dont lapserv a besoin
+# ---------------------------------------------------------------------------
+# file-claude-valheim.service tourne en « User=lapserv » — il appelle le CLI
+# claude, installe dans ~lapserv — mais publie sa reponse via le bot, qui doit
+# tourner sous « valheim » pour lire /etc/valheim-discord.conf (root:valheim
+# 640). C'est le seul endroit du projet ou lapserv a besoin d'une cible autre
+# que root : partout ailleurs, c'est systemd qui lance en root.
+#
+# Le chemin vient d'un « mktemp -d », d'ou le joker. Le fichier doit etre un
+# JSON de la forme attendue, sinon publie_reponse() s'arrete. Le pire cas est
+# donc de publier un message dans le salon Discord — ce que lapserv peut deja
+# faire en demarrant l'unite du bilan. Pas d'escalade de privilege.
+Cmnd_Alias SRV_BOT_REPONSE = \
+    /usr/local/bin/lit-discord-valheim.py --repondre /tmp/tmp.*/reponse.json
+
+# ---------------------------------------------------------------------------
+# Les regles
 # ---------------------------------------------------------------------------
 lapserv ALL=(root) NOPASSWD: SRV_DIAG, SRV_JOUR_J_AUDIT, SRV_UNITES, SRV_MINUTERIES
+lapserv ALL=(valheim) NOPASSWD: SRV_BOT_REPONSE
 
 # ---------------------------------------------------------------------------
 # Volontairement ABSENT, avec la raison
