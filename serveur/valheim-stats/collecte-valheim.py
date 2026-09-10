@@ -146,6 +146,21 @@ CREATE TABLE IF NOT EXISTS joueurs (
   premiere_vue TEXT,
   derniere_vue TEXT
 );
+
+-- Tous les personnages qu'un compte a portes, et pas seulement le dernier.
+-- La table « joueurs » n'en garde qu'un : elle repond a « qui est-ce ? ».
+-- Celle-ci repond a « ce nom, c'etait qui ? », question qui se pose des qu'un
+-- joueur refait son personnage. Le 2026-09-09 au soir, deux l'ont fait :
+-- Djoose est passe de « Djoos Io » a « DjoosI o », Bab-y de « Babyy » a
+-- « Babyyy ». Les anciens noms sont alors devenus des joueurs fantomes,
+-- porteurs de morts que plus aucun compte ne reclamait.
+CREATE TABLE IF NOT EXISTS pseudos (
+  steamid      TEXT NOT NULL,
+  pseudo       TEXT NOT NULL,
+  premiere_vue TEXT NOT NULL,
+  derniere_vue TEXT NOT NULL,
+  PRIMARY KEY (steamid, pseudo)
+);
 """
 
 
@@ -336,6 +351,13 @@ def relie_pseudos(cx):
             "INSERT INTO joueurs (steamid, pseudo, premiere_vue, derniere_vue) "
             "VALUES (?, ?, ?, ?) ON CONFLICT (steamid) DO UPDATE SET "
             "pseudo = excluded.pseudo, derniere_vue = excluded.derniere_vue",
+            (sid, joueur, ts, ts),
+        )
+        # Et l'on garde la trace du nom, meme quand un autre lui succedera.
+        cx.execute(
+            "INSERT INTO pseudos (steamid, pseudo, premiere_vue, derniere_vue) "
+            "VALUES (?, ?, ?, ?) ON CONFLICT (steamid, pseudo) DO UPDATE SET "
+            "derniere_vue = excluded.derniere_vue",
             (sid, joueur, ts, ts),
         )
     cx.commit()

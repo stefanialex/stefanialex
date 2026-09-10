@@ -111,6 +111,37 @@ def duree(secondes):
     return "%d h %02d" % (h, m)
 
 
+def alias(cx):
+    """Chaque nom de personnage, rapporte au nom que porte le compte aujourd'hui.
+
+    Un joueur qui refait son personnage change de nom, et le serveur n'ecrit
+    que des noms de personnages. Le 2026-09-09 au soir, deux l'ont fait :
+    Djoose est passe de « Djoos Io » a « DjoosI o », Bab-y de « Babyy » a
+    « Babyyy ». L'ancien nom devenait alors un joueur fantome, avec ses morts
+    a lui -- deux dans le tableau du 2026-09-10, sans compte Steam, et un role
+    d'Explorateur qu'on ne pouvait plus trancher.
+
+    C'est le SteamID qui fait le pont, comme le demandait Alexandre : il ne
+    change pas, lui. Le collecteur relie chaque nom au compte qui l'a porte, et
+    cette table ramene tous les noms d'un compte a son nom courant.
+
+    La table peut manquer -- une base d'avant cette version, un collecteur pas
+    encore reinstalle : on rend alors un dictionnaire vide et tout se comporte
+    comme avant, sans planter.
+    """
+    courant = {sid: p for sid, p in cx.execute("SELECT steamid, pseudo FROM joueurs")}
+    try:
+        anciens = cx.execute("SELECT steamid, pseudo FROM pseudos").fetchall()
+    except sqlite3.OperationalError:
+        return {}
+    res = {}
+    for sid, p in anciens:
+        actuel = courant.get(sid)
+        if actuel and actuel != p:
+            res[p] = actuel
+    return res
+
+
 def monde_actif(cx):
     """Le monde le plus recemment vu par le collecteur."""
     r = cx.execute("SELECT monde FROM mondes ORDER BY derniere_vue DESC LIMIT 1").fetchone()
@@ -148,11 +179,16 @@ def charge(cx, monde=None):
     for sid, debut in ouvertes.items():
         sessions.append((sid, debut, maintenant, True))
 
+    # Les morts sont enregistrees sous le nom du personnage. On les ramene au
+    # nom courant du compte, sinon un joueur qui refait son personnage se
+    # dedouble : ses morts d'avant restent orphelines et forment une ligne
+    # fantome dans le tableau.
+    noms = alias(cx)
     morts = {}
     for joueur, ts in cx.execute(
             "SELECT joueur, horodatage FROM evenements WHERE type = 'mort'" + ou +
             " ORDER BY horodatage", arg):
-        morts.setdefault(joueur, []).append(ts)
+        morts.setdefault(noms.get(joueur, joueur), []).append(ts)
 
     progression = {}
     for detail, ts in cx.execute(
@@ -297,7 +333,13 @@ def roles(cx, monde, ident, sessions):
     # La feuille nomme les joueurs « Lapin, Beny, Djoose, Baby » ; les mesures
     # les nomment par leur pseudo en jeu. La table des joueurs de chantiers.json
     # fait le pont.
-    pseudo_de = {n: (d.get("pseudo") or n) for n, d in (c.get("joueurs") or {}).items()}
+    # La feuille est ecrite a la main et vieillit : elle nomme le personnage
+    # qu'avait le joueur le jour de la transcription. On la fait passer par la
+    # meme table d'alias, sinon « Djoos Io » reste introuvable et le verdict du
+    # role devient impossible alors que le joueur est bien la, sous un autre nom.
+    noms = alias(cx)
+    pseudo_de = {n: noms.get(d.get("pseudo") or n, d.get("pseudo") or n)
+                 for n, d in (c.get("joueurs") or {}).items()}
 
     sortie = []
     for f in c.get("fonctions") or []:
