@@ -112,7 +112,9 @@ CREATE TABLE IF NOT EXISTS evenements (
   type        TEXT NOT NULL,
   joueur      TEXT,
   steamid     TEXT,
-  detail      TEXT
+  detail      TEXT,
+  -- Rang de cet evenement parmi ses jumeaux de la meme seconde. Voir rang_de().
+  rang        INTEGER NOT NULL DEFAULT 0
 );
 -- Unicite pour rendre la relecture du journal idempotente. Elle porte sur des
 -- COALESCE et non directement sur les colonnes : dans SQLite deux NULL ne sont
@@ -120,8 +122,18 @@ CREATE TABLE IF NOT EXISTS evenements (
 -- sur une connexion, pas de SteamID sur une mort). Une contrainte UNIQUE posee
 -- sur les colonnes brutes ne se declencherait donc jamais et chaque relecture
 -- dupliquerait tout le journal.
+--
+-- Le rang en fait partie, et c'est ce qui manquait. Sans lui, deux evenements
+-- identiques a la meme seconde n'en faisaient qu'un -- et Valheim en produit :
+-- il peuple souvent plusieurs donjons dans la meme seconde, quand un joueur
+-- approche d'une zone qui en contient plusieurs. Mesure du 2026-09-10 sur le
+-- journal entier : 266 entrees de donjon ecrites, 219 en base. 47 perdues,
+-- 18 %. Les autres types n'ont produit qu'une seule collision (un autel) --
+-- zero sur les morts, les connexions, les sauvegardes et les zones, ou le
+-- dedoublonnage se fait de toute facon dans la requete.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_ev_unique ON evenements (
-  horodatage, type, COALESCE(joueur, ''), COALESCE(steamid, ''), COALESCE(detail, '')
+  horodatage, type, COALESCE(joueur, ''), COALESCE(steamid, ''), COALESCE(detail, ''),
+  rang
 );
 CREATE INDEX IF NOT EXISTS idx_ev_type  ON evenements (type, horodatage);
 CREATE INDEX IF NOT EXISTS idx_ev_joueur ON evenements (joueur, horodatage);
@@ -291,10 +303,51 @@ def releve_monde(cx, monde):
     cx.commit()
 
 
+# Le rang d'un evenement parmi ses jumeaux exacts de la meme seconde, compte
+# pour la duree de ce processus. C'est ce qui rend le rang utilisable sans
+# casser l'idempotence : le collecteur relit le journal entier a chaque
+# demarrage, dans le meme ordre, donc la meme ligne recoit toujours le meme
+# rang et l'INSERT OR IGNORE retombe sur la meme ligne de base.
+RANGS = {}
+
+
+def rang_de(ts, typ, joueur, steamid, detail):
+    """Le rang de cet evenement parmi ses jumeaux deja vus dans cette passe."""
+    cle = (ts, typ, joueur, steamid, detail)
+    n = RANGS.get(cle, 0)
+    RANGS[cle] = n + 1
+    return n
+
+
+def migre(cx):
+    """Ajoute la colonne rang et refait l'index unique sur une base d'avant.
+
+    La colonne s'ajoute sans douleur, mais l'index ne se remplace pas tout
+    seul : « CREATE UNIQUE INDEX IF NOT EXISTS » ne fait rien quand le nom
+    existe deja, meme si sa definition a change. On lit donc son texte plutot
+    que sa presence -- une verification qui ne peut pas se tromper sur ce
+    qu'elle constate.
+
+    Effet au prochain rattrapage : le premier de chaque groupe de jumeaux
+    retombe sur la ligne deja en base, les suivants s'inserent enfin. Les 47
+    entrees de donjon perdues depuis le 2026-09-09 reviennent.
+    """
+    colonnes = {r[1] for r in cx.execute("PRAGMA table_info(evenements)")}
+    if "rang" not in colonnes:
+        cx.execute("ALTER TABLE evenements ADD COLUMN rang INTEGER NOT NULL DEFAULT 0")
+    r = cx.execute("SELECT sql FROM sqlite_master WHERE type = 'index' "
+                   "AND name = 'idx_ev_unique'").fetchone()
+    if r and "rang" not in (r[0] or ""):
+        cx.execute("DROP INDEX idx_ev_unique")
+        cx.executescript(SCHEMA)
+    cx.commit()
+
+
 def ouvre():
     os.makedirs(os.path.dirname(BASE), exist_ok=True)
     cx = sqlite3.connect(BASE)
     cx.executescript(SCHEMA)
+    migre(cx)
     return cx
 
 
@@ -537,8 +590,9 @@ def enregistre(cx, monde, lot):
         mondes = [monde] * len(lot)
     cx.executemany(
         "INSERT OR IGNORE INTO evenements "
-        "(horodatage, monde, type, joueur, steamid, detail) VALUES (?, ?, ?, ?, ?, ?)",
-        [(ts, m, typ, j, sid, d)
+        "(horodatage, monde, type, joueur, steamid, detail, rang) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [(ts, m, typ, j, sid, d, rang_de(ts, typ, j, sid, d))
          for (ts, typ, j, sid, d), m in zip(lot, mondes)],
     )
     cx.commit()
