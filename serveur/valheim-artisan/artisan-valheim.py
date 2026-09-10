@@ -37,6 +37,14 @@ joueur : les fichiers de personnage vivent chez le joueur, pas sur le serveur.
 Ce qu'il compte, ce sont les objets poses dans le monde -- coffres, supports
 d'armes, etabli, ce qui traine par terre.
 
+Consequence a ne pas se cacher : ce nombre BAISSE. Ce n'est pas un compteur de
+ce qu'un joueur a fabrique dans sa vie, c'est un inventaire de ce qui existe
+encore dans le monde a son nom. Un objet qui passe dans un sac, qui casse ou
+qui se mange en sort. Mesure du 2026-09-10 entre deux sauvegardes distantes
+d'une heure : Bëwulf de 8 a 10 objets, « Djoos Io » de 11 a 9. Les deux
+mouvements sont vrais, et aucun des deux ne dit qui a forge le plus depuis le
+debut -- seulement qui a laisse le plus derriere lui.
+
 Il lit par defaut la derniere archive de sauvegarde, lisible par tous, et non
 le monde vivant qui est en 0750 valheim. C'est delibere : la page Cockpit
 tourne sous le compte de l'humain et doit pouvoir l'appeler sans privilege. Le
