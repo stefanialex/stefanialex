@@ -745,13 +745,14 @@ sudo chmod 750 /var/lib/valheim
 ```
 
 **6. Réinstaller les programmes et les unités**, depuis le dépôt. Deux lots :
-les quinze programmes ouverts en `755`, et les cinq qui touchent au monde ou
+les seize programmes ouverts en `755`, et les cinq qui touchent au monde ou
 aux sauvegardes en `750` — eux ne doivent rester lisibles que par root.
 
 ```bash
 sudo install -o root -g root -m 755 \
   monde-valheim/monde-valheim.py \
   valheim-artisan/artisan-valheim.py \
+  valheim-artisan/noms-prefabs-valheim.py \
   valheim-cles/cles-monde-valheim.py \
   valheim-discord/bilan-discord-valheim.py \
   valheim-discord/file-claude-valheim.sh \
@@ -832,6 +833,16 @@ sudo systemctl start sauvegarde-valheim        # une archive neuve, verifiee
 La ligne `Load world:` doit nommer **ton** monde. Si elle en nomme un autre, le
 serveur en a généré un neuf : arrête-le, vérifie `NOM_MONDE` dans
 `/etc/valheim.env`, et compare-le au nom du dossier sous `worlds_local/`.
+
+La table des noms de prefabs ne se restaure pas non plus, elle se refabrique --
+elle vit dans `/var/tmp`, exprès, parce qu'elle dépend de la version du jeu :
+
+```bash
+noms-prefabs-valheim.py          # ~50 s, deplie 1,7 Go de bundles
+```
+
+Sans elle, le relevé des artisans affiche des hashes au lieu des noms d'objets.
+À relancer après chaque mise à jour de Valheim.
 
 Enfin, la base de statistiques ne se restaure pas et n'a pas à l'être : le
 collecteur relit tout le journal `systemd` à chaque démarrage et se
