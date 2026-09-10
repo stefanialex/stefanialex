@@ -1,0 +1,9 @@
+[Unit]
+Description=Redemarrage hebdomadaire du serveur Valheim
+
+[Service]
+Type=oneshot
+# Valheim accumule de la memoire au fil des jours. Un redemarrage regulier est
+# le remede le plus efficace, et l'arret propre ecrit le monde sur disque.
+ExecStartPre=/usr/local/bin/sauvegarde-valheim.sh
+ExecStart=/usr/bin/systemctl restart valheim.service

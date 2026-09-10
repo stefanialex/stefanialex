@@ -630,7 +630,7 @@ rclone copy gdrive:sauvegardes-valheim/ "$T/"
 A=$(ls -1 "$T"/valheim-*.tar.gz | head -1)
 
 gzip -t "$A"                                  # l'archive est-elle intacte ?
-tar tzf "$A" | grep Midgard                   # contient-elle le monde ?
+tar tzf "$A" | grep worlds_local/             # contient-elle le monde ?
 
 # Et la preuve : meme somme de controle que l'originale locale.
 md5sum "$A"
@@ -652,6 +652,190 @@ sudo systemctl start valheim
 
 Ne supprime l'ancien dossier qu'après avoir vérifié en jeu que le monde
 restauré est le bon.
+
+---
+
+## Reconstruire depuis rien — la machine est perdue
+
+Le cas que les archives horaires ne couvrent pas : la machine ne redémarre
+plus, ou n'existe plus. La copie hors site est alors la seule qui reste, et
+elle ne contient **que le monde**. Le reste se reconstitue, et c'est l'ordre
+qui compte.
+
+### Ce qui n'est pas sauvegardé, et qu'il faut savoir d'avance
+
+| Ce qui manquera | Où ça vivait | Comment le retrouver |
+|---|---|---|
+| Nom du serveur, nom du monde, **mot de passe**, modificateurs | `/etc/valheim.env`, en `0600 root` | **À retaper à la main.** Hors dépôt — il contient le mot de passe — et hors archive, qui ne couvre que `/var/lib/valheim/donnees`. Voir l'étape 4. |
+| Jeton Google Drive de `rclone` | `/etc/rclone/rclone.conf`, sur la machine perdue | Ne se restaure pas : on se **réauthentifie**. Le Drive appartient au compte Google, pas à la machine. |
+| Le binaire du serveur, 2 Gio | `/srv/jeux/valheim/serveur` | Réinstallé par SteamCMD, étape 3. Ce n'est pas de la donnée, on ne l'archive pas. |
+| Programmes, unités systemd, page Cockpit | `/usr/local/bin`, `/etc/systemd/system`, `/usr/share/cockpit/valheim` | Le dépôt. C'est sa raison d'être. |
+
+**Le mot de passe est le seul point vraiment fragile** : il ne vit que dans
+`/etc/valheim.env`, sur la machine, et nulle part ailleurs — c'est volontaire,
+un mot de passe n'a pas sa place dans un dépôt, et il n'est donc pas écrit dans
+ce document non plus. Sans lui, le monde se restaure très bien mais personne ne
+s'y connecte tant qu'on n'en a pas choisi un nouveau, ce qui oblige à le redire
+à tout le groupe. Le garder en double dans un gestionnaire de mots de passe,
+hors de cette machine, évite ce détour.
+
+### L'ordre
+
+**1. Le dépôt d'abord.** Tout ce qui suit s'y trouve.
+
+```bash
+git clone https://github.com/stefanialex/stefanialex.git ~/stefanialex
+cd ~/stefanialex/serveur
+```
+
+**2. Les étapes 1 à 5 de ce document**, dans l'ordre : dépendances, compte
+système `valheim`, installation par SteamCMD, `/etc/valheim.env`, unité
+systemd. L'unité, elle, ne se retape pas — elle est dans le dépôt :
+
+```bash
+sudo install -o root -g root -m 644 valheim-serveur/valheim.service /etc/systemd/system/
+sudo systemctl daemon-reload
+```
+
+**Ne démarre pas encore le serveur.** Lancé sur un nom de monde qui n'existe
+pas, il en génère un neuf avec une seed au hasard — et le monde restauré à
+l'étape suivante se retrouverait à côté, inutilisé, ce qui se voit mal.
+
+**3. Réauthentifier `rclone`.** C'est l'étape que rien ne remplace.
+
+```bash
+sudo apt install -y rclone
+rclone config                    # remote de type « drive », nommé gdrive
+sudo mkdir -p /etc/rclone
+sudo cp ~/.config/rclone/rclone.conf /etc/rclone/rclone.conf
+sudo chmod 600 /etc/rclone/rclone.conf
+```
+
+Le remote **doit** s'appeler `gdrive` et le fichier atterrir dans
+`/etc/rclone/rclone.conf` : c'est ce que `sauvegarde-valheim-hors-site.sh`
+attend, en dur.
+
+**4. Rapatrier l'archive, et la vérifier avant d'y toucher.**
+
+```bash
+rclone --config /etc/rclone/rclone.conf ls gdrive:sauvegardes-valheim/
+rclone --config /etc/rclone/rclone.conf copy \
+  gdrive:sauvegardes-valheim/valheim-AAAAMMJJ-HHMMSS.tar.gz /tmp/
+
+gzip -t /tmp/valheim-AAAAMMJJ-HHMMSS.tar.gz
+tar tzf /tmp/valheim-AAAAMMJJ-HHMMSS.tar.gz | grep worlds_local/
+```
+
+La dernière ligne doit nommer ton monde. Depuis la 1.0 c'est un **dossier** —
+`./worlds_local/NordheimV2/_main.12.db2` et son `.fwl2` — et non plus deux
+fichiers. Une archive d'avant le 2026-09-09 contient l'ancienne forme,
+`./worlds_local/Midgard.db` : le serveur 1.0 la lit et la convertit, mais
+vérifie alors que la conversion a bien eu lieu avant de laisser le groupe
+jouer dessus.
+
+**5. Restaurer le monde.** L'archive contient le **contenu** de `donnees`, pas
+le dossier lui-même — `tar` l'a créée avec `-C "$SOURCE" .`. Elle se déplie
+donc *dans* un `donnees` vide, pas un niveau au-dessus.
+
+```bash
+sudo mkdir -p /var/lib/valheim/donnees
+sudo tar xzf /tmp/valheim-AAAAMMJJ-HHMMSS.tar.gz -C /var/lib/valheim/donnees
+sudo chown -R valheim:valheim /var/lib/valheim
+sudo chmod 750 /var/lib/valheim
+```
+
+**6. Réinstaller les programmes et les unités**, depuis le dépôt. Deux lots :
+les quatorze programmes ouverts en `755`, et les cinq qui touchent au monde ou
+aux sauvegardes en `750` — eux ne doivent rester lisibles que par root.
+
+```bash
+sudo install -o root -g root -m 755 \
+  monde-valheim/monde-valheim.py \
+  valheim-cles/cles-monde-valheim.py \
+  valheim-discord/bilan-discord-valheim.py \
+  valheim-discord/file-claude-valheim.sh \
+  valheim-discord/lit-discord-valheim.py \
+  valheim-discord/notifie-discord-valheim.py \
+  valheim-discord/salon-valheim.py \
+  valheim-kpi/chantier-valheim.py \
+  valheim-meteo/meteo-valheim.py \
+  valheim-meteo/oracle-valheim.py \
+  valheim-monde/lecteur-monde-valheim.py \
+  valheim-stats/collecte-valheim.py \
+  valheim-stats/stats-valheim.py \
+  valheim-steam/succes-steam-valheim.py \
+  /usr/local/bin/
+
+sudo install -o root -g root -m 750 \
+  jour-j/jour-j-valheim.sh \
+  monde-valheim/bascule-monde-valheim.sh \
+  monde-valheim/nouveau-monde-valheim.sh \
+  valheim-sauvegarde/sauvegarde-valheim.sh \
+  valheim-sauvegarde/sauvegarde-valheim-hors-site.sh \
+  /usr/local/bin/
+
+sudo install -o root -g root -m 644 $(find . -name '*.service' -o -name '*.timer') \
+  /etc/systemd/system/
+sudo systemctl daemon-reload
+```
+
+La page Cockpit, si tu la veux :
+
+```bash
+sudo mkdir -p /usr/share/cockpit/valheim
+sudo install -o root -g root -m 644 cockpit-valheim/* /usr/share/cockpit/valheim/
+```
+
+Le contrôle qui dit que le lot est complet — il doit ne rien afficher :
+
+```bash
+for f in $(ls /usr/local/bin/ | grep -iE 'valheim|oracle|salon|chantier'); do
+    src=$(find . -name "$f" -not -path '*/__pycache__/*' | head -1)
+    [ -n "$src" ] && sudo cmp -s "$src" "/usr/local/bin/$f" || echo "manque ou differe : $f"
+done
+```
+
+Aucune unité ne porte de secret : tout passe par `/etc/valheim.env` et
+`/etc/valheim-discord.conf`, à recréer à la main.
+
+**7. Armer les minuteries et démarrer.** Trois services et onze minuteries,
+c'est la liste exacte de ce qui était armé sur la machine :
+
+```bash
+sudo systemctl enable --now valheim collecte-valheim profil-performance
+
+sudo systemctl enable --now \
+  sauvegarde-valheim.timer sauvegarde-valheim-hors-site.timer \
+  bilan-discord-valheim.timer notifie-discord-valheim.timer \
+  lit-discord-valheim.timer file-claude-valheim.timer \
+  cles-monde-valheim.timer succes-steam-valheim.timer \
+  redemarrage-valheim.timer redemarrage-machine.timer
+```
+
+`guette-valheim-1.0.timer` manque à cette liste **exprès** : elle guettait la
+sortie de la 1.0, arrivée le 2026-09-09 à 15 h. Elle est encore armée sur la
+machine par simple inertie ; sur une machine neuve, elle n'a plus d'objet.
+
+Et si tu comptes, tu comptes bien : dix minuteries armées ici, onze sur la
+machine, la onzième étant celle-là.
+
+**8. Vérifier, dans cet ordre.**
+
+```bash
+systemctl status valheim                       # actif, pas de redemarrage en boucle
+journalctl -u valheim -n 30 | grep -i "Load world"
+stats-valheim.py                               # le monde, le jour, les joueurs connus
+sudo systemctl start sauvegarde-valheim        # une archive neuve, verifiee
+```
+
+La ligne `Load world:` doit nommer **ton** monde. Si elle en nomme un autre, le
+serveur en a généré un neuf : arrête-le, vérifie `NOM_MONDE` dans
+`/etc/valheim.env`, et compare-le au nom du dossier sous `worlds_local/`.
+
+Enfin, la base de statistiques ne se restaure pas et n'a pas à l'être : le
+collecteur relit tout le journal `systemd` à chaque démarrage et se
+reconstitue seul. Ce qui est perdu, c'est ce que le journal ne garde plus —
+l'historique ancien, pas l'état courant.
 
 ---
 

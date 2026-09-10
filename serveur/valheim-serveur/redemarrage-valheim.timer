@@ -1,0 +1,10 @@
+[Unit]
+Description=Redemarrage hebdomadaire du serveur Valheim
+
+[Timer]
+OnCalendar=Mon *-*-* 05:00:00
+Persistent=false
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

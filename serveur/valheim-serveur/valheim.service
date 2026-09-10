@@ -1,0 +1,51 @@
+[Unit]
+Description=Serveur Valheim
+After=network-online.target
+RequiresMountsFor=/srv/jeux /var/lib/valheim
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Nice= est inutile ici : le binaire Unity remonte lui-meme sa priorite apres
+# demarrage (verifie -- systemd applique bien -10, le processus se retrouve a
+# 12). CPUWeight agit au niveau du cgroup, hors de portee de l'application.
+CPUWeight=500
+User=valheim
+Group=valheim
+WorkingDirectory=/srv/jeux/valheim/serveur
+EnvironmentFile=/etc/valheim.env
+
+# Sans SteamAppId le binaire refuse de démarrer : installé comme app 896660,
+# il doit s'identifier comme le jeu 892970.
+Environment="SteamAppId=892970"
+Environment="LD_LIBRARY_PATH=/srv/jeux/valheim/serveur/linux64"
+
+ExecStart=/srv/jeux/valheim/serveur/valheim_server.x86_64 \
+  -nographics -batchmode \
+  -name "${NOM_SERVEUR}" \
+  -port 2456 \
+  -world "${NOM_MONDE}" \
+  -password "${MOT_DE_PASSE}" \
+  -savedir /var/lib/valheim/donnees \
+  $MODIFICATEURS \
+  -public 0 \
+  -saveinterval 600 \
+  -backups 4 -backupshort 7200 -backuplong 43200
+
+# Valheim sauvegarde le monde en s'arrêtant. Sans ces deux lignes, systemd le
+# tue trop tôt et la progression depuis la dernière sauvegarde est perdue.
+KillSignal=SIGINT
+TimeoutStopSec=120
+
+Restart=on-failure
+RestartSec=10s
+
+# Cloisonnement : le service n'écrit que dans son propre dossier.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/jeux/valheim /var/lib/valheim
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+[Unit]
+Description=Applique le profil processeur « performance » au demarrage
+After=com.system76.PowerDaemon.service
+Wants=com.system76.PowerDaemon.service
+
+[Service]
+Type=oneshot
+# system76-power ne memorise pas le profil : sans cette unite, la machine
+# repart en « Balanced » a chaque redemarrage.
+ExecStart=/usr/bin/system76-power profile performance
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target
