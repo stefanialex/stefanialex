@@ -45,12 +45,19 @@ d'une heure : Bëwulf de 8 a 10 objets, « Djoos Io » de 11 a 9. Les deux
 mouvements sont vrais, et aucun des deux ne dit qui a forge le plus depuis le
 debut -- seulement qui a laisse le plus derriere lui.
 
-Il lit par defaut la derniere archive de sauvegarde, lisible par tous, et non
-le monde vivant qui est en 0750 valheim. C'est delibere : la page Cockpit
-tourne sous le compte de l'humain et doit pouvoir l'appeler sans privilege. Le
-prix est une fraicheur d'au plus une heure, ce qui est sans importance pour une
-mesure qui bouge lentement. « --monde » lit un dossier de monde directement,
-pour qui a les droits.
+Il lit le MONDE VIVANT quand il y a droit, et retombe sinon sur la derniere
+archive de sauvegarde, lisible par tous. Depuis le 2026-09-10, lapserv est
+dans le groupe valheim en lecture seule, donc la page Cockpit -- qui tourne
+sous le compte de l'humain -- voit l'etat du moment et non celui d'il y a une
+heure. Le repli garde le programme utilisable sans ce droit : sur une machine
+neuve, ou pour qui n'est pas dans le groupe, il repond quand meme.
+
+La difference n'est pas cosmetique : le compte des objets BOUGE. Entre deux
+sauvegardes distantes d'une heure, le 2026-09-10, Bëwulf est passe de 8 a 10
+objets et « Djoos Io » de 11 a 9. Lire une archive, c'est afficher un etat que
+personne ne reconnait plus.
+
+« --monde » force un dossier precis, « --archive » une archive precise.
 """
 
 import argparse
@@ -98,6 +105,23 @@ def personnages(cx, monde=None):
 def monde_le_plus_recent(cx):
     r = cx.execute("SELECT monde FROM mondes ORDER BY derniere_vue DESC LIMIT 1").fetchone()
     return r[0] if r else None
+
+
+def lisible(dossier):
+    """Le dossier existe et on peut vraiment y lire un chunk.
+
+    os.access ne suffit pas : il repond sur les droits declares, pas sur ce
+    qu'un open() obtiendra. On essaie donc pour de vrai.
+    """
+    try:
+        fs = glob.glob(os.path.join(dossier, "*.chunk"))
+        if not fs:
+            return False
+        with open(fs[0], "rb") as f:
+            f.read(1)
+        return True
+    except OSError:
+        return False
 
 
 def derniere_archive():
@@ -212,6 +236,13 @@ def main():
     monde = o.nom_monde or monde_le_plus_recent(cx)
 
     temporaire = None
+    vivant = os.path.join(SAVEDIR, monde) if monde else None
+    if not o.monde and not o.archive and vivant and lisible(vivant):
+        # Le monde vivant d'abord : c'est le seul etat que les joueurs
+        # reconnaissent. On verifie qu'il est vraiment lisible plutot que de
+        # supposer le droit -- l'appartenance au groupe valheim ne vaut que
+        # pour les sessions ouvertes apres l'avoir recue.
+        o.monde = vivant
     if o.monde:
         fichiers = glob.glob(os.path.join(o.monde, "*.chunk"))
         source = o.monde
