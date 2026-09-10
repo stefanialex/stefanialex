@@ -525,11 +525,6 @@ def morts_de_naissance(cx, lot, mondes):
     return lot2, mondes2
 
 
-# Delai maximal entre l'abandon d'un personnage et la creation du suivant pour
-# que les morts de l'abandonne soient effacees.
-REROLL = timedelta(minutes=10)
-
-
 def comptes_par_pseudo(cx):
     """Quel compte Steam a joue quel personnage, et depuis quand.
 
@@ -625,62 +620,27 @@ def enregistre_vies(cx):
     return cx.execute("SELECT count(*) FROM vies").fetchone()[0]
 
 
-def purge_morts_abandonnees(cx):
-    """Efface les morts d'un personnage abandonne aussitot pour un neuf.
-
-    Decide par le groupe le 2026-09-09 : Baby est morte a 21h28 sur un
-    personnage cree onze minutes plus tot, s'est deconnectee dans la minute et
-    est revenue avec un autre. Les morts d'un personnage qui n'existe plus ne
-    disent rien du joueur d'aujourd'hui.
-
-    Ce n'est pas l'echappatoire qu'on pourrait craindre : pour effacer une mort
-    il faut supprimer son personnage, donc perdre ses competences, son
-    inventaire et sa progression. Le prix est sans commune mesure avec l'enjeu.
-
-    La regle est RETROSPECTIVE -- au moment de la mort on ignore que le
-    personnage sera abandonne -- donc elle ne peut pas empecher l'annonce dans
-    le salon, seulement corriger la statistique. Elle s'applique a chaque
-    demarrage du collecteur, apres le rattrapage.
-    """
-    comptes = comptes_par_pseudo(cx)
-    # Derniere trace de chaque personnage, et debut de chacun.
-    derniere = {}
-    for monde, joueur, ts in cx.execute(
-            "SELECT monde, joueur, max(horodatage) FROM evenements "
-            "WHERE joueur IS NOT NULL GROUP BY monde, joueur"):
-        derniere[(monde, joueur)] = datetime.fromisoformat(ts)
-
-    efface = 0
-    for monde, joueur, ts in cx.execute(
-            "SELECT monde, joueur, horodatage FROM evenements "
-            "WHERE type = 'mort' AND joueur IS NOT NULL"):
-        cle = (monde, joueur)
-        compte = comptes.get(cle)
-        fin = derniere.get(cle)
-        if not compte or not fin:
-            continue
-        sid, _debut = compte
-        mort = datetime.fromisoformat(ts)
-        # Le personnage doit avoir ete abandonne juste apres la mort.
-        if fin - mort > REROLL:
-            continue
-        # ... et le meme compte doit avoir repris un AUTRE personnage peu apres.
-        suivant = None
-        for (m2, j2), (sid2, debut2) in comptes.items():
-            if m2 != monde or j2 == joueur or sid2 != sid:
-                continue
-            d2 = datetime.fromisoformat(debut2)
-            if fin < d2 <= fin + REROLL:
-                suivant = j2
-                break
-        if not suivant:
-            continue
-        efface += cx.execute(
-            "DELETE FROM evenements WHERE type = 'mort' AND monde IS ? "
-            "AND joueur = ? AND horodatage = ?", (monde, joueur, ts)).rowcount
-    if efface:
-        cx.commit()
-    return efface
+# RETIREE le 2026-09-10 : purge_morts_abandonnees().
+#
+# Elle effacait les morts d'un personnage abandonne pour un neuf dans les dix
+# minutes. Regle decidee par le groupe le 2026-09-09, quand Baby est morte sur
+# un personnage cree onze minutes plus tot et a repris un autre aussitot : les
+# morts d'un personnage qui n'existe plus ne disaient rien du joueur du jour.
+#
+# Le besoin etait reel, la methode trop chere. Depuis que les compteurs se
+# cloisonnent par personnage -- table « vies » ici, par_joueur() dans
+# stats-valheim.py -- une mort subie par un personnage retire ne pese deja plus
+# sur le personnage en cours, sans qu'il faille la supprimer. La supprimer, en
+# plus, la retirait de l'histoire du compte, du cumul du groupe et du KPI des
+# morts cumulees : le 2026-09-10 la mort d'Alexandre, absent du clavier, a
+# disparu de partout alors que seul son nouveau personnage devait l'ignorer.
+#
+# Elle rendait aussi les defis truquables : « intact depuis Eikthyr » se
+# gagnait en mourant puis en refaisant son personnage dans les dix minutes.
+#
+# Retrait demande par Alexandre. Consequence assumee : les morts que la regle
+# effacait reviennent en base au prochain rejeu du journal, dans la limite de
+# ce que le journal garde encore. Celles qui en sont sorties sont perdues.
 
 
 def enregistre(cx, monde, lot):
@@ -747,15 +707,13 @@ def rattrapage(cx, depuis):
     lot, mondes = morts_de_naissance(cx, lot, mondes)
     releve_monde(cx, monde)
     nb = enregistre(cx, mondes, lot)
-    # Apres coup seulement : la regle du personnage abandonne a besoin de
-    # connaitre la suite de l'histoire.
+    # Apres coup seulement : rattacher les pseudos, reconnaitre les creations
+    # de personnage et recenser les vies demande de connaitre toute
+    # l'histoire, y compris ce que ce lot vient d'ajouter.
     relie_pseudos(cx)
     nees = purge_morts_de_naissance(cx)
     if nees:
         print("%d mort(s) effacee(s) : creation de personnage" % nees)
-    purgees = purge_morts_abandonnees(cx)
-    if purgees:
-        print("%d mort(s) effacee(s) : personnage abandonne pour un neuf" % purgees)
     print("%d personnage(s) recense(s)" % enregistre_vies(cx))
     return len(lot), nb
 
