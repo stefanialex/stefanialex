@@ -192,6 +192,28 @@ def morts_par_personnage(cx, monde=None):
     return res
 
 
+def morts_de_la_vie(cx, monde=None):
+    """Les morts du personnage en cours de chaque compte, par pseudo affiche.
+
+    Les defis de serie comptaient sur le compte entier, et c'etait defendable :
+    « intact depuis Eikthyr » se gagnerait en mourant puis en refaisant son
+    personnage. Alexandre a tranche autrement le 2026-09-10, apres etre mort en
+    etant absent du clavier : **un personnage neuf redemarre le defi**. La
+    contrepartie, il la connait -- refaire un personnage coute les competences,
+    l'inventaire et la progression, ce qui est sans commune mesure avec un
+    compteur remis a zero.
+
+    Rend None quand la table des vies manque : les appelants retombent alors
+    sur les morts du compte entier, comme avant.
+    """
+    vies = vies_par_compte(cx, monde)
+    if not vies:
+        return None
+    morts = morts_par_personnage(cx, monde)
+    return {histoire[-1]["pseudo"]: morts.get(histoire[-1]["pseudo"], [])
+            for histoire in vies.values()}
+
+
 def monde_actif(cx):
     """Le monde le plus recemment vu par le collecteur."""
     r = cx.execute("SELECT monde FROM mondes ORDER BY derniere_vue DESC LIMIT 1").fetchone()
@@ -634,9 +656,14 @@ def defis(agg, morts, progression, sessions, ident, boss_vaincus):
         dates = morts.get(pseudo, [])
         depart = datetime.fromisoformat(dates[-1]) if dates else None
         if depart is None:
-            # Jamais mort : la serie court depuis la premiere session.
-            debuts = [d for sid, d, _f, _c in sessions if ident.get(sid) == pseudo]
-            depart = min(debuts) if debuts else maintenant
+            # Jamais mort sur ce personnage : la serie court depuis sa
+            # naissance, et a defaut depuis la premiere session du compte.
+            ne_le = e.get("depuis")
+            if ne_le:
+                depart = datetime.fromisoformat(ne_le)
+            else:
+                debuts = [d for sid, d, _f, _c in sessions if ident.get(sid) == pseudo]
+                depart = min(debuts) if debuts else maintenant
         rangs.append({"joueur": pseudo,
                       "valeur": int((maintenant - depart).total_seconds()),
                       "tient": None,
@@ -755,9 +782,17 @@ def raids_tenus(cx, monde, fenetre=timedelta(minutes=5)):
 
 
 def valeur_kpi(source, ident, sessions, morts, progression, agg, boss_vaincus,
-               raids=None):
-    """Calcule un indicateur. Renvoie None si la donnee manque encore."""
+               raids=None, morts_vie=None):
+    """Calcule un indicateur. Renvoie None si la donnee manque encore.
+
+    « morts » porte le compte entier, « morts_vie » le seul personnage en
+    cours. Les indicateurs de SERIE prennent le second -- un personnage neuf
+    redemarre la serie, decision d'Alexandre du 2026-09-10 -- et les TOTAUX du
+    groupe le premier : les morts cumulees d'un monde ne s'effacent pas parce
+    qu'un joueur a refait sa figurine.
+    """
     maintenant = datetime.now()
+    serie = morts_vie if morts_vie is not None else morts
 
     if source in ("raids_sans_perte", "raids_serie", "raids_record"):
         # Avant le premier raid il n'y a rien a afficher : sur un monde neuf,
@@ -780,7 +815,7 @@ def valeur_kpi(source, ident, sessions, morts, progression, agg, boss_vaincus,
         if not depuis:
             return None
         return sum(1 for p in agg
-                   if not [d for d in morts.get(p, []) if d >= depuis])
+                   if not [d for d in serie.get(p, []) if d >= depuis])
 
     if source == "morts_total":
         return sum(len(v) for v in morts.values())
@@ -796,10 +831,12 @@ def valeur_kpi(source, ident, sessions, morts, progression, agg, boss_vaincus,
 
     if source == "serie_max":
         series = []
-        for pseudo in agg:
-            dates = morts.get(pseudo, [])
+        for pseudo, e in agg.items():
+            dates = serie.get(pseudo, [])
             if dates:
                 depart = datetime.fromisoformat(dates[-1])
+            elif e.get("depuis"):
+                depart = datetime.fromisoformat(e["depuis"])
             else:
                 debuts = [d for sid, d, _f, _c in sessions if ident.get(sid) == pseudo]
                 if not debuts:
@@ -832,13 +869,14 @@ def kpis(cx, monde):
         return None
     ident, sessions, morts, progression, _i, _j = charge(cx, monde)
     agg = par_joueur(cx, monde, ident, sessions, morts)
+    morts_vie = morts_de_la_vie(cx, monde)
     boss_vaincus = progression_boss(cx, monde, progression)
     raids = raids_tenus(cx, monde)
 
     resultat = {"kpis": [], "jalons": []}
     for k in conf.get("kpis", []):
         v = valeur_kpi(k["source"], ident, sessions, morts, progression, agg,
-                       boss_vaincus, raids)
+                       boss_vaincus, raids, morts_vie=morts_vie)
         cible = k.get("cible")
         entree = dict(k)
         entree["valeur"] = v
@@ -967,6 +1005,9 @@ def exploration(cx, monde=None):
 def texte(cx, monde=None):
     ident, sessions, morts, progression, infos, jour = charge(cx, monde)
     agg = par_joueur(cx, monde, ident, sessions, morts)
+    # Les defis de serie repartent au personnage neuf ; les totaux du groupe et
+    # le cumul du compte, eux, gardent tout. Voir morts_de_la_vie().
+    defi_morts = morts_de_la_vie(cx, monde) or morts
     boss_vaincus = progression_boss(cx, monde, progression)
 
     nom_monde = (infos[0] if infos and infos[0] else None) or monde or "?"
@@ -1035,7 +1076,7 @@ def texte(cx, monde=None):
             "" if e["connu"] else "   (type inconnu)"))
     print()
 
-    d = defi_baby(morts, boss_vaincus)
+    d = defi_baby(defi_morts, boss_vaincus)
     if d:
         print("DEFI DE BAB-Y — jamais mort depuis la chute de l'Ancien (%s)" % d["depuis"])
         if d["tenants"]:
@@ -1046,7 +1087,7 @@ def texte(cx, monde=None):
         if not d["tenants"]:
             print("  personne ne tient le defi sur ce monde")
 
-    for defi in defis(agg, morts, progression, sessions, ident, boss_vaincus):
+    for defi in defis(agg, defi_morts, progression, sessions, ident, boss_vaincus):
         print()
         print("%s — %s" % (defi["nom"].upper(), defi["regle"]))
         for r in defi["rangs"]:
@@ -1107,6 +1148,9 @@ def texte(cx, monde=None):
 def donnees(cx, monde=None):
     ident, sessions, morts, progression, infos, jour = charge(cx, monde)
     agg = par_joueur(cx, monde, ident, sessions, morts)
+    # Les defis de serie repartent au personnage neuf ; les totaux du groupe et
+    # le cumul du compte, eux, gardent tout. Voir morts_de_la_vie().
+    defi_morts = morts_de_la_vie(cx, monde) or morts
     boss_vaincus = progression_boss(cx, monde, progression)
     t = taille_monde(cx, monde)
     return {
@@ -1125,8 +1169,8 @@ def donnees(cx, monde=None):
                         for e in boss_vaincus],
         "raids": [{"raid": c, "premier": t}
                   for c, t in sorted(progression.items(), key=lambda kv: kv[1])],
-        "defi_baby": defi_baby(morts, boss_vaincus),
-        "defis": defis(agg, morts, progression, sessions, ident, boss_vaincus),
+        "defi_baby": defi_baby(defi_morts, boss_vaincus),
+        "defis": defis(agg, defi_morts, progression, sessions, ident, boss_vaincus),
         "kpi": kpis(cx, monde),
         "roles": roles(cx, monde, ident, sessions),
         "chantiers": chantiers(),
