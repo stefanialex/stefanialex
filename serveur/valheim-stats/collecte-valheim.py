@@ -41,7 +41,24 @@ MOTIFS = [
     # boss qu'une fois ce boss vaincu. C'est notre seule trace datee de la
     # progression, le journal ne dit rien des global keys.
     ("raid", re.compile(r"^Random event set:(\S+)$"), "detail"),
+    # La sauvegarde, et la taille du monde qu'elle mesurait. La 0.2 disait tout
+    # en une ligne, « Saved 12345 ZDOs » : la date du point de sauvegarde ET le
+    # nombre d'objets du monde. La 1.0 a separe les deux, et le motif unique ne
+    # captait plus rien -- constate le 2026-09-10 : 1795 releves sur Midgard,
+    # zero sur NordheimV2. On lit donc les deux lignes de la 1.0.
     ("sauvegarde", re.compile(r"^Saved (\d+) ZDOs$"), "detail"),
+    # « World save (5/5) done. Total time [41ms] » : la sauvegarde 1.0 est
+    # confirmee. On garde la duree comme detail -- c'est le seul chiffre de la
+    # ligne, et une sauvegarde qui s'allonge annonce un monde qui grossit.
+    ("sauvegarde", re.compile(r"^World save \(5/5\) done\. Total time \[(\d+)ms\]$"),
+     "detail"),
+    # «  Connections 0 ZDOS:144313  sent:0 recv:0 » : le recensement d'objets,
+    # ecrit toutes les dix minutes, sauvegarde ou pas. C'est le remplacant du
+    # compte que portait « Saved N ZDOs », d'ou son type propre : melanger les
+    # deux ferait passer un recensement pour une sauvegarde.
+    # Le corps de cette ligne commence par une espace, d'ou le \s* : sans lui
+    # le motif ne colle pas, en silence.
+    ("zdos", re.compile(r"^\s*Connections \d+ ZDOS:(\d+)\b.*$"), "detail"),
     ("jour", re.compile(r"^Time [\d,.]+, day:(\d+) .*$"), "detail"),
     # « Found location of type Dragonqueen » : le serveur localise l'autel d'un
     # boss, ce qui precede la chasse de plusieurs heures. Verifie sur Moder :
