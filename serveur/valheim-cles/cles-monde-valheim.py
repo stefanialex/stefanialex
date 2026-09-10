@@ -66,6 +66,19 @@ CREATE TABLE IF NOT EXISTS cles_globales (
   certaine     INTEGER NOT NULL DEFAULT 1,
   PRIMARY KEY (monde, cle)
 );
+
+-- La trace du passage, monde par monde. Sans elle, un monde neuf n'a aucune
+-- cle, donc rien a inscrire, donc le releve se croyait le premier a chaque
+-- tour : « premier releve : aucun boss » toutes les cinq minutes pendant huit
+-- heures, le 2026-09-10. Le bruit n'etait que le symptome. Le vrai degat
+-- attendait la suite : le premier boss a tomber aurait ete inscrit
+-- « certaine = 0 », date incertaine, alors qu'on interroge le monde toutes
+-- les cinq minutes et qu'on connaissait donc l'heure a cinq minutes pres.
+CREATE TABLE IF NOT EXISTS releves_monde (
+  monde         TEXT PRIMARY KEY,
+  premier       TEXT NOT NULL,
+  dernier       TEXT NOT NULL
+);
 """
 
 
@@ -176,6 +189,8 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--muet", action="store_true", help="ne rien publier sur Discord")
     ap.add_argument("--liste", action="store_true", help="affiche l'etat et sort")
+    ap.add_argument("--bavard", action="store_true",
+                    help="ecrit une ligne meme quand rien n'a change")
     o = ap.parse_args()
 
     monde = monde_actif()
@@ -193,6 +208,8 @@ def main():
     connues = {c: (v, cert) for c, v, cert in cx.execute(
         "SELECT cle, premiere_vue, certaine FROM cles_globales WHERE monde = ?",
         (monde,))}
+    deja_releve = cx.execute(
+        "SELECT 1 FROM releves_monde WHERE monde = ?", (monde,)).fetchone() is not None
 
     if o.liste:
         for cle, nom in BOSS:
@@ -208,7 +225,7 @@ def main():
     maintenant = datetime.now().isoformat(sep=" ", timespec="seconds")
     # Au tout premier relevé, ce qui est deja la n'a pas de date : on l'inscrit
     # comme incertaine plutot que de laisser croire que le boss vient de tomber.
-    premier_releve = not connues
+    premier_releve = not deja_releve
     nouvelles = []
     for cle in presentes:
         if cle in connues:
@@ -217,6 +234,9 @@ def main():
                    "(monde, cle, premiere_vue, certaine) VALUES (?, ?, ?, ?)",
                    (monde, cle, maintenant, 0 if premier_releve else 1))
         nouvelles.append(cle)
+    cx.execute("INSERT INTO releves_monde (monde, premier, dernier) VALUES (?, ?, ?) "
+               "ON CONFLICT (monde) DO UPDATE SET dernier = excluded.dernier",
+               (monde, maintenant, maintenant))
     cx.commit()
 
     noms = dict(BOSS)
@@ -234,7 +254,10 @@ def main():
                         % (noms[cle], cle))
         else:
             print("nouvelle cle : %s" % cle)
-    if not nouvelles:
+    # Rien de neuf : on se tait. Ce releve tourne toutes les cinq minutes, et
+    # une ligne par tour noie dans le journal les seules qui comptent, celles
+    # qui annoncent un boss. --bavard les rend pour le diagnostic.
+    if not nouvelles and o.bavard:
         print("aucun changement (%d cle(s) connues)" % len(connues))
     return 0
 
