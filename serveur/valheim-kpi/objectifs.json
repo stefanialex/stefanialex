@@ -1,14 +1,14 @@
 {
-  "_note": "Cibles recalibrees le 2026-09-09 sur les chiffres mesures de Midgard (fenetre du 28/08 au 09/09), et non plus sur des reperes de recherche : chaque KPI porte sa base de calcul dans sa note. Les jalons ci-dessous, eux, restent des estimations — Midgard ne peut pas les mesurer, ses deux premiers boss etant tombes avant la pose de la sonde. NordheimV1 donnera la vraie courbe depuis le jour 0 : les recalibrer alors.",
+  "_note": "Cibles recalibrees le 2026-09-09 sur les chiffres mesures de Midgard (fenetre du 28/08 au 09/09), et non plus sur des reperes de recherche : chaque KPI porte sa base de calcul dans sa note. Les jalons ci-dessous, eux, restent des estimations — Midgard ne peut pas les mesurer, ses deux premiers boss etant tombes avant la pose de la sonde. NordheimV2, ne le 2026-09-09 a 21h11, donne la vraie courbe depuis le jour 0 : c'est lui qu'il faudra mesurer, et non plus Midgard. Releve du 2026-09-10 : les cibles restent celles de Midgard, faute d'assez de recul sur NordheimV2.",
   "kpis": [
     {
       "cle": "boss",
       "libelle": "Boss vaincus",
       "source": "boss_vaincus",
-      "cible": 8,
+      "cible": 7,
       "sens": "plus",
       "unite": "boss",
-      "note": "8 boss attendus en 1.0 avec le Grand Nord. Non verifie : c'est le seul repere que je n'ai pas pu confirmer, a corriger le 9 au soir."
+      "note": "Cible ramenee a 7 le 2026-09-10, et voici pourquoi : le programme ne sait reconnaitre que sept cles de boss (Eikthyr, l'Ancien, Bonemass, Moder, Yagluth, la Reine, Fader). Une cible a 8 etait donc inatteignable par construction -- le huitieme boss annonce avec le Grand Nord n'a pas de cle connue chez nous, et un compteur ne peut pas compter ce qu'il ne sait pas nommer. Le releve des cles ecrit « nouvelle cle : X » quand il en voit une qu'il ignore : le jour ou cette ligne parait, ajouter la cle a BOSS et remonter la cible a 8."
     },
     {
       "cle": "intacts",
@@ -53,7 +53,7 @@
       "cible": 835200,
       "sens": "plus",
       "unite": "duree",
-      "note": "232 h de temps de groupe en 12 jours sur Midgard. La cible reprend ce chiffre : investir autant sur NordheimV1. Les sessions simultanees s'additionnent, donc 4 joueurs une heure ensemble valent 4 h."
+      "note": "232 h de temps de groupe en 12 jours sur Midgard. La cible reprend ce chiffre : investir autant sur NordheimV2. Les sessions simultanees s'additionnent, donc 4 joueurs une heure ensemble valent 4 h."
     },
     {
       "cle": "rythme",
