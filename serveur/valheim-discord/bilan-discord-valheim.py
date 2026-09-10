@@ -216,6 +216,46 @@ def champs_roles(d):
 VERT = 0x3D7317
 
 
+def champ_autels(d):
+    """Les lieux d'invocation reperes, chasse ouverte d'abord.
+
+    C'est le champ qui manquait : le serveur savait depuis 02h36 que l'autel de
+    l'Ancien etait localise, et le bilan du matin n'en disait rien. Un autel
+    repere annonce la chasse plusieurs heures avant la mise a mort -- Bonemass
+    deux jours, Moder trois heures.
+    """
+    au = d.get("autels") or []
+    ouvertes = [e for e in au if not e["vaincu"]]
+    if not ouvertes:
+        return None
+    lignes = []
+    for e in ouvertes:
+        lignes.append("**%s** — repéré le %s à %s%s" % (
+            e["boss"], e["premiere"][8:10] + "/" + e["premiere"][5:7],
+            e["premiere"][11:16],
+            "" if e["connu"] else "  _(lieu non identifié)_"))
+    return {"name": "🗿  Autels repérés — la chasse est ouverte", "inline": False,
+            "value": "\n".join(lignes)[:1024]}
+
+
+def champ_terrain(d):
+    """Le terrain decouvert et les donjons ouverts, deux mesures jamais publiees."""
+    ex = d.get("exploration") or {}
+    dj = d.get("donjons") or {}
+    lignes = []
+    if ex.get("zones"):
+        recent = ex.get("zones_24h") or 0
+        lignes.append("**%d** zones découvertes%s" % (
+            ex["zones"], "  ·  dont **%d** sur 24 h" % recent if recent else ""))
+    for e in (dj.get("types") or [])[:6]:
+        nom = e["nom_pluriel"] if e["entrees"] > 1 else e["nom"]
+        lignes.append("`%3d` %s%s" % (e["entrees"], nom,
+                                      "" if e["connu"] else "  _(type inconnu)_"))
+    if not lignes:
+        return None
+    return {"name": "🧭  Terrain", "inline": False, "value": "\n".join(lignes)[:1024]}
+
+
 def bilan(d):
     """Construit l'embed du bilan.
 
@@ -275,12 +315,20 @@ def bilan(d):
                                    dernier["heures_cumulees"],
                                    "✅" if dernier["tenu"] else "⏱️")})
 
+    au = champ_autels(d)
+    if au:
+        champs.append(au)
+
     pt = point_du_soir(d)
     if pt:
         champs.append(pt)
 
     for champ in champs_roles(d):
         champs.append(champ)
+
+    tr = champ_terrain(d)
+    if tr:
+        champs.append(tr)
 
     mt = champ_meteo(d)
     if mt:

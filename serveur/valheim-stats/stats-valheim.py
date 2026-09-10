@@ -45,6 +45,41 @@ BOSS = [
     ("defeated_queen", "la Reine"),
     ("defeated_fader", "Fader"),
 ]
+
+# Le nom que Valheim donne au lieu d'invocation, tel qu'il sort de « Found
+# location of type X », rapporte au boss qu'on y appelle. Les cinq premiers
+# sont verifies sur nos propres journaux : Midgard a vu Eikthyrnir, GDKing,
+# Bonemass et Dragonqueen, chaque fois plusieurs heures avant la mise a mort.
+# Les deux derniers ne le sont pas -- aucun des deux n'est encore apparu chez
+# nous -- et un lieu inconnu s'affiche sous son nom brut plutot que d'etre
+# tu : mieux vaut un nom illisible qu'un autel invisible.
+AUTELS = {
+    "Eikthyrnir": "defeated_eikthyr",
+    "GDKing": "defeated_gdking",
+    "Bonemass": "defeated_bonemass",
+    "Dragonqueen": "defeated_dragon",
+    "GoblinKing": "defeated_goblinking",
+    "Mistlands_DvergrBossEntrance1": "defeated_queen",   # non verifie
+    "FaderLocation": "defeated_fader",                   # non verifie
+}
+
+# Les donjons, sous le nom que le serveur leur donne en les peuplant. Le type
+# dit le biome, donc la courbe raconte ce que le groupe farme.
+#
+# Le pluriel est ecrit a la main plutot que devine. Une regle mecanique se
+# trompe des le deuxieme cas : « ferme abandonnee » demande l'accord des DEUX
+# mots, « crypte de Foret-Noire » celui du premier seul. Huit lignes de table
+# valent mieux qu'une heuristique qui a l'air de marcher.
+DONJONS = {
+    "DG_ForestCrypt": ("crypte de Forêt-Noire", "cryptes de Forêt-Noire"),
+    "DG_SunkenCrypt": ("crypte engloutie", "cryptes englouties"),
+    "DG_Cave": ("grotte gelée", "grottes gelées"),
+    "DG_GoblinCamp": ("camp de Fulings", "camps de Fulings"),
+    "DG_MeadowsFarm": ("ferme abandonnée", "fermes abandonnées"),
+    "DG_MeadowsVillage": ("village abandonné", "villages abandonnés"),
+    "DG_DvergrTown": ("cité des Dvergrs", "cités des Dvergrs"),
+    "DG_DvergrBossEntrance": ("mine infestée", "mines infestées"),
+}
 NOM_BOSS = dict(BOSS)
 
 # Quel raid exige quelle cle. Attention, ce n'est PAS le boss du meme nom : un
@@ -677,6 +712,98 @@ def kpis(cx, monde):
     return resultat
 
 
+def filtre_monde(monde):
+    """Le fragment de WHERE et son argument, pour un monde ou pour tous."""
+    return (" AND monde = ?", (monde,)) if monde else ("", ())
+
+
+def taille_monde(cx, monde=None):
+    """Le nombre d'objets du monde, et la date du dernier point de sauvegarde.
+
+    Deux sources, parce que la 1.0 a coupe en deux ce que la 0.2 disait en une
+    ligne. Le recensement « Connections N ZDOS:M » porte le compte ; la ligne
+    « World save (5/5) done » porte la date. Sur les mondes d'avant, le compte
+    n'existe pas et on retombe sur le detail de l'ancienne ligne, qui le
+    portait -- c'est pour Midgard que ce repli existe, et pour lui seul.
+    """
+    ou, arg = filtre_monde(monde)
+    z = cx.execute(
+        "SELECT detail, horodatage FROM evenements WHERE type = 'zdos'" + ou +
+        " ORDER BY horodatage DESC LIMIT 1", arg).fetchone()
+    s = cx.execute(
+        "SELECT max(horodatage), detail FROM evenements "
+        "WHERE type = 'sauvegarde'" + ou, arg).fetchone()
+    sauvegarde = s[0] if s and s[0] else None
+    if z:
+        return {"zdos": int(z[0]), "releve": z[1], "sauvegarde": sauvegarde,
+                "source": "recensement"}
+    # Avant la 1.0 : le compte etait le detail de la ligne de sauvegarde.
+    if s and s[0] and s[1] is not None:
+        return {"zdos": int(s[1]), "releve": s[0], "sauvegarde": sauvegarde,
+                "source": "sauvegarde"}
+    return {"zdos": None, "releve": None, "sauvegarde": sauvegarde,
+            "source": None}
+
+
+def autels(cx, monde, boss_vaincus):
+    """Les lieux d'invocation reperes par le serveur, du plus ancien au plus recent.
+
+    C'est la seule source qui annonce une intention et non un fait : sur
+    Midgard, l'autel de Bonemass est apparu le 3 septembre a 23h12 et Bonemass
+    est tombe le 5 ; celui de Moder le 8 a 22h03, mise a mort le 9 a 01h28.
+    Un autel repere est donc une chasse ouverte, et c'est ce qui manquait au
+    brief : le serveur le savait depuis le 2026-09-10 a 02h36 pour l'Ancien,
+    sans que rien ne le dise.
+    """
+    ou, arg = filtre_monde(monde)
+    tombes = {e["cle"] for e in boss_vaincus}
+    res = []
+    for lieu, n, premiere, derniere in cx.execute(
+            "SELECT detail, count(*), min(horodatage), max(horodatage) "
+            "FROM evenements WHERE type = 'autel'" + ou +
+            " GROUP BY detail ORDER BY min(horodatage)", arg):
+        cle = AUTELS.get(lieu)
+        nom = dict(BOSS).get(cle) if cle else None
+        res.append({"lieu": lieu, "cle": cle, "boss": nom or lieu,
+                    "connu": nom is not None, "vues": n,
+                    "premiere": premiere, "derniere": derniere,
+                    "vaincu": cle in tombes if cle else False})
+    return res
+
+
+def donjons(cx, monde=None):
+    """Les entrees de donjon, par type, avec leur nom lisible."""
+    ou, arg = filtre_monde(monde)
+    types = []
+    for typ, n, derniere in cx.execute(
+            "SELECT detail, count(*), max(horodatage) FROM evenements "
+            "WHERE type = 'donjon'" + ou +
+            " GROUP BY detail ORDER BY count(*) DESC", arg):
+        noms = DONJONS.get(typ, (typ, typ))
+        types.append({"type": typ, "nom": noms[0], "nom_pluriel": noms[1],
+                      "entrees": n, "connu": typ in DONJONS, "derniere": derniere})
+    return {"total": sum(t["entrees"] for t in types), "types": types}
+
+
+def exploration(cx, monde=None):
+    """Les zones de terrain neuf, en tout et sur les dernieres 24 heures.
+
+    Une zone n'est peuplee qu'a la premiere approche : ces lignes mesurent donc
+    le terrain decouvert, pas le terrain traverse. Le compte porte sur les
+    coordonnees distinctes -- la 1.0 ecrit une ligne par lieu pose, donc
+    plusieurs par zone, et compter les evenements compterait faux.
+    """
+    ou, arg = filtre_monde(monde)
+    veille = (datetime.now() - timedelta(hours=24)).isoformat(sep=" ", timespec="seconds")
+    total = cx.execute(
+        "SELECT count(DISTINCT detail) FROM evenements WHERE type = 'zone'" + ou,
+        arg).fetchone()[0]
+    recent = cx.execute(
+        "SELECT count(DISTINCT detail) FROM evenements WHERE type = 'zone'"
+        " AND horodatage >= ?" + ou, (veille,) + arg).fetchone()[0]
+    return {"zones": total, "zones_24h": recent}
+
+
 def texte(cx, monde=None):
     ident, sessions, morts, progression, infos, jour = charge(cx, monde)
     agg = par_joueur(ident, sessions, morts)
@@ -686,8 +813,11 @@ def texte(cx, monde=None):
     print("SERVEUR VALHEIM — monde « %s »" % nom_monde)
     if jour:
         print("jour %s dans le monde" % jour[0])
-    if infos and infos[2]:
-        print("%s ZDOs a la derniere sauvegarde (%s)" % (infos[2], infos[1]))
+    t = taille_monde(cx, monde)
+    if t["zdos"]:
+        print("%s objets dans le monde (releve du %s)" % (t["zdos"], t["releve"][:16]))
+    if t["sauvegarde"]:
+        print("derniere sauvegarde %s" % t["sauvegarde"][:16])
     print()
 
     print("JOUEURS")
@@ -708,6 +838,32 @@ def texte(cx, monde=None):
     for cle, nom in BOSS:
         if not any(e["cle"] == cle for e in boss_vaincus):
             print("  %-16s pas encore" % nom)
+    print()
+
+    au = autels(cx, monde, boss_vaincus)
+    print("AUTELS REPERES par le serveur")
+    if not au:
+        print("  aucun -- personne n'a encore approche un lieu d'invocation")
+    for e in au:
+        etat = "boss vaincu" if e["vaincu"] else "CHASSE OUVERTE"
+        print("  %-16s repere le %s   %d vue(s)   %s%s" % (
+            e["boss"], e["premiere"][:16], e["vues"], etat,
+            "" if e["connu"] else "   (lieu non identifie)"))
+    print()
+
+    ex = exploration(cx, monde)
+    dj = donjons(cx, monde)
+    print("EXPLORATION  %d zones decouvertes, dont %d sur les dernieres 24 h"
+          % (ex["zones"], ex["zones_24h"]))
+    print()
+    print("DONJONS  %d entrees" % dj["total"])
+    if not dj["types"]:
+        print("  aucune entree relevee sur ce monde")
+    for e in dj["types"]:
+        print("  %-26s %4d   derniere le %s%s" % (
+            e["nom_pluriel"] if e["entrees"] > 1 else e["nom"],
+            e["entrees"], e["derniere"][:16],
+            "" if e["connu"] else "   (type inconnu)"))
     print()
 
     d = defi_baby(morts, boss_vaincus)
@@ -776,12 +932,16 @@ def donnees(cx, monde=None):
     ident, sessions, morts, progression, infos, jour = charge(cx, monde)
     agg = par_joueur(ident, sessions, morts)
     boss_vaincus = progression_boss(cx, monde, progression)
+    t = taille_monde(cx, monde)
     return {
         "mondes": metadonnees_monde(cx),
         "monde": (infos[0] if infos and infos[0] else None) or monde,
         "jour": jour[0] if jour else None,
-        "zdos": infos[2] if infos else None,
-        "derniere_sauvegarde": infos[1] if infos else None,
+        "zdos": t["zdos"],
+        "derniere_sauvegarde": t["sauvegarde"],
+        "autels": autels(cx, monde, boss_vaincus),
+        "donjons": donjons(cx, monde),
+        "exploration": exploration(cx, monde),
         "joueurs": [dict(pseudo=p, **e) for p, e in
                     sorted(agg.items(), key=lambda kv: -kv[1]["temps"])],
         "progression": [{"boss": e["boss"], "premier": e["date"],
