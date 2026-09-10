@@ -32,6 +32,7 @@ NOM=""
 HEURE=""
 CONFIRM=0
 MODIFICATEURS=""
+SANS_PLAN=0
 UNITE=/etc/systemd/system/valheim.service
 JALONS="30 10 2"          # minutes avant la bascule ou l'on previent
 
@@ -50,6 +51,9 @@ bascule-monde-valheim.sh --nom NOM [--a HH:MM] [--confirm]
   --modificateurs "-modifier raids muchmore -modifier resources more"
                 options de difficulte a appliquer au passage. Categories :
                 combat, deathpenalty, resources, raids, portals.
+  --sans-plan   n'annonce pas le plan au demarrage. Utile quand on relance la
+                bascule avec d'autres reglages : l'annonce est deja partie et
+                la repeter encombre le salon.
   --confirm     execute pour de vrai. Sans lui : simulation, rien n'est touche.
 
 La bascule elle-meme : sauvegarde verifiee, copie de l'archive hors purge,
@@ -65,6 +69,7 @@ while [ $# -gt 0 ]; do
         --a) HEURE="${2:-}"; shift 2 ;;
         --jalons) JALONS="${2:-}"; shift 2 ;;
         --modificateurs) MODIFICATEURS="${2:-}"; shift 2 ;;
+        --sans-plan) SANS_PLAN=1; shift ;;
         --confirm) CONFIRM=1; shift ;;
         -h|--help) aide; exit 0 ;;
         *) mourir "argument inconnu : $1" ;;
@@ -156,11 +161,13 @@ if [ "$CONFIRM" -eq 0 ]; then
     exit 0
 fi
 
+if [ "$SANS_PLAN" -eq 0 ]; then
 annonce "📣  **Départ groupé à $(date -d "@$CIBLE" '+%Hh%M')** sur un monde neuf : **$NOM**.
 
 Le monde actuel **$ACTUEL** (seed \`${SEED_ACTUELLE:-inconnue}\`) est **conservé** — archivé, pas détruit. On pourra y revenir.
 
 Finissez ce que vous faites : le serveur redémarre à $(date -d "@$CIBLE" '+%Hh%M') pile et vous serez déconnectés."
+fi
 
 for m in $JALONS; do
     quand=$((CIBLE - m * 60))
