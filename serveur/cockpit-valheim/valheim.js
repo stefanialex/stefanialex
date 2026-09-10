@@ -75,25 +75,49 @@ async function majService() {
 /* ---------- journal : joueurs et monde ---------- */
 function analyseJournal(texte) {
   const joueurs = new Map();
-  let attente = null, zdos = null, sauve = null, dateSauve = null, donjons = 0;
+  const zones = new Set();
+  let attente = null, ambigu = false;
+  let zdos = null, sauve = null, dateSauve = null, donjons = 0;
   for (const l of texte.split("\n")) {
     const dt = (l.match(/^(\S+T\S+)/) || [])[1];
     let m;
     if ((m = l.match(/Got connection SteamID (\d+)/))) {
+      // Deux connexions sans nom entre elles : on ne saura pas laquelle porte
+      // le personnage qui va apparaitre, donc on ne devine pas.
+      ambigu = attente !== null;
       attente = m[1];
       const e = joueurs.get(m[1]) || { id: m[1] };
       e.enligne = true; e.depuis = dt; joueurs.set(m[1], e);
     } else if ((m = l.match(/Got character ZDOID from (.+?) :/))) {
-      if (attente) { const e = joueurs.get(attente) || { id: attente }; e.nom = m[1].trim(); joueurs.set(attente, e); }
+      // Une connexion ne nomme qu'un personnage, le premier qui la suit.
+      // Sans cette remise a zero, « attente » restait sur le dernier entrant
+      // et TOUTE ligne ZDOID ulterieure -- une mort, une reapparition, celles
+      // d'un autre joueur -- ecrasait son nom. C'est ce qui a affiche « Djoos
+      // Io » en face du compte de Bab-y le 2026-09-10, deux Djoose dans la
+      // meme table pour quatre joueurs.
+      if (attente && !ambigu) {
+        const e = joueurs.get(attente) || { id: attente };
+        e.nom = m[1].trim(); joueurs.set(attente, e);
+      }
+      attente = null; ambigu = false;
     } else if ((m = l.match(/Closing socket (\d+)/))) {
       const e = joueurs.get(m[1]); if (e) e.enligne = false;
-    } else if ((m = l.match(/Saved (\d+) ZDOs/))) {
+    } else if ((m = l.match(/Connections \d+ ZDOS:(\d+)/)) || (m = l.match(/Saved (\d+) ZDOs/))) {
+      // La 1.0 a remplace « Saved N ZDOs » par un recensement periodique.
+      // L'ancien motif est garde pour relire un journal d'avant la bascule.
       zdos = +m[1];
-    } else if ((m = l.match(/World saved \(\s*([\d.,]+)\s*ms\s*\)/))) {
-      sauve = parseFloat(m[1].replace(",", ".")); dateSauve = dt;
+    } else if ((m = l.match(/World save \(5\/5\) done\. Total time \[(\d+)ms\]/)) ||
+               (m = l.match(/World saved \(\s*([\d.,]+)\s*ms\s*\)/))) {
+      sauve = parseFloat(String(m[1]).replace(",", ".")); dateSauve = dt;
+    } else if ((m = l.match(/Placed location \S+ in zone (\S+)/)) ||
+               (m = l.match(/Placed locations in zone (\S+)/))) {
+      // La 1.0 ecrit une ligne par lieu pose, donc plusieurs par zone : c'est
+      // un ensemble de coordonnees, pas un compteur de lignes.
+      zones.add(m[1]);
     } else if (/Placed \d+ rooms/.test(l)) { donjons++; }
   }
-  return { joueurs: [...joueurs.values()], zdos, sauve, dateSauve, donjons };
+  return { joueurs: [...joueurs.values()], zdos, sauve, dateSauve, donjons,
+           zones: zones.size };
 }
 
 async function majJournal() {
@@ -120,7 +144,7 @@ async function majJournal() {
     }
     $("monde").innerHTML = `
       <dt>Objets du monde (ZDOs)</dt><dd>${d.zdos !== null ? nf(d.zdos) : "—"}</dd>
-      <dt>Zones explorées estimées</dt><dd>${d.zdos !== null ? nf(Math.round(d.zdos / 85)) : "—"}</dd>
+      <dt>Zones découvertes (12 h)</dt><dd>${nf(d.zones)}</dd>
       <dt>Dernière sauvegarde du jeu</dt><dd>${d.dateSauve ? "il y a " + duree(Date.now() - new Date(d.dateSauve)) : "—"}</dd>
       <dt>Durée de cette sauvegarde</dt><dd class="${d.sauve > 2000 ? "alerte" : ""}">${d.sauve !== null ? nf(d.sauve) + " ms" : "—"}</dd>
       <dt>Donjons générés (12 h)</dt><dd>${d.donjons}</dd>`;
