@@ -745,12 +745,13 @@ sudo chmod 750 /var/lib/valheim
 ```
 
 **6. Réinstaller les programmes et les unités**, depuis le dépôt. Deux lots :
-les quatorze programmes ouverts en `755`, et les cinq qui touchent au monde ou
+les quinze programmes ouverts en `755`, et les cinq qui touchent au monde ou
 aux sauvegardes en `750` — eux ne doivent rester lisibles que par root.
 
 ```bash
 sudo install -o root -g root -m 755 \
   monde-valheim/monde-valheim.py \
+  valheim-artisan/artisan-valheim.py \
   valheim-cles/cles-monde-valheim.py \
   valheim-discord/bilan-discord-valheim.py \
   valheim-discord/file-claude-valheim.sh \

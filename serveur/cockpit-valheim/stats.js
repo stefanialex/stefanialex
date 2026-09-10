@@ -277,6 +277,32 @@ function rendChantiers(c) {
   }
 }
 
+/* ---------- artisans ---------- */
+function rendArtisans(d) {
+  const tb = $("artisans").tBodies[0];
+  $("compte-artisans").textContent = d.total ? `${d.total} objets` : "";
+  const lignes = [...(d.artisans || []), ...(d.sans_compte || [])];
+  if (!lignes.length) return vide(tb, "aucun objet fabriqué ne porte de nom");
+
+  tb.replaceChildren();
+  const entete = el("tr");
+  for (const [t, c] of [["artisan", null], ["objets", "num"], ["personnages", null]])
+    entete.append(el("th", c, t));
+  tb.append(entete);
+
+  for (const a of lignes) {
+    const tr = el("tr");
+    tr.append(el("td", null, a.compte || a.pseudo));
+    tr.append(el("td", "num", nf(a.objets)));
+    // Un joueur qui a refait son personnage a fabrique sous deux noms : le
+    // total est celui du compte, le detail dit sous quel personnage.
+    const detail = (a.personnages || [])
+      .map((p) => `${p.pseudo} (${p.objets})`).join(", ");
+    tr.append(el("td", "ip", detail || "nom non rattaché à un compte"));
+    tb.append(tr);
+  }
+}
+
 /* ---------- chargement ---------- */
 function resume(d) {
   const p = [];
@@ -292,6 +318,14 @@ function charge() {
   // Aucun privilege demande : la base et les metadonnees de monde sont
   // deposees par le collecteur en lecture pour tous, exprès pour que cette
   // page de consultation ne reclame pas l'acces administrateur.
+  // Les artisans se lisent dans le monde et non dans la base : c'est un autre
+  // programme, donc un autre appel. Il echoue seul, sans emporter la page --
+  // il depend d'une archive de sauvegarde qui peut manquer sur une machine
+  // neuve.
+  cockpit.spawn(["/usr/local/bin/artisan-valheim.py", "--json"], { err: "message" })
+    .then((sortie) => rendArtisans(JSON.parse(sortie)))
+    .catch(() => vide($("artisans").tBodies[0], "relevé des artisans indisponible"));
+
   cockpit.spawn(["/usr/local/bin/stats-valheim.py", "--json"], { err: "message" })
     .then((sortie) => {
       const d = JSON.parse(sortie);
