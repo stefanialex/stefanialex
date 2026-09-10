@@ -227,6 +227,34 @@ def main():
     if not lignes:
         return 0
 
+    # Plancher de fraicheur. Le curseur porte sur l'IDENTIFIANT, qui est
+    # attribue a l'insertion : une ligne ancienne reinserée apres coup recoit
+    # un identifiant neuf et passait donc pour un evenement du moment.
+    #
+    # C'est arrive le 2026-09-10 a 11h04. En retirant la regle qui effacait les
+    # morts d'un personnage abandonne, deux morts sont revenues en base au
+    # rejeu du journal -- l'une de la veille a 21h28 -- et le salon les a
+    # annoncees comme si elles venaient d'avoir lieu.
+    #
+    # Le collecteur inserant dans l'ordre du journal, un evenement reellement
+    # neuf porte toujours une date au moins egale a la plus recente deja
+    # traitee. Une date anterieure signale une reinsertion : on avance le
+    # curseur dessus sans rien dire. La comparaison se fait sur le maximum des
+    # lignes deja traitees, et non sur la ligne du curseur, qui a pu etre
+    # effacee depuis par une purge.
+    plancher = cx.execute(
+        "SELECT max(horodatage) FROM evenements WHERE id <= ?", (dernier,)).fetchone()[0]
+    fin = lignes[-1][0]
+    if plancher:
+        anciennes = [l for l in lignes if l[1] < plancher]
+        lignes = [l for l in lignes if l[1] >= plancher]
+        if anciennes:
+            print("%d evenement(s) reinseres, anterieurs au %s : non annonces"
+                  % (len(anciennes), plancher))
+    if not lignes:
+        curseur(cx, fin)
+        return 0
+
     if len(lignes) > LOT_MAX:
         # Rattrapage apres une longue coupure : un resume plutot que trente
         # messages d'affilee.
@@ -246,7 +274,7 @@ def main():
             print("publication impossible (%s), on retentera" % e, file=sys.stderr)
             return 1
 
-    curseur(cx, lignes[-1][0])
+    curseur(cx, fin)
     print("%d evenement(s) publie(s)" % len(textes))
     return 0
 
