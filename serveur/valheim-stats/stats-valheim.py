@@ -941,6 +941,13 @@ def texte(cx, monde=None):
         barre = ""
         if e["avancement"] is not None:
             plein = int(round(e["avancement"] * 10))
+            # Une barre pleine veut dire tenu, et rien d'autre. Sans ce
+            # plafond, « 0,289 / 0,28 mort par heure » s'arrondissait a dix
+            # blocs sur dix et affichait une barre pleine suivie de « a faire »
+            # -- deux signes contraires sur la meme ligne. Le dernier bloc se
+            # gagne en atteignant la cible, pas en s'en approchant.
+            if not e["tenu"]:
+                plein = min(plein, 9)
             barre = "[" + "#" * plein + "." * (10 - plein) + "]"
         print("  %-44s %14s / %-12s %s %s" % (
             e["libelle"], fmt(e["valeur"]), fmt(e["cible"]), barre, etat))
