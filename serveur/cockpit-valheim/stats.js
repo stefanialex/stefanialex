@@ -286,19 +286,34 @@ function rendArtisans(d) {
 
   tb.replaceChildren();
   const entete = el("tr");
-  for (const [t, c] of [["artisan", null], ["objets", "num"], ["personnages", null]])
+  for (const [t, c] of [["artisan", null], ["objets", "num"], ["ce qu'il a fait", null]])
     entete.append(el("th", c, t));
   tb.append(entete);
+
+  // Les objets sont regroupes par nom : « BoarJerky x6 » se lit mieux que six
+  // lignes de viande sechee. La qualite, elle, distingue vraiment deux objets
+  // et reste donc a part.
+  const resume = (detail) => {
+    const par = new Map();
+    for (const e of detail || []) {
+      const cle = e.qualite > 1 ? `${e.objet} q${e.qualite}` : e.objet;
+      par.set(cle, (par.get(cle) || 0) + 1);
+    }
+    return [...par].sort((a, b) => b[1] - a[1])
+      .map(([nom, n]) => (n > 1 ? `${nom} \u00d7${n}` : nom)).join(", ");
+  };
 
   for (const a of lignes) {
     const tr = el("tr");
     tr.append(el("td", null, a.compte || a.pseudo));
     tr.append(el("td", "num", nf(a.objets)));
+    const td = el("td", "ip", resume(a.detail) || "—");
     // Un joueur qui a refait son personnage a fabrique sous deux noms : le
-    // total est celui du compte, le detail dit sous quel personnage.
-    const detail = (a.personnages || [])
+    // total est celui du compte, l'infobulle dit sous quel personnage.
+    const persos = (a.personnages || [])
       .map((p) => `${p.pseudo} (${p.objets})`).join(", ");
-    tr.append(el("td", "ip", detail || "nom non rattaché à un compte"));
+    td.title = persos || "nom non rattaché à un compte Steam";
+    tr.append(td);
     tb.append(tr);
   }
 }
