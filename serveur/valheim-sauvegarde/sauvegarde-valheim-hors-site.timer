@@ -1,0 +1,10 @@
+[Unit]
+Description=Copie quotidienne hors site de la sauvegarde Valheim
+
+[Timer]
+OnCalendar=*-*-* 04:45:00
+RandomizedDelaySec=600
+Persistent=true
+
+[Install]
+WantedBy=timers.target

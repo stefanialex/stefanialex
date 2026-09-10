@@ -1,0 +1,9 @@
+[Unit]
+Description=Sauvegarde du monde Valheim
+After=valheim.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/sauvegarde-valheim.sh
+Nice=10
+IOSchedulingClass=idle

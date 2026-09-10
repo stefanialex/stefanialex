@@ -1,0 +1,10 @@
+[Unit]
+Description=Copie hors site de la sauvegarde Valheim (Google Drive)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/sauvegarde-valheim-hors-site.sh
+Nice=10
+IOSchedulingClass=idle
