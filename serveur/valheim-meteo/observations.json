@@ -87,6 +87,60 @@
       "vers": "2026-09-10 13:09",
       "certaine": true,
       "reserve": "Confirme par Alexandre : plusieurs joueurs en ligne au meme instant, les uns en Prairies sous la pluie, les autres en Foret Noire par beau temps. Chacun etait donc DANS son biome, et les deux releves tombent dans la meme periode -- la 70 courait de 13:06:08 a 13:17:14."
+    },
+    {
+      "monde": "NordheimV2",
+      "periode": 75,
+      "biome": "Océan",
+      "temps": "Dégagé",
+      "vers": "2026-09-10 13:56",
+      "certaine": true,
+      "reserve": "Sauvegarde fraiche de 13:53:40 donnant 50027 s, soit 75,1 periodes : l'observation lui est posterieure, elle ne peut donc pas relever de la 74. C'est cette observation qui a elimine les candidats A et B, qui annoncaient tous deux Brouillard en Ocean."
+    },
+    {
+      "monde": "NordheimV2",
+      "periode": 75,
+      "biome": "Océan",
+      "temps": "Dégagé",
+      "vers": "2026-09-10 14:01",
+      "certaine": true,
+      "reserve": "Second releve, meme periode que le precedent : n'elimine rien de plus. A 1,13 fois le temps reel il reste dans la 75 a 88 % ; a 1,51, le maximum mesure dans la journee, il basculerait de justesse dans la 76 -- ou C et D annoncent tous deux Degage, donc sans consequence."
+    },
+    {
+      "monde": "NordheimV2",
+      "periode": 76,
+      "biome": "Forêt Noire",
+      "temps": "Pluie",
+      "vers": "2026-09-10 14:07",
+      "certaine": true,
+      "reserve": "Sauvegarde de 14:03:40 donnant 50627 s, soit 76,02 periodes : l'observation lui est posterieure de quatre minutes, elle est dans la 76. Bande imposee : 0,86957 .. 0,91304, soit 4,3 % de la plage. C'est elle qui a tue le candidat C et fait passer D."
+    },
+    {
+      "monde": "NordheimV2",
+      "periode": 76,
+      "biome": "Océan",
+      "temps": "Dégagé",
+      "vers": "2026-09-10 14:10",
+      "certaine": true,
+      "reserve": "Meme periode que la pluie de Foret Noire. Croisees, les deux resserrent le tirage partage a 0,86957 .. 0,91304 -- si le modele a tirage unique est le bon, ce qu'aucune observation n'a encore separe de D."
+    },
+    {
+      "monde": "NordheimV2",
+      "periode": 78,
+      "biome": "Océan",
+      "temps": "Dégagé",
+      "vers": "2026-09-10 14:34",
+      "certaine": true,
+      "reserve": "Sauvegarde fraiche de 14:33 donnant 52427 s, soit 78,72 periodes."
+    },
+    {
+      "monde": "NordheimV2",
+      "periode": 79,
+      "biome": "Océan",
+      "temps": "Pluie",
+      "vers": "2026-09-10 14:35",
+      "certaine": true,
+      "reserve": "« il commence a pleuvoir », rapporte en direct. Le changement observe tombe sur la frontiere CALCULEE de la periode 79, 14:35:45. C'est cette observation qui tue le dernier candidat, D, qui annoncait Degage en Ocean aux periodes 78, 79 ET 80 -- donc quelle que soit celle a laquelle on rattache la pluie."
     }
   ],
   "_hypothese_ouverte": {
@@ -109,6 +163,9 @@
     "B": "periode-14 xor drapeau de biome, variante 2, rang 2",
     "C": "periode-10 plus drapeau de biome, variante 1, rang 2",
     "D": "periode-8 xor drapeau de biome, variante 1, rang 2",
-    "_epreuve": "Les quatre divergent presque a chaque periode en OCEAN et en MONTAGNES, biomes ou les tables corrigees contraignent des deux cotes. Une seule observation simultanee y elimine la moitie du champ. Le 2026-09-10 a 14:00:59, periode 75 : A et B annoncent Brouillard en Ocean, C et D Degage. A 14:12:05, periode 76 : A et D annoncent Blizzard en Montagnes, B et C Neige. Toute observation qui contredit un candidat le tue."
-  }
+    "_epreuve": "Les quatre divergent presque a chaque periode en OCEAN et en MONTAGNES, biomes ou les tables corrigees contraignent des deux cotes. Une seule observation simultanee y elimine la moitie du champ. Le 2026-09-10 a 14:00:59, periode 75 : A et B annoncent Brouillard en Ocean, C et D Degage. A 14:12:05, periode 76 : A et D annoncent Blizzard en Montagnes, B et C Neige. Toute observation qui contredit un candidat le tue.",
+    "_elimines": "LES QUATRE SONT MORTS le 2026-09-10, tues par prediction et non par ajustement. A et B annoncaient Brouillard en Ocean a la periode 75, le groupe y a vu un ciel degage. C annoncait Brume en Foret Noire a la 76, il y pleuvait. D, qui avait passe ce test-la en tombant dans une bande de 4,3 %, annonce Degage en Ocean aux periodes 78, 79 et 80 : il s'est mis a pleuvoir en mer vers 14:35. La famille entiere -- xorshift128 d'Unity amorce par une fonction simple de la periode et du biome -- est refutee."
+  },
+  "_horloge_du_monde": "2026-09-10, MESURE QUI CHANGE TOUT : le temps du monde n'avance pas a la vitesse de la montre. Rapports releves sur les lignes « Time X, day:N » du journal, sur la journee : 1,05 / 1,09 / 1,13 / 1,13 / 1,23 / 1,28 / 1,51, et 1,01 une fois. Environ 1,13 en moyenne, et VARIABLE. Deux consequences. La conversion periode -> heure de montre que faisait meteo-valheim.py, a raison de 1 pour 1, est fausse : la periode 75 a commence vers 13:52 alors que l'outil l'annoncait a 14:00:59. Et surtout, les numeros de periode des observations anterieures au 2026-09-10 13h sont DOUTEUX A PLUS OU MOINS UN : ils venaient tous de cette extrapolation, parfois sur une sauvegarde vieille de dix minutes. Si les periodes 20, 21, 23, 34 et 59 sont decalees, l'ajustement qui a produit les quatre candidats repose sur du sable -- ce qui expliquerait deux jours d'echecs mieux que toutes les theories de generateur essayees. La mesure a faire, qui ne depend d'aucune horloge : la SECONDE exacte a laquelle le ciel change. Elle donne une frontiere de periode en heure reelle directement, et deux changements donnent le vrai rapport en meme temps que la duree de 666 s, jamais verifiee sur le jeu.",
+  "_acquis": "CE QUI EST ETABLI le 2026-09-10, et qui ne l'etait pas la veille : 1. Les tables, leurs poids ET leur ordre, lues dans le jeu. 2. L'index de periode est BON. Le groupe a vu le ciel changer en mer vers 14:35 ; la frontiere de la periode 79, calculee comme temps_du_monde / 666 sur une sauvegarde fraiche, tombait a 14:35:45. Un changement observe coincide donc avec une frontiere calculee, a moins d'une minute. Cela valide d'un coup la duree de 666 secondes -- jamais verifiee sur le jeu jusqu'ici -- et la lecture du temps du monde dans l'en-tete. 3. L'horloge du monde avance environ 1,13 fois plus vite que la montre, et de facon variable : convertir une periode en heure ne vaut qu'a la minute pres, et seulement depuis une sauvegarde recente. Ce qui reste inconnu est donc UNIQUEMENT la fonction periode -> tirage. La deviner a echoue quatre fois ; la lire dans assembly_valheim.dll est la suite, et demande un decompilateur IL, qui n'est pas installe."
 }
