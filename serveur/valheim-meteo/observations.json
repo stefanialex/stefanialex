@@ -2,9 +2,9 @@
   "_note": "Observations de meteo en jeu, pour retrouver le generateur qu'utilise Valheim. Chaque ligne contraint le modele : elle dit dans quelle bande de la table du biome tombe le tirage de cette periode. Les periodes sont lues sur le monde vivant au moment du signalement ; « certaine » vaut faux quand l'observation tombe pres d'une frontiere de periode ou quand le message a pu etre envoye quelques minutes apres coup.",
   "_pourquoi": "Le modele du 2026-09-09 est refute : il annoncait degage a la periode 23 alors qu'il pleuvait. La periode de 666 s, la lecture du temps du monde et les neuf tables tiennent ; c'est la fonction periode -> tirage qui est fausse.",
   "_utile": "Les observations les plus informatives sont celles d'un temps RARE : pluie ou orage en Prairies (3 % chacun), blizzard en Montagnes (17 %). Un « degage » en Prairies n'elimine qu'un quatorzieme des tirages possibles.",
-  "monde": "NordheimV1",
   "observations": [
     {
+      "monde": "NordheimV1",
       "periode": 20,
       "biome": "Prairies",
       "temps": "Dégagé",
@@ -12,6 +12,7 @@
       "certaine": true
     },
     {
+      "monde": "NordheimV1",
       "periode": 21,
       "biome": "Prairies",
       "temps": "Dégagé",
@@ -19,6 +20,7 @@
       "certaine": true
     },
     {
+      "monde": "NordheimV1",
       "periode": 23,
       "biome": "Prairies",
       "temps": "Pluie",
@@ -26,12 +28,65 @@
       "certaine": true
     },
     {
+      "monde": "NordheimV1",
       "periode": 25,
       "biome": "Prairies",
       "temps": "Dégagé",
       "vers": "2026-09-09 19:23",
       "certaine": false,
       "reserve": "mesure a 24,68 periode : peut relever de la 24"
+    },
+    {
+      "monde": "NordheimV2",
+      "periode": 59,
+      "biome": "Prairies",
+      "temps": "Dégagé",
+      "vers": "2026-09-10 11:21",
+      "certaine": true
+    },
+    {
+      "monde": "NordheimV2",
+      "periode": 59,
+      "biome": "Forêt Noire",
+      "temps": "Dégagé",
+      "vers": "2026-09-10 11:21",
+      "certaine": true
+    },
+    {
+      "monde": "NordheimV1",
+      "periode": 34,
+      "biome": "Prairies",
+      "temps": "Dégagé",
+      "vers": "2026-09-10 11:21",
+      "certaine": false,
+      "reserve": "monde charge en solo a 11:21 ; periode deduite du temps sauvegarde par le serveur (23 184 s le 2026-09-09 a 21:10), et non lue sur le monde charge. Si la copie chargee n'etait pas celle du serveur, la periode est fausse. Fin de periode 34 a 11:23:06 : la mesure est proche de la frontiere."
+    },
+    {
+      "monde": "NordheimV1",
+      "periode": 34,
+      "biome": "Forêt Noire",
+      "temps": "Dégagé",
+      "vers": "2026-09-10 11:21",
+      "certaine": false,
+      "reserve": "meme reserve que la ligne precedente"
+    },
+    {
+      "monde": "NordheimV2",
+      "periode": 70,
+      "biome": "Prairies",
+      "temps": "Pluie",
+      "vers": "2026-09-10 13:09",
+      "certaine": true,
+      "reserve": "Confirme par Alexandre : plusieurs joueurs en ligne au meme instant, les uns en Prairies sous la pluie, les autres en Foret Noire par beau temps. Chacun etait donc DANS son biome, et les deux releves tombent dans la meme periode -- la 70 courait de 13:06:08 a 13:17:14."
+    },
+    {
+      "monde": "NordheimV2",
+      "periode": 70,
+      "biome": "Forêt Noire",
+      "temps": "Dégagé",
+      "vers": "2026-09-10 13:09",
+      "certaine": true,
+      "reserve": "Confirme par Alexandre : plusieurs joueurs en ligne au meme instant, les uns en Prairies sous la pluie, les autres en Foret Noire par beau temps. Chacun etait donc DANS son biome, et les deux releves tombent dans la meme periode -- la 70 courait de 13:06:08 a 13:17:14."
     }
   ],
   "_hypothese_ouverte": {
@@ -40,6 +95,20 @@
     "lecture_B": "tous les mondes voient le MEME ciel au meme instant reel, quel que soit leur age. Alors l'index ne depend pas du temps du monde et tout mon calcul est a refaire -- ce qui expliquerait la refutation du 2026-09-09 mieux que ma theorie d'un generateur defaillant.",
     "test": "charger NordheimV1 en solo pendant que NordheimV2 tourne, et comparer le ciel des Prairies a la meme minute. Ciels differents : lecture A, l'index est bon et le defaut est dans le tirage. Ciels identiques : lecture B, l'index est a refaire. Une seule observation elimine la moitie du probleme, ce qui vaut mieux que d'accumuler des orages.",
     "prevu": "2026-09-10, par le groupe",
-    "note": "Souleve par Alexandre le 2026-09-09 au soir. Je n'avais pas teste cette ambiguite : j'ai retenu la lecture qui m'arrangeait et je l'ai presentee comme etablie -- « SUR : la periode de 666 secondes »."
+    "note": "Souleve par Alexandre le 2026-09-09 au soir. Je n'avais pas teste cette ambiguite : j'ai retenu la lecture qui m'arrangeait et je l'ai presentee comme etablie -- « SUR : la periode de 666 secondes ».",
+    "resultat": "Test fait le 2026-09-10 a 11:21 par Alexandre : NordheimV1 charge en solo pendant que NordheimV2 tournait. Prairies et Foret Noire DEGAGEES dans les deux mondes. NON DISCRIMINANT, et c'etait le resultat attendu trois fois sur quatre : « Degage » pese 25 sur 29 en Prairies, donc deux tirages independants tombent ensemble dans cette bande une fois sur deux. La Foret Noire n'ajoute rien, sa borne (0,8696) est plus large que celle des Prairies (0,8621). Les deux lectures survivent.",
+    "test_2": "L'INSTANT du changement, et non le ciel : il ne depend pas de la rarete du temps. Sous la lecture B les deux mondes basculent au meme instant reel, donc sur les frontieres connues de NordheimV2 -- 11:38:55, 11:50:01, 12:01:07 le 2026-09-10. Sous la lecture A chaque monde bascule sur son propre temps ecoule, donc ailleurs. Ce test a l'avantage de ne rien supposer du temps de monde de la copie chargee : il suffit qu'un changement observe dans V1 tombe, ou ne tombe pas, sur une frontiere de V2."
+  },
+  "_variantes": "Mesure du 2026-09-10 : les variantes 1 et 3 rendent le MEME nombre a trois decimales sur les six observations. Ce n'est pas un hasard, c'est la meme fonction -- (m >> 9) / 2^23 contre m / 2^32, l'une etant l'autre tronquee a 23 bits. « Trancher entre trois variantes » n'en compare donc que deux. Aucune ne passe la periode 23, ou la pluie observee exige un tirage dans (0,931 ; 0,966] et ou les trois donnent moins de 0,14. Les periodes 34 et 59 du 2026-09-10 ne refutent rien de plus : elles sont compatibles avec les trois.",
+  "_refutation_2": "RETRACTEE le 2026-09-10. J'avais conclu que « pluie en Prairies et beau en Foret Noire au meme instant » etait impossible, donc que le modele « une periode, un tirage partage » tombait. C'etait faux : la conclusion reposait sur l'ORDRE suppose des tables, et l'ordre etait faux. Avec les tables lues dans le jeu, la pluie en Prairies veut dire un tirage dans (0,86207 ; 0,89655] et la brume de Foret Noire un tirage sous 0,86957 : l'intersection (0,86207 ; 0,86957] n'est PAS vide. Le modele survit, et cette observation devient la plus contraignante qu'on ait -- une fenetre de 0,75 % de la plage. J'avais reproche a l'observation ce qui etait la faute de ma table.",
+  "_refutation_3": "Recherche relancee sur les tables corrigees, en admettant qu'« il pleut » puisse designer Rain OU LightRain -- un joueur ne les distingue pas, et avec les vraies tables ces deux bandes sont aux deux extremites. 3510 hypotheses (amorces periode+d pour d de -32 a +32, periode melangee au drapeau de biome par somme et par ou-exclusif, trois variantes de conversion dont deux identiques, rangs 0 a 5). Il en survit QUATRE distinctes, la ou le hasard en predisait 0,5. Suggestif, pas concluant : la meme famille a deja produit des faux positifs, et je me suis trompe trois fois aujourd'hui. Elles sont donc mises a l'epreuve par PREDICTION.",
+  "_suite": "Arreter de deviner le generateur. Les tables, leur ordre et la duree de 666 s sont des DONNEES du jeu, et l'algorithme de selection est du code : les deux sont sur le disque, dans /srv/jeux/valheim. Les lire trancherait au lieu d'accumuler des refutations. Obstacle : ce dossier est en 0750 valheim:valheim, illisible pour lapserv, et aucun decompilateur n'est installe (ni monodis, ni ikdasm, ni ilspycmd). En attendant, la source la moins chere reste le groupe : ils sont plusieurs en ligne, repartis sur les biomes. Un releve simultane de plusieurs biomes vaut plusieurs contraintes d'un coup -- c'est exactement ce qu'a produit la periode 70.",
+  "_tables_lues_dans_le_jeu": "2026-09-10 : les tables ne sont plus supposees, elles sont LUES. Source : valheim_server_Data/StreamingAssets/SoftRef/Bundles/d59cfac, un bundle UnityFS compresse en LZ4 -- ni le module lz4 ni l'outil ne sont installes, un decompresseur de bloc en Python pur tient en trente lignes, il est dans le scratchpad de la session. La liste m_biomes de EnvMan y figure DEUX fois, a l'identique. Les POIDS etaient justes ; l'ORDRE etait faux dans quatre biomes sur six -- Montagnes carrement renverse, et « Clear » quatrieme et non premier en Ocean. Tables corrigees dans meteo-valheim.py. Ashlands, Grand Nord et Mistlands n'ont AUCUNE table dans ce bundle : les leurs etaient inventees, elles sont retirees.",
+  "_candidats": {
+    "A": "periode-32 xor drapeau de biome, variante 2, rang 1",
+    "B": "periode-14 xor drapeau de biome, variante 2, rang 2",
+    "C": "periode-10 plus drapeau de biome, variante 1, rang 2",
+    "D": "periode-8 xor drapeau de biome, variante 1, rang 2",
+    "_epreuve": "Les quatre divergent presque a chaque periode en OCEAN et en MONTAGNES, biomes ou les tables corrigees contraignent des deux cotes. Une seule observation simultanee y elimine la moitie du champ. Le 2026-09-10 a 14:00:59, periode 75 : A et B annoncent Brouillard en Ocean, C et D Degage. A 14:12:05, periode 76 : A et D annoncent Blizzard en Montagnes, B et C Neige. Toute observation qui contredit un candidat le tue."
   }
 }

@@ -86,19 +86,57 @@ RACINE_AUTORISEE = "/var/lib/valheim/donnees/worlds_local"
 # Poids entiers reconstituees depuis les pourcentages publies. Le nom entre
 # parentheses est celui qu'affiche la console du jeu (« env <nom> »), pour
 # qu'on puisse verifier a la main.
+# Les tables, LUES DANS LE JEU le 2026-09-10, et non plus reprises d'une source
+# exterieure. Elles viennent du bundle
+# valheim_server_Data/StreamingAssets/SoftRef/Bundles/d59cfac, un UnityFS
+# compresse en LZ4 : la liste « m_biomes » de EnvMan y donne, pour chaque
+# biome, ses couples (nom d'environnement, poids) DANS L'ORDRE. Le meme bloc
+# figure deux fois dans le fichier, a l'identique -- deux scenes, une seule
+# verite.
+#
+# Ce que la lecture a change, et ce n'est pas cosmetique : les POIDS etaient
+# justes, ils avaient ete verifies au pourcentage pres. Mais l'ORDRE etait faux
+# dans quatre biomes sur six, et c'est l'ordre qui decide dans quelle bande
+# tombe un tirage, donc quel temps il donne.
+#
+#   Prairies      Pluie et Brouillard etaient permutes avec Orage et Pluie fine
+#   Foret Noire   Pluie et Brouillard permutes
+#   Montagnes     ORDRE RENVERSE. Le blizzard occupe le BAS de la plage, pas le
+#                 haut : une observation de blizzard disait donc l'exact
+#                 contraire de ce qu'on en tirait.
+#   Ocean         « Clear » est le QUATRIEME et non le premier. Un ciel degage
+#                 en mer contraint le tirage des DEUX cotes, entre 0,214 et
+#                 0,929 : c'est devenu l'observation la plus utile du jeu.
+#   Plaines       seul biome ou l'ordre suppose etait le bon.
+#
+# Les noms sont ceux du jeu, NOMS les traduit pour l'affichage. « DeepForest
+# Mist » est le temps ordinaire de la Foret Noire, celui que les joueurs
+# decrivent comme du beau temps.
 TABLES = {
-    "Prairies":     [("Dégagé", 25), ("Brouillard", 1), ("Pluie fine", 1),
-                     ("Pluie", 1), ("Orage", 1)],
-    "Forêt Noire":  [("Dégagé", 20), ("Brouillard", 1), ("Pluie", 1), ("Orage", 1)],
-    "Marais":       [("Pluie", 1)],
-    "Montagnes":    [("Neige", 5), ("Blizzard", 1)],
-    "Plaines":      [("Dégagé", 5), ("Brouillard", 1), ("Pluie fine", 1)],
-    "Mistlands":    [("Dégagé", 15), ("Pluie", 1), ("Orage", 1)],
-    "Océan":        [("Dégagé", 10), ("Brouillard", 1), ("Pluie fine", 1),
-                     ("Pluie", 1), ("Orage", 1)],
-    "Ashlands":     [("Pluie de cendres", 30), ("Pluie de braises", 4),
-                     ("Brouillard", 2), ("Orage", 1)],
-    "Grand Nord":   [("Neige", 2), ("Blizzard", 1), ("Dégagé", 1)],
+    "Prairies":     [("Clear", 5.0), ("Rain", 0.2), ("Misty", 0.2),
+                     ("ThunderStorm", 0.2), ("LightRain", 0.2)],
+    "Forêt Noire":  [("DeepForest Mist", 2.0), ("Rain", 0.1), ("Misty", 0.1),
+                     ("ThunderStorm", 0.1)],
+    "Marais":       [("SwampRain", 1.0)],
+    "Montagnes":    [("SnowStorm", 1.0), ("Snow", 5.0)],
+    "Plaines":      [("Heath clear", 2.0), ("Misty", 0.4), ("LightRain", 0.4)],
+    "Océan":        [("Rain", 0.1), ("LightRain", 0.1), ("Misty", 0.1),
+                     ("Clear", 1.0), ("ThunderStorm", 0.1)],
+}
+
+# Ashlands, Grand Nord et Mistlands N'ONT PAS de table dans ce bundle : la
+# liste « m_biomes » n'en compte que six. Ce qui figurait ici pour ces trois
+# biomes venait d'une source exterieure et n'a jamais ete verifie ; c'est
+# retire plutot que garde en donnant l'illusion d'une prevision. Soit leur
+# meteo se decide ailleurs, soit elle vit dans un autre bundle : a chercher,
+# sans rien deviner d'ici la.
+SANS_TABLE = ("Ashlands", "Grand Nord", "Mistlands")
+
+NOMS = {
+    "Clear": "Dégagé", "Rain": "Pluie", "Misty": "Brouillard",
+    "ThunderStorm": "Orage", "LightRain": "Pluie fine",
+    "SwampRain": "Pluie", "SnowStorm": "Blizzard", "Snow": "Neige",
+    "DeepForest Mist": "Brume de forêt", "Heath clear": "Dégagé",
 }
 # Le Marais pleut toujours et les Mistlands sont toujours sombres : le jeu y
 # force l'environnement tant qu'un joueur s'y trouve. Les annoncer serait du
@@ -146,8 +184,8 @@ def environnement(biome, periode, variante=1):
     for nom, poids in table:
         cumul += poids
         if tirage <= cumul:
-            return nom
-    return table[0][0]
+            return NOMS.get(nom, nom)
+    return NOMS.get(table[0][0], table[0][0])
 
 
 def temps_du_monde(dossier):
