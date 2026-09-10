@@ -60,10 +60,19 @@ function rendJoueurs(joueurs) {
   // La classe « num » existe deja dans valheim.css : chiffres alignes a droite
   // et chasse fixe, pour que les colonnes se comparent verticalement.
   const entete = el("tr");
-  const colonnes = [["joueur", null], ["sessions", "num"], ["temps de jeu", "num"],
-                    ["morts", "num"], ["morts / h", "num"], ["dernière fois", null]];
+  const colonnes = [["joueur", null], ["perso", "num"], ["sessions", "num"],
+                    ["temps de jeu", "num"], ["morts", "num"], ["morts / h", "num"],
+                    ["dernière fois", null]];
   for (const [t, c] of colonnes) entete.append(el("th", c, t));
   tb.append(entete);
+
+  // Les compteurs sont ceux du personnage en cours. Ce que le compte a fait
+  // avant s'ecrit a cote, en « + N » : le total reste lisible sans que le
+  // personnage du jour herite des morts d'un personnage qui n'existe plus.
+  const cumul = (cell, ecart) => {
+    if (ecart) cell.append(el("span", "cumul", ` + ${ecart}`));
+    return cell;
+  };
 
   for (const j of joueurs) {
     const tr = el("tr");
@@ -71,9 +80,14 @@ function rendJoueurs(joueurs) {
     nom.append(el("span", null, j.pseudo));
     if (j.en_cours) nom.append(document.createTextNode(" "), el("span", "badge", "en jeu"));
     tr.append(nom);
+    const perso = el("td", "num", `${j.personnage || 1}e`);
+    if (j.depuis) perso.title = `personnage joué depuis le ${court(j.depuis)}`;
+    tr.append(perso);
     tr.append(el("td", "num", nf(j.sessions)));
-    tr.append(el("td", "num", duree(j.temps)));
-    tr.append(el("td", "num", nf(j.morts)));
+    const reste = Math.round((j.temps_total || j.temps) - j.temps);
+    tr.append(cumul(el("td", "num", duree(j.temps)), reste >= 60 ? duree(reste) : null));
+    const mortsAvant = (j.morts_total || j.morts) - j.morts;
+    tr.append(cumul(el("td", "num", nf(j.morts)), mortsAvant > 0 ? nf(mortsAvant) : null));
     const taux = j.temps > 3600 ? nf(j.morts / (j.temps / 3600), 2) : "—";
     tr.append(el("td", "num", taux));
     tr.append(el("td", "ip", court(j.derniere)));

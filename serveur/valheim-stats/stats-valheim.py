@@ -142,6 +142,56 @@ def alias(cx):
     return res
 
 
+def vies_par_compte(cx, monde=None):
+    """Les personnages de chaque compte, du plus ancien au plus recent.
+
+    Le dernier de la liste est celui qui joue aujourd'hui, et c'est lui qui
+    porte les compteurs affiches. Les precedents ne disparaissent pas : ils
+    font le cumul, et le rang du personnage en cours (« 2e perso »).
+
+    L'ordre est celui des DEBUTS, pas des fins : un joueur peut laisser une
+    trace tardive sur un ancien nom -- une mort, une deconnexion en retard --
+    et cela ne doit pas le faire repasser pour son personnage courant.
+
+    La table peut manquer, sur une base d'avant cette version ou un collecteur
+    pas encore reinstalle : on rend alors un dictionnaire vide et tout se
+    comporte comme avant, compteurs cumules, sans planter.
+    """
+    ou, arg = ("", ())
+    if monde:
+        ou, arg = (" WHERE monde = ?", (monde,))
+    try:
+        lignes = cx.execute("SELECT steamid, pseudo, debut, fin FROM vies" + ou +
+                            " ORDER BY debut, pseudo", arg).fetchall()
+    except sqlite3.OperationalError:
+        return {}
+    res = {}
+    for sid, pseudo, debut, fin in lignes:
+        res.setdefault(sid, []).append({"pseudo": pseudo, "debut": debut, "fin": fin})
+    return res
+
+
+def morts_par_personnage(cx, monde=None):
+    """Les morts de chaque personnage, sous son propre nom, sans regroupement.
+
+    charge() rend les morts REGROUPEES par compte : tous les personnages d'un
+    joueur y comptent sous son nom du jour. C'est ce qu'il faut pour les defis,
+    qui portent sur le joueur et non sur le personnage du jour. Ici c'est
+    l'inverse : une
+    mort appartient au personnage qui l'a subie, et un personnage neuf part
+    donc de zero.
+    """
+    ou, arg = ("", ())
+    if monde:
+        ou, arg = (" AND monde = ?", (monde,))
+    res = {}
+    for joueur, ts in cx.execute(
+            "SELECT joueur, horodatage FROM evenements WHERE type = 'mort'" + ou +
+            " ORDER BY horodatage", arg):
+        res.setdefault(joueur, []).append(ts)
+    return res
+
+
 def monde_actif(cx):
     """Le monde le plus recemment vu par le collecteur."""
     r = cx.execute("SELECT monde FROM mondes ORDER BY derniere_vue DESC LIMIT 1").fetchone()
@@ -384,23 +434,82 @@ def roles(cx, monde, ident, sessions):
     return {"roles": sortie, "presence": presence}
 
 
-def par_joueur(ident, sessions, morts):
-    """Agrege sessions et morts par joueur, indexe par pseudo."""
+def par_joueur(cx, monde, ident, sessions, morts):
+    """Agrege sessions et morts par joueur, indexe par pseudo.
+
+    Les compteurs — sessions, temps de jeu, morts — sont ceux du PERSONNAGE EN
+    COURS, et repartent donc de zero des qu'un joueur en cree un neuf. C'est ce
+    qu'Alexandre a demande le 2026-09-10 : il venait de mourir en etant absent
+    du clavier, reprenait un personnage, et un compteur de morts qui garde les
+    fautes d'un personnage qui n'existe plus ne dit plus rien du joueur qui est
+    la.
+
+    Rien n'est perdu pour autant : « temps_total » et « morts_total » portent le
+    cumul du compte, toutes vies confondues, et « personnage » dit a la
+    combientieme on en est. Les defis, eux, continuent de compter sur le compte
+    entier — voir defis().
+
+    Le decoupage se fait au personnage et non a la date pour les morts, parce
+    que le journal ecrit le nom du personnage sur chaque mort : c'est exact,
+    meme quand un joueur alterne entre deux personnages. Pour le temps de jeu
+    il se fait a la date, faute de mieux : une session qui enjambe la naissance
+    du personnage — le cas normal, on refait son perso sans se deconnecter —
+    n'est comptee qu'a partir de cette naissance.
+    """
+    vies = vies_par_compte(cx, monde)
+    morts_perso = morts_par_personnage(cx, monde)
+
+    def vide(sid):
+        return {"steamid": sid, "sessions": 0, "temps": 0.0, "morts": 0,
+                "sessions_total": 0, "temps_total": 0.0, "morts_total": 0,
+                "personnage": 1, "depuis": None,
+                "derniere": None, "en_cours": False}
+
     res = {}
     for sid, debut, fin, en_cours in sessions:
-        pseudo = ident.get(sid, "SteamID %s" % sid)
-        e = res.setdefault(pseudo, {"steamid": sid, "sessions": 0, "temps": 0.0,
-                                    "morts": 0, "derniere": None, "en_cours": False})
-        e["sessions"] += 1
-        e["temps"] += (fin - debut).total_seconds()
+        histoire = vies.get(sid, [])
+        vie = histoire[-1] if histoire else None
+        pseudo = (vie["pseudo"] if vie else None) or ident.get(sid, "SteamID %s" % sid)
+        e = res.setdefault(pseudo, vide(sid))
+        e["sessions_total"] += 1
+        e["temps_total"] += (fin - debut).total_seconds()
         e["en_cours"] = e["en_cours"] or en_cours
         d = fin.isoformat(sep=" ", timespec="seconds")
         if not e["derniere"] or d > e["derniere"]:
             e["derniere"] = d
+        if vie:
+            # Le personnage en cours est le dernier de la liste : son rang
+            # est donc aussi le nombre de personnages qu'a portes ce compte.
+            e["personnage"] = len(histoire)
+            e["depuis"] = vie["debut"]
+            e["morts"] = len(morts_perso.get(pseudo, []))
+            e["morts_total"] = sum(len(morts_perso.get(v["pseudo"], []))
+                                   for v in histoire)
+            naissance = datetime.fromisoformat(vie["debut"])
+            if fin <= naissance:
+                continue          # session d'un personnage precedent
+            e["sessions"] += 1
+            e["temps"] += (fin - max(debut, naissance)).total_seconds()
+        else:
+            # Sans table des vies, on se comporte comme avant : tout cumule.
+            e["sessions"] += 1
+            e["temps"] += (fin - debut).total_seconds()
+            e["morts"] = len(morts.get(pseudo, []))
+            e["morts_total"] = e["morts"]
+
+    # Les comptes qui n'ont que des morts et aucune session appariee : ils
+    # n'apparaitraient nulle part sinon. On ecarte les noms deja rattaches a un
+    # compte present, pour ne pas recreer les lignes fantomes de la veille.
+    connus = set(res)
+    for e in res.values():
+        for v in vies.get(e["steamid"], []):
+            connus.add(v["pseudo"])
     for pseudo, dates in morts.items():
-        e = res.setdefault(pseudo, {"steamid": None, "sessions": 0, "temps": 0.0,
-                                    "morts": 0, "derniere": None, "en_cours": False})
+        if pseudo in connus:
+            continue
+        e = res.setdefault(pseudo, vide(None))
         e["morts"] = len(dates)
+        e["morts_total"] = len(dates)
     return res
 
 
@@ -471,6 +580,15 @@ def defis(agg, morts, progression, sessions, ident, boss_vaincus):
     qu'on ne peut pas verifier automatiquement n'a pas sa place ici, il finirait
     en dispute. « Pas de portail » ou « pacifiste » relevent de l'honneur et
     restent volontairement dehors.
+
+    Les defis comptent sur le COMPTE ENTIER, toutes vies confondues, alors que
+    le tableau des joueurs ne compte plus que le personnage en cours. Ce n'est
+    pas une incoherence, c'est la seule facon de les garder honnetes : « intact
+    depuis Eikthyr » se gagnerait en mourant puis en refaisant son personnage,
+    ce qui est exactement ce que le defi veut interdire. Un compteur personnel
+    dit ou en est le personnage qu'on joue ; un defi dit ce que le joueur a
+    tenu. Seul « le plus solide » se lit sur le personnage en cours -- c'est
+    une mesure de forme du moment, pas une promesse.
     """
     maintenant = datetime.now()
     liste = []
@@ -506,7 +624,7 @@ def defis(agg, morts, progression, sessions, ident, boss_vaincus):
         liste.append({
             "nom": "Le plus solide",
             "regle": "le moins de morts par heure de jeu",
-            "metrique": "morts / heures de session",
+            "metrique": "morts / heures de session, sur le personnage en cours",
             "sens": "moins", "rangs": sorted(rangs, key=lambda r: r["valeur"]),
         })
 
@@ -713,7 +831,7 @@ def kpis(cx, monde):
     if not conf:
         return None
     ident, sessions, morts, progression, _i, _j = charge(cx, monde)
-    agg = par_joueur(ident, sessions, morts)
+    agg = par_joueur(cx, monde, ident, sessions, morts)
     boss_vaincus = progression_boss(cx, monde, progression)
     raids = raids_tenus(cx, monde)
 
@@ -848,7 +966,7 @@ def exploration(cx, monde=None):
 
 def texte(cx, monde=None):
     ident, sessions, morts, progression, infos, jour = charge(cx, monde)
-    agg = par_joueur(ident, sessions, morts)
+    agg = par_joueur(cx, monde, ident, sessions, morts)
     boss_vaincus = progression_boss(cx, monde, progression)
 
     nom_monde = (infos[0] if infos and infos[0] else None) or monde or "?"
@@ -862,11 +980,20 @@ def texte(cx, monde=None):
         print("derniere sauvegarde %s" % t["sauvegarde"][:16])
     print()
 
-    print("JOUEURS")
-    print("%-16s %8s %9s %6s   %s" % ("pseudo", "sessions", "temps", "morts", "derniere fois"))
+    print("JOUEURS  compteurs du personnage en cours ; le cumul du compte suit")
+    print("%-16s %6s %8s %16s %10s   %s" % (
+        "pseudo", "perso", "sessions", "temps", "morts", "derniere fois"))
     for pseudo, e in sorted(agg.items(), key=lambda kv: -kv[1]["temps"]):
-        print("%-16s %8d %9s %6d   %s%s" % (
-            pseudo, e["sessions"], duree(e["temps"]), e["morts"],
+        t = duree(e["temps"])
+        # Le cumul ne s'affiche que s'il dit autre chose : sur un premier
+        # personnage il est egal au compteur, et le repeter serait du bruit.
+        if int(e["temps_total"]) - int(e["temps"]) >= 60:
+            t += " + %s" % duree(e["temps_total"] - e["temps"])
+        m = "%d" % e["morts"]
+        if e["morts_total"] != e["morts"]:
+            m += " + %d" % (e["morts_total"] - e["morts"])
+        print("%-16s %6s %8d %16s %10s   %s%s" % (
+            pseudo, "%de" % e["personnage"], e["sessions"], t, m,
             e["derniere"] or "-", "  (en jeu)" if e["en_cours"] else ""))
     print()
 
@@ -979,7 +1106,7 @@ def texte(cx, monde=None):
 
 def donnees(cx, monde=None):
     ident, sessions, morts, progression, infos, jour = charge(cx, monde)
-    agg = par_joueur(ident, sessions, morts)
+    agg = par_joueur(cx, monde, ident, sessions, morts)
     boss_vaincus = progression_boss(cx, monde, progression)
     t = taille_monde(cx, monde)
     return {

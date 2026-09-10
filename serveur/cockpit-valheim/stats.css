@@ -21,6 +21,9 @@
   font-size: .7rem; font-weight: 500; background: var(--ok);
   color: var(--sur-marque); }
 
+/* Le cumul du compte, a cote du compteur du personnage en cours. Discret :
+   c'est un rappel, pas la mesure qu'on vient lire. */
+.cumul { color: var(--doux); font-size: .75rem; }
 .regle { color: var(--doux); font-size: .8rem; margin-bottom: .5rem; }
 .seed { font-family: RedHatMono, ui-monospace, monospace; }
 

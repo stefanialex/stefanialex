@@ -173,6 +173,28 @@ CREATE TABLE IF NOT EXISTS pseudos (
   derniere_vue TEXT NOT NULL,
   PRIMARY KEY (steamid, pseudo)
 );
+
+-- Une « vie » : un personnage, le compte qui le porte, le monde ou il vit, et
+-- ses bornes. C'est la table qui permet de remettre les compteurs a zero quand
+-- un joueur repart sur un personnage neuf -- demande d'Alexandre le
+-- 2026-09-10, apres une mort en etant absent du clavier.
+--
+-- Elle ne remplace pas « pseudos », elle la precise : « pseudos » ignore le
+-- monde, or c'est justement par monde qu'un personnage vit et meurt. Et elle
+-- n'efface rien : les vies passees restent, ce sont elles qui donnent le
+-- cumul affiche a cote du compteur du personnage en cours.
+--
+-- « monde » vaut '' et non NULL quand il est inconnu : dans une cle primaire
+-- SQLite, deux NULL ne sont jamais egaux, donc l'unicite ne se declencherait
+-- pas et chaque relecture du journal ajouterait une ligne.
+CREATE TABLE IF NOT EXISTS vies (
+  monde   TEXT NOT NULL DEFAULT '',
+  steamid TEXT NOT NULL,
+  pseudo  TEXT NOT NULL,
+  debut   TEXT NOT NULL,
+  fin     TEXT NOT NULL,
+  PRIMARY KEY (monde, steamid, pseudo)
+);
 """
 
 
@@ -459,18 +481,35 @@ def morts_de_naissance(cx, lot, mondes):
     donc un test incapable d'echouer. Alexandre a demande de creuser, et il
     avait raison.
     """
+    # Premiere apparition de chaque personnage concerne : ce que dit le lot,
+    # puis ce que dit la base -- et la base doit etre interrogee AUSSI pour un
+    # personnage qui ne fait que mourir dans ce lot, sans y apparaitre.
+    #
+    # C'est le cas normal en suivi, ou le lot ne contient qu'une seule ligne :
+    # « premieres » restait alors vide, la boucle de rattrapage en base ne
+    # tournait sur rien, et le filtre laissait passer la mort. Deux fausses
+    # morts en ont profite le 2026-09-10, a 10h25 et 10h37, sur des
+    # personnages crees quatre et treize secondes plus tot -- annoncees dans le
+    # salon, et posees sur le compteur d'un personnage qui venait de naitre.
+    # Seul le rattrapage complet filtrait, parce que son lot porte l'apparition
+    # et la mort ensemble.
     premieres = {}
+    orphelines = set()
     for (ts, typ, j, _sid, _d), m in zip(lot, mondes):
-        if typ == "apparition" and j:
+        if not j:
+            continue
+        if typ == "apparition":
             cle = (m, j)
             if cle not in premieres or ts < premieres[cle]:
                 premieres[cle] = ts
-    for (m, j) in list(premieres):
+        elif typ == "mort":
+            orphelines.add((m, j))
+    for (m, j) in set(premieres) | orphelines:
         r = cx.execute(
             "SELECT min(horodatage) FROM evenements "
             "WHERE type = 'apparition' AND joueur = ? AND monde IS ?",
             (j, m)).fetchone()
-        if r and r[0] and r[0] < premieres[(m, j)]:
+        if r and r[0] and ((m, j) not in premieres or r[0] < premieres[(m, j)]):
             premieres[(m, j)] = r[0]
 
     lot2, mondes2 = [], []
@@ -516,6 +555,74 @@ def comptes_par_pseudo(cx):
         _, sid = attente.pop()
         vus.setdefault((monde, joueur), (sid, ts))
     return vus
+
+
+def purge_morts_de_naissance(cx):
+    """Efface les fausses morts de creation deja inscrites en base.
+
+    morts_de_naissance() filtre a l'insertion, et « INSERT OR IGNORE » ne
+    revient jamais sur une ligne deja ecrite : les fausses morts passees avant
+    le correctif du 2026-09-10 restaient donc en base pour toujours, et un
+    rattrapage ne pouvait pas les reprendre.
+
+    Meme critere que le filtre, applique a tout l'historique : une mort qui
+    tombe dans les 90 secondes de la premiere apparition de son personnage sur
+    son monde n'a pas eu lieu. Le prix est le meme, et deja assume : une vraie
+    mort au spawn d'un personnage neuf est perdue. Cette regle-la se repare
+    d'elle-meme a chaque demarrage, alors que les lignes fautives, elles,
+    s'accumulaient.
+    """
+    efface = 0
+    for monde, joueur, ts in cx.execute(
+            "SELECT monde, joueur, horodatage FROM evenements "
+            "WHERE type = 'mort' AND joueur IS NOT NULL").fetchall():
+        r = cx.execute(
+            "SELECT min(horodatage) FROM evenements "
+            "WHERE type = 'apparition' AND joueur = ? AND monde IS ?",
+            (joueur, monde)).fetchone()
+        if not r or not r[0]:
+            continue
+        if (datetime.fromisoformat(ts)
+                - datetime.fromisoformat(r[0])) < NAISSANCE:
+            efface += cx.execute(
+                "DELETE FROM evenements WHERE type = 'mort' AND monde IS ? "
+                "AND joueur = ? AND horodatage = ?", (monde, joueur, ts)).rowcount
+    if efface:
+        cx.commit()
+    return efface
+
+
+def enregistre_vies(cx):
+    """Inscrit chaque personnage avec ses bornes, pour que les compteurs
+    puissent repartir de zero au personnage suivant.
+
+    Le debut vient de comptes_par_pseudo -- la premiere apparition du
+    personnage, rapportee au compte Steam par la sequence connexion/apparition.
+    La fin est la derniere trace de ce personnage dans le journal, quelle qu'en
+    soit la nature : elle sert a raconter les vies passees, pas a decider
+    laquelle est en cours. Le personnage en cours, c'est celui dont le DEBUT
+    est le plus recent -- pas celui dont la fin est la plus tardive. La nuance
+    compte : un joueur peut mourir sur un personnage neuf, donc y laisser une
+    trace, et une trace tardive sur un ancien nom ne doit pas le ressusciter.
+
+    Rien n'est efface, jamais : une vie inscrite le reste. Un personnage qu'on
+    reprend plus tard voit seulement sa borne de fin avancer.
+    """
+    comptes = comptes_par_pseudo(cx)
+    fins = {}
+    for monde, joueur, ts in cx.execute(
+            "SELECT monde, joueur, max(horodatage) FROM evenements "
+            "WHERE joueur IS NOT NULL GROUP BY monde, joueur"):
+        fins[(monde, joueur)] = ts
+    for (monde, joueur), (sid, debut) in comptes.items():
+        cx.execute(
+            "INSERT INTO vies (monde, steamid, pseudo, debut, fin) "
+            "VALUES (?, ?, ?, ?, ?) "
+            "ON CONFLICT (monde, steamid, pseudo) DO UPDATE SET "
+            "debut = min(debut, excluded.debut), fin = max(fin, excluded.fin)",
+            (monde or "", sid, joueur, debut, fins.get((monde, joueur), debut)))
+    cx.commit()
+    return cx.execute("SELECT count(*) FROM vies").fetchone()[0]
 
 
 def purge_morts_abandonnees(cx):
@@ -643,9 +750,13 @@ def rattrapage(cx, depuis):
     # Apres coup seulement : la regle du personnage abandonne a besoin de
     # connaitre la suite de l'histoire.
     relie_pseudos(cx)
+    nees = purge_morts_de_naissance(cx)
+    if nees:
+        print("%d mort(s) effacee(s) : creation de personnage" % nees)
     purgees = purge_morts_abandonnees(cx)
     if purgees:
         print("%d mort(s) effacee(s) : personnage abandonne pour un neuf" % purgees)
+    print("%d personnage(s) recense(s)" % enregistre_vies(cx))
     return len(lot), nb
 
 
@@ -679,6 +790,7 @@ def suit(cx):
         enregistre(cx, monde, [e])
         if e[1] in ("connexion", "apparition"):
             relie_pseudos(cx)
+            enregistre_vies(cx)
         sys.stdout.write("%s %s %s\n" % (e[0], e[1], e[2] or e[3] or e[4] or ""))
         sys.stdout.flush()
 
