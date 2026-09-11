@@ -124,19 +124,48 @@ TABLES = {
                      ("Clear", 1.0), ("ThunderStorm", 0.1)],
 }
 
-# Ashlands, Grand Nord et Mistlands N'ONT PAS de table dans ce bundle : la
-# liste « m_biomes » n'en compte que six. Ce qui figurait ici pour ces trois
-# biomes venait d'une source exterieure et n'a jamais ete verifie ; c'est
-# retire plutot que garde en donnant l'illusion d'une prevision. Soit leur
-# meteo se decide ailleurs, soit elle vit dans un autre bundle : a chercher,
-# sans rien deviner d'ici la.
-SANS_TABLE = ("Ashlands", "Grand Nord", "Mistlands")
+# Ces trois-la ont bien une table, CONTRAIREMENT A CE QUE J'AI ECRIT LE
+# 2026-09-10. Je n'avais parcouru que la liste contigue de EnvMan -- six
+# biomes -- et conclu du haut de cette fenetre qu'Ashlands, Grand Nord et
+# Mistlands n'en avaient pas. Leurs BiomeEnvSetup sont ailleurs dans le meme
+# bundle, a 2 703 120, 2 777 884 et 5 788 044, avec la meme signature : le nom
+# du biome, son drapeau, puis les couples (environnement, poids). Verifie le
+# 2026-09-11 : ils y etaient DEJA dans le bundle de la veille, la mise a jour
+# 1.0.12 n'y est pour rien.
+#
+# Comme pour les six autres, les poids repris de la source exterieure etaient
+# justes et l'ordre faux : en Ashlands, « brouillard » et « pluie de braises »
+# etaient permutes ; au Grand Nord, le blizzard occupe le BAS de la plage, pas
+# le haut. Seules les Mistlands etaient dans le bon ordre.
+TABLES.update({
+    "Grand Nord":  [("Twilight_SnowStorm", 0.5), ("Twilight_Snow", 1.0),
+                    ("Twilight_Clear", 1.0)],
+    "Ashlands":    [("Ashlands_ashrain", 1.5), ("Ashlands_misty", 0.1),
+                    ("Ashlands_CinderRain", 0.2), ("Ashlands_storm", 0.05)],
+    "Mistlands":   [("Mistlands_clear", 1.5), ("Mistlands_rain", 0.1),
+                    ("Mistlands_thunder", 0.1)],
+})
+
+# L'Ocean a une seconde table, pour les eaux des Ashlands : une entree
+# « Ashlands_SeaStorm » de poids 0,05 portant le drapeau m_ashlandsOverride.
+# C'est le PREMIER drapeau non nul trouve dans tout le jeu, et il valide la
+# lecture : SelectWeightedEnvironment exclut du total et du parcours toute
+# entree ainsi marquee, donc cette tempete n'existe que dans les eaux des
+# Ashlands. Elle n'est pas ajoutee ici : le programme ne sait pas ou se tient
+# le joueur, et l'annoncer partout serait faux.
+OCEAN_ASHLANDS = [("Ashlands_SeaStorm", 0.05)]
 
 NOMS = {
     "Clear": "Dégagé", "Rain": "Pluie", "Misty": "Brouillard",
     "ThunderStorm": "Orage", "LightRain": "Pluie fine",
     "SwampRain": "Pluie", "SnowStorm": "Blizzard", "Snow": "Neige",
     "DeepForest Mist": "Brume de forêt", "Heath clear": "Dégagé",
+    "Twilight_SnowStorm": "Blizzard", "Twilight_Snow": "Neige",
+    "Twilight_Clear": "Dégagé", "Ashlands_ashrain": "Pluie de cendres",
+    "Ashlands_misty": "Brouillard", "Ashlands_CinderRain": "Pluie de braises",
+    "Ashlands_storm": "Orage", "Ashlands_SeaStorm": "Tempête",
+    "Mistlands_clear": "Dégagé", "Mistlands_rain": "Pluie",
+    "Mistlands_thunder": "Orage",
 }
 # Le Marais pleut toujours et les Mistlands sont toujours sombres : le jeu y
 # force l'environnement tant qu'un joueur s'y trouve. Les annoncer serait du
