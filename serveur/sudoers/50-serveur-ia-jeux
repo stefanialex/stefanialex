@@ -131,6 +131,10 @@ Cmnd_Alias SRV_UNITES = \
     /usr/bin/systemctl stop oracle-valheim.service, \
     /usr/bin/systemctl restart oracle-valheim.service, \
     /usr/bin/systemctl reset-failed oracle-valheim.service, \
+    /usr/bin/systemctl start soiree-discord-valheim.service, \
+    /usr/bin/systemctl stop soiree-discord-valheim.service, \
+    /usr/bin/systemctl restart soiree-discord-valheim.service, \
+    /usr/bin/systemctl reset-failed soiree-discord-valheim.service, \
     /usr/bin/systemctl start succes-steam-valheim.service, \
     /usr/bin/systemctl stop succes-steam-valheim.service, \
     /usr/bin/systemctl restart succes-steam-valheim.service, \
@@ -171,6 +175,9 @@ Cmnd_Alias SRV_MINUTERIES = \
     /usr/bin/systemctl start oracle-valheim.timer, \
     /usr/bin/systemctl stop oracle-valheim.timer, \
     /usr/bin/systemctl restart oracle-valheim.timer, \
+    /usr/bin/systemctl start soiree-discord-valheim.timer, \
+    /usr/bin/systemctl stop soiree-discord-valheim.timer, \
+    /usr/bin/systemctl restart soiree-discord-valheim.timer, \
     /usr/bin/systemctl start succes-steam-valheim.timer, \
     /usr/bin/systemctl stop succes-steam-valheim.timer, \
     /usr/bin/systemctl restart succes-steam-valheim.timer, \

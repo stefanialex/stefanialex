@@ -745,7 +745,7 @@ sudo chmod 750 /var/lib/valheim
 ```
 
 **6. Réinstaller les programmes et les unités**, depuis le dépôt. Deux lots :
-les seize programmes ouverts en `755`, et les cinq qui touchent au monde ou
+les dix-sept programmes ouverts en `755`, et les cinq qui touchent au monde ou
 aux sauvegardes en `750` — eux ne doivent rester lisibles que par root.
 
 ```bash
@@ -755,6 +755,7 @@ sudo install -o root -g root -m 755 \
   valheim-artisan/noms-prefabs-valheim.py \
   valheim-cles/cles-monde-valheim.py \
   valheim-discord/bilan-discord-valheim.py \
+  valheim-discord/soiree-discord-valheim.py \
   valheim-discord/file-claude-valheim.sh \
   valheim-discord/lit-discord-valheim.py \
   valheim-discord/notifie-discord-valheim.py \
@@ -800,7 +801,7 @@ done
 Aucune unité ne porte de secret : tout passe par `/etc/valheim.env` et
 `/etc/valheim-discord.conf`, à recréer à la main.
 
-**7. Armer les minuteries et démarrer.** Trois services et douze minuteries,
+**7. Armer les minuteries et démarrer.** Trois services et treize minuteries,
 c'est la liste exacte de ce qui était armé sur la machine :
 
 ```bash
@@ -811,7 +812,7 @@ sudo systemctl enable --now \
   bilan-discord-valheim.timer notifie-discord-valheim.timer \
   lit-discord-valheim.timer file-claude-valheim.timer \
   cles-monde-valheim.timer succes-steam-valheim.timer \
-  oracle-valheim.timer \
+  oracle-valheim.timer soiree-discord-valheim.timer \
   redemarrage-valheim.timer redemarrage-machine.timer
 ```
 
@@ -819,8 +820,8 @@ sudo systemctl enable --now \
 sortie de la 1.0, arrivée le 2026-09-09 à 15 h. Elle est encore armée sur la
 machine par simple inertie ; sur une machine neuve, elle n'a plus d'objet.
 
-Et si tu comptes, tu comptes bien : onze minuteries armées ici, douze sur la
-machine, la douzième étant celle-là.
+Et si tu comptes, tu comptes bien : douze minuteries armées ici, treize sur
+la machine, la treizième étant celle-là.
 
 **8. Vérifier, dans cet ordre.**
 

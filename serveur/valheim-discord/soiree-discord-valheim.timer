@@ -1,0 +1,15 @@
+[Unit]
+Description=Bilan de soiree Valheim, guette le depart du dernier joueur
+
+[Timer]
+# Toutes les cinq minutes, parce que l'heure du bilan n'est pas fixe : il part
+# dix minutes apres la deconnexion du dernier joueur, quelle que soit l'heure.
+# Le programme se tait tant que quelqu'un joue, et ne raconte jamais deux fois
+# la meme soiree -- la marque est en base.
+OnBootSec=5min
+OnUnitActiveSec=5min
+AccuracySec=1min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
