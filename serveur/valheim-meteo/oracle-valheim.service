@@ -8,6 +8,12 @@ Type=oneshot
 User=valheim
 Group=valheim
 StateDirectory=valheim-stats
+# Sans ce groupe, journalctl ne rend RIEN sous le compte valheim -- et l'oracle
+# lit le journal pour connaitre le TYPE des lieux generes, que le collecteur ne
+# retient pas. Oubli constate au premier passage reel : il a publie son message
+# de repli, « le monde ne m'a encore rien dit », alors qu'il avait quatre
+# indices en main quand on le lancait a la main.
+SupplementaryGroups=systemd-journal
 ExecStart=/usr/local/bin/oracle-valheim.py --discord
 ProtectSystem=strict
 ProtectHome=yes
