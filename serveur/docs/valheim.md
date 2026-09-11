@@ -800,7 +800,7 @@ done
 Aucune unité ne porte de secret : tout passe par `/etc/valheim.env` et
 `/etc/valheim-discord.conf`, à recréer à la main.
 
-**7. Armer les minuteries et démarrer.** Trois services et onze minuteries,
+**7. Armer les minuteries et démarrer.** Trois services et douze minuteries,
 c'est la liste exacte de ce qui était armé sur la machine :
 
 ```bash
@@ -811,6 +811,7 @@ sudo systemctl enable --now \
   bilan-discord-valheim.timer notifie-discord-valheim.timer \
   lit-discord-valheim.timer file-claude-valheim.timer \
   cles-monde-valheim.timer succes-steam-valheim.timer \
+  oracle-valheim.timer \
   redemarrage-valheim.timer redemarrage-machine.timer
 ```
 
@@ -818,8 +819,8 @@ sudo systemctl enable --now \
 sortie de la 1.0, arrivée le 2026-09-09 à 15 h. Elle est encore armée sur la
 machine par simple inertie ; sur une machine neuve, elle n'a plus d'objet.
 
-Et si tu comptes, tu comptes bien : dix minuteries armées ici, onze sur la
-machine, la onzième étant celle-là.
+Et si tu comptes, tu comptes bien : onze minuteries armées ici, douze sur la
+machine, la douzième étant celle-là.
 
 **8. Vérifier, dans cet ordre.**
 

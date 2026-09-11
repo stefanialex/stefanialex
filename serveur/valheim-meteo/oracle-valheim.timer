@@ -1,0 +1,15 @@
+[Unit]
+Description=Indice quotidien de l'oracle Valheim
+
+[Timer]
+# 18h00, soit une demi-heure avant le passage de Claude sur le salon et une
+# heure avant le bilan : l'indice arrive dans un salon calme, et il est lu
+# avant que le groupe se connecte le soir. Persistent rattrape un passage
+# manque -- machine eteinte, coupure -- et le garde-fou en base empeche alors
+# de redire le meme indice deux fois.
+OnCalendar=*-*-* 18:00:00
+RandomizedDelaySec=300
+Persistent=true
+
+[Install]
+WantedBy=timers.target

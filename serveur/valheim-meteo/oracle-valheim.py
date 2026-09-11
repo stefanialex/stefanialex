@@ -36,11 +36,18 @@ import json
 import math
 import os
 import re
+import urllib.error
+import urllib.request
 import sqlite3
 import subprocess
 import sys
 
 BASE = os.environ.get("STATE_DIRECTORY", "/var/lib/valheim-stats") + "/valheim.db"
+CONF = "/etc/valheim-discord.conf"
+AGENT = "valheim-serveur/1.0 (collecteur de statistiques auto-heberge)"
+# Le meme nom que le reste du salon : l'oracle n'est pas un second personnage,
+# c'est la meme voix qui parle a demi-mot.
+NOM_AFFICHE = "Claudo Le Viking"
 ZONE = 64.0          # cote d'une zone Valheim, en metres
 
 LIGNE = re.compile(r"Placed location (\w+) in zone (-?\d+),(-?\d+)")
@@ -203,11 +210,67 @@ def indices(cx, monde, tous=False):
     return sortie if tous else sortie
 
 
+def annonce(texte):
+    """Publie dans le salon. Silencieux si le webhook n'est pas configure : le
+    programme doit rester lancable sur une machine neuve."""
+    try:
+        with open(CONF) as f:
+            url = next(l.split("=", 1)[1].strip().strip('"')
+                       for l in f if l.startswith("WEBHOOK="))
+    except (OSError, StopIteration):
+        print("pas de webhook configure, rien publie", file=sys.stderr)
+        return False
+    corps = json.dumps({"content": texte, "username": NOM_AFFICHE,
+                        "allowed_mentions": {"parse": []}}).encode()
+    r = urllib.request.Request(url, data=corps, headers={
+        "Content-Type": "application/json", "User-Agent": AGENT})
+    try:
+        urllib.request.urlopen(r, timeout=15)
+    except (urllib.error.URLError, OSError) as e:
+        print("annonce non partie : %s" % e, file=sys.stderr)
+        return False
+    return True
+
+
+def deja_dit_aujourd_hui(jour):
+    """Un indice par jour, et pas un de plus.
+
+    La rotation est deterministe sur la date, donc deux lancements le meme jour
+    rediraient mot pour mot la meme chose. Le garde-fou est en base plutot que
+    dans la minuterie : une minuterie « Persistent » rattrape un passage manque
+    au demarrage, et c'est justement la qu'on republierait.
+    """
+    cx = sqlite3.connect(BASE)
+    try:
+        cx.execute("CREATE TABLE IF NOT EXISTS reglages "
+                   "(cle TEXT PRIMARY KEY, valeur TEXT)")
+        r = cx.execute(
+            "SELECT valeur FROM reglages WHERE cle = 'oracle_dernier_jour'").fetchone()
+        if r and r[0] == jour:
+            return True
+        cx.execute("INSERT INTO reglages (cle, valeur) VALUES "
+                   "('oracle_dernier_jour', ?) ON CONFLICT (cle) DO UPDATE SET "
+                   "valeur = excluded.valeur", (jour,))
+        cx.commit()
+        return False
+    except sqlite3.OperationalError as e:
+        # Base non inscriptible : on ne publie PAS. Sans la marque, un second
+        # passage rediraient le meme indice dans le salon, et deux fois le meme
+        # oracle dans la journee le decredibilise. Echouer bruyamment vaut
+        # mieux que publier en double.
+        raise SystemExit("base non inscriptible (%s) : rien publie. Ce "
+                         "programme doit tourner sous le compte valheim." % e)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--tout", action="store_true",
                     help="tous les indices, sans rotation")
+    ap.add_argument("--discord", action="store_true",
+                    help="publie l'indice du jour dans le salon")
+    ap.add_argument("--quand-meme", action="store_true",
+                    help="publie meme si c'est deja fait aujourd'hui")
     o = ap.parse_args()
 
     monde = monde_courant()
@@ -222,6 +285,17 @@ def main():
         # aucun n'est oublie, et deux jours de suite ne se ressemblent pas.
         jour = datetime.date.today().toordinal()
         choisis = [tous[jour % len(tous)]]
+
+    if o.discord:
+        jour = datetime.date.today().isoformat()
+        if not o.quand_meme and deja_dit_aujourd_hui(jour):
+            print("indice du %s deja publie" % jour)
+            return 0
+        texte = "\n".join("🔮  " + i["texte"] for i in choisis)
+        if not annonce(texte):
+            return 1
+        print("publie : %s" % texte.replace("\n", " / "))
+        return 0
 
     if o.json:
         print(json.dumps({"monde": monde, "indices": choisis}, ensure_ascii=False))
