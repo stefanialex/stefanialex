@@ -143,6 +143,34 @@ def lien_instable(cx, ts, steamid, id_ev):
     return n
 
 
+def personne_en_ligne(cx, ts, id_ev):
+    """Vrai si le serveur n'avait AUCUN joueur a cet instant.
+
+    La source est la ligne « Connections N ZDOS:M », que le serveur ecrit
+    toutes les dix minutes et que le collecteur garde depuis le 2026-09-12.
+    C'est la seule fiable : l'appariement connexion/deconnexion laisse des
+    sessions ouvertes pour toujours quand le serveur s'arrete sans ecrire
+    « Closing socket », et il annoncerait alors du monde la ou il n'y a
+    personne.
+
+    Le dernier releve peut dater de dix minutes : on regarde donc aussi s'il y
+    a eu une connexion entre-temps, sinon un raid tombant juste apres l'arrivee
+    d'un joueur serait tu a tort.
+    """
+    r = cx.execute(
+        "SELECT detail FROM evenements WHERE type = 'connectes' AND horodatage <= ? "
+        "ORDER BY horodatage DESC, id DESC LIMIT 1", (ts,)).fetchone()
+    if not r:
+        return False          # rien de releve : dans le doute, on annonce
+    dernier = cx.execute(
+        "SELECT max(horodatage) FROM evenements WHERE type = 'connectes' "
+        "AND horodatage <= ?", (ts,)).fetchone()[0]
+    arrivee = cx.execute(
+        "SELECT 1 FROM evenements WHERE type = 'connexion' AND horodatage > ? "
+        "AND horodatage <= ? LIMIT 1", (dernier, ts)).fetchone()
+    return r[0] == "0" and not arrivee
+
+
 def message(cx, ev):
     id_ev, ts, _monde, typ, joueur, steamid, detail = ev
     heure = ts[11:16]
@@ -168,9 +196,19 @@ def message(cx, ev):
             joueur, n, "s" if n > 1 else "")
     if typ == "raid":
         quoi = RAIDS.get(detail, detail)
-        if detail in RAIDS and detail.startswith("army_") and premier_raid(cx, detail, id_ev):
+        premier = (detail in RAIDS and detail.startswith("army_")
+                   and premier_raid(cx, detail, id_ev))
+        if premier:
+            # Un PREMIER raid reste annonce meme serveur vide : il revele
+            # qu'un boss est tombe, ce qui est une nouvelle et non du bruit, et
+            # il n'arrive qu'une fois par boss.
             return ("⚔️  Premier raid de %s : le boss correspondant est donc tombé. "
                     "Nouvelle étape franchie." % quoi)
+        # Les autres, non. « Annoncer des raids quand personne n'est connecte
+        # ne sert a rien » -- Alexandre, le 2026-09-12. Une attaque sur une
+        # base vide n'a ni temoin ni consequence.
+        if personne_en_ligne(cx, ts, id_ev):
+            return None
         return "⚔️  Raid : %s attaque la base. (%s)" % (quoi, heure)
     return None
 

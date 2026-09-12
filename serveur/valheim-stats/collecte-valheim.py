@@ -59,6 +59,13 @@ MOTIFS = [
     # Le corps de cette ligne commence par une espace, d'ou le \s* : sans lui
     # le motif ne colle pas, en silence.
     ("zdos", re.compile(r"^\s*Connections \d+ ZDOS:(\d+)\b.*$"), "detail"),
+    # La MEME ligne porte le nombre de joueurs connectes, et personne ne le
+    # gardait. C'est pourtant la seule source fiable : l'appariement
+    # connexion/deconnexion laisse des sessions ouvertes pour toujours quand le
+    # serveur s'arrete sans ecrire « Closing socket » -- constate le
+    # 2026-09-12, quatre sessions fantomes alors que le serveur annoncait
+    # « Connections 0 ». Le serveur, lui, dit la verite toutes les dix minutes.
+    ("connectes", re.compile(r"^\s*Connections (\d+) ZDOS:\d+\b.*$"), "detail"),
     ("jour", re.compile(r"^Time [\d,.]+, day:(\d+) .*$"), "detail"),
     # « Found location of type Dragonqueen » : le serveur localise l'autel d'un
     # boss, ce qui precede la chasse de plusieurs heures. Verifie sur Moder :
@@ -374,28 +381,42 @@ def ouvre():
 
 
 def analyse(ligne):
-    """Une ligne de journal -> (horodatage, type, joueur, steamid, detail) ou None."""
+    """Une ligne de journal -> LISTE d'evenements, souvent vide ou d'un seul.
+
+    Une liste et non un evenement unique : « Connections 2 ZDOS:557389 » en
+    porte deux, le recensement d'objets et le nombre de joueurs en ligne. Le
+    programme rendait le premier motif trouve et s'arretait, ce qui interdisait
+    d'en tirer deux -- limitation connue depuis le 2026-09-09, levee ici.
+
+    Les motifs ne se recouvrent pas par ailleurs : les deux « sauvegarde » et
+    les deux « zone » s'excluent par leur libelle, donc collecter toutes les
+    correspondances ne cree aucun doublon.
+    """
     m = PREFIXE.match(ligne.rstrip())
     if not m:
-        return None
+        return []
     mois, jour, an, h, mi, s, corps = m.groups()
     ts = "%s-%s-%s %s:%s:%s" % (an, mois, jour, h, mi, s)
+    trouves = []
     for nom, motif, forme in MOTIFS:
         c = motif.match(corps)
         if not c:
             continue
         if forme == "steamid":
-            return (ts, nom, None, c.group(1), None)
-        if forme == "detail":
-            return (ts, nom, None, None, c.group(1))
-        # zdoid : 0:0 vaut mort, le reste vaut apparition
-        # Le separateur du log est «  :  », donc la capture non gourmande du
-        # pseudo ramene l'espace qui precede : « Bab-y » sortirait « Bab-y ».
-        pseudo, zdo, sous = c.group(1).strip(), c.group(2), c.group(3)
-        if zdo == "0" and sous == "0":
-            return (ts, "mort", pseudo, None, None)
-        return (ts, "apparition", pseudo, None, "%s:%s" % (zdo, sous))
-    return None
+            trouves.append((ts, nom, None, c.group(1), None))
+        elif forme == "detail":
+            trouves.append((ts, nom, None, None, c.group(1)))
+        else:
+            # zdoid : 0:0 vaut mort, le reste vaut apparition. Le separateur du
+            # log est «  :  », donc la capture non gourmande du pseudo ramene
+            # l'espace qui precede.
+            pseudo, zdo, sous = c.group(1).strip(), c.group(2), c.group(3)
+            if zdo == "0" and sous == "0":
+                trouves.append((ts, "mort", pseudo, None, None))
+            else:
+                trouves.append((ts, "apparition", pseudo, None,
+                                "%s:%s" % (zdo, sous)))
+    return trouves
 
 
 def relie_pseudos(cx):
@@ -696,8 +717,7 @@ def rattrapage(cx, depuis):
             if c:
                 courant = c.group(1)
                 continue
-        e = analyse(ligne)
-        if e:
+        for e in analyse(ligne):
             lot.append(e)
             mondes.append(courant)
     # Les lignes d'avant le premier « Load world » heritent de celui-ci.
@@ -725,32 +745,30 @@ def suit(cx):
         stdout=subprocess.PIPE, text=True, errors="replace", bufsize=1,
     )
     for ligne in p.stdout:
-        e = analyse(ligne)
-        if not e:
-            continue
-        # Un changement de monde (9 septembre : nouveau monde 1.0) doit etre vu
-        # sans redemarrer le collecteur, sinon les evenements du monde neuf
-        # seraient etiquetes avec l'ancien nom.
-        if e[1] == "connexion":
-            neuf = monde_courant()
-            if neuf and neuf != monde:
-                monde = neuf
-                releve_monde(cx, monde)
-        # Meme filtre qu'au rattrapage, mais sur un seul evenement : la
-        # premiere apparition du personnage est deja en base a cet instant,
-        # puisqu'elle precede la fausse mort de quelques secondes.
-        e_lot, _m = morts_de_naissance(cx, [e], [monde])
-        if not e_lot:
-            sys.stdout.write("%s mort ecartee (creation de perso) %s\n"
-                             % (e[0], e[2] or ""))
+        for e in analyse(ligne):
+            # Un changement de monde (9 septembre : nouveau monde 1.0) doit
+            # etre vu sans redemarrer le collecteur, sinon les evenements du
+            # monde neuf seraient etiquetes avec l'ancien nom.
+            if e[1] == "connexion":
+                neuf = monde_courant()
+                if neuf and neuf != monde:
+                    monde = neuf
+                    releve_monde(cx, monde)
+            # Meme filtre qu'au rattrapage, mais sur un seul evenement : la
+            # premiere apparition du personnage est deja en base a cet instant,
+            # puisqu'elle precede la fausse mort de quelques secondes.
+            e_lot, _m = morts_de_naissance(cx, [e], [monde])
+            if not e_lot:
+                sys.stdout.write("%s mort ecartee (creation de perso) %s\n"
+                                 % (e[0], e[2] or ""))
+                sys.stdout.flush()
+                continue
+            enregistre(cx, monde, [e])
+            if e[1] in ("connexion", "apparition"):
+                relie_pseudos(cx)
+                enregistre_vies(cx)
+            sys.stdout.write("%s %s %s\n" % (e[0], e[1], e[2] or e[3] or e[4] or ""))
             sys.stdout.flush()
-            continue
-        enregistre(cx, monde, [e])
-        if e[1] in ("connexion", "apparition"):
-            relie_pseudos(cx)
-            enregistre_vies(cx)
-        sys.stdout.write("%s %s %s\n" % (e[0], e[1], e[2] or e[3] or e[4] or ""))
-        sys.stdout.flush()
 
 
 def main():

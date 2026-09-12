@@ -745,7 +745,7 @@ sudo chmod 750 /var/lib/valheim
 ```
 
 **6. Réinstaller les programmes et les unités**, depuis le dépôt. Deux lots :
-les dix-sept programmes ouverts en `755`, et les cinq qui touchent au monde ou
+les dix-huit programmes ouverts en `755`, et les cinq qui touchent au monde ou
 aux sauvegardes en `750` — eux ne doivent rester lisibles que par root.
 
 ```bash
@@ -756,6 +756,7 @@ sudo install -o root -g root -m 755 \
   valheim-cles/cles-monde-valheim.py \
   valheim-discord/bilan-discord-valheim.py \
   valheim-discord/soiree-discord-valheim.py \
+  valheim-discord/pret-discord-valheim.py \
   valheim-discord/file-claude-valheim.sh \
   valheim-discord/lit-discord-valheim.py \
   valheim-discord/notifie-discord-valheim.py \
@@ -806,6 +807,10 @@ c'est la liste exacte de ce qui était armé sur la machine :
 
 ```bash
 sudo systemctl enable --now valheim collecte-valheim profil-performance
+
+# L'annonce de disponibilite n'a pas de minuterie : elle est liee au serveur et
+# part avec lui. Sans « enable » elle ne serait jamais accrochee a valheim.service.
+sudo systemctl enable pret-discord-valheim.service
 
 sudo systemctl enable --now \
   sauvegarde-valheim.timer sauvegarde-valheim-hors-site.timer \

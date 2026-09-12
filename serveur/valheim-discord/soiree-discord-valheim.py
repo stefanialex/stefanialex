@@ -54,9 +54,32 @@ def duree(secondes):
     return "%d h %02d" % (h, m)
 
 
+def encore_en_ligne(cx):
+    """Quelqu'un joue-t-il ? D'apres le SERVEUR, pas d'apres l'appariement.
+
+    L'appariement connexion/deconnexion laisse des sessions ouvertes pour
+    toujours quand le serveur s'arrete sans ecrire « Closing socket » : le
+    2026-09-12, quatre sessions fantomes trainaient alors que le serveur
+    annoncait « Connections 0 » depuis des heures. Un bilan fonde dessus se
+    serait tu indefiniment.
+
+    La ligne « Connections N ZDOS:M », relevee toutes les dix minutes et gardee
+    en base depuis ce jour-la, dit la verite. On regarde aussi s'il y a eu une
+    connexion depuis le dernier releve, qui peut dater de dix minutes.
+    """
+    r = cx.execute("SELECT horodatage, detail FROM evenements WHERE type = 'connectes' "
+                   "ORDER BY horodatage DESC, id DESC LIMIT 1").fetchone()
+    if not r:
+        return None           # rien de releve : on ne sait pas
+    depuis = cx.execute("SELECT 1 FROM evenements WHERE type = 'connexion' "
+                        "AND horodatage > ? LIMIT 1", (r[0],)).fetchone()
+    return r[1] != "0" or bool(depuis)
+
+
 def sessions(cx, monde):
     """Les sessions appariees, par SteamID. Une session sans deconnexion est
-    en cours -- et sa presence suffit a se taire."""
+    close d'office a la derniere trace connue : voir encore_en_ligne(), c'est
+    le serveur qui dit qui est la, pas l'appariement."""
     ouvertes, finies, encore = {}, [], False
     for ts, typ, sid in cx.execute(
             "SELECT horodatage, type, steamid FROM evenements "
@@ -67,7 +90,7 @@ def sessions(cx, monde):
             ouvertes[sid] = t
         elif sid in ouvertes:
             finies.append((sid, ouvertes.pop(sid), t))
-    return finies, bool(ouvertes)
+    return finies, ouvertes
 
 
 def blocs(finies):
@@ -200,10 +223,22 @@ def main():
     except sqlite3.OperationalError:
         alias = {}
 
-    finies, quelqu_un_en_ligne = sessions(cx, monde)
-    if quelqu_un_en_ligne:
+    finies, restes = sessions(cx, monde)
+    en_ligne = encore_en_ligne(cx)
+    if en_ligne is None:
+        en_ligne = restes          # base d'avant les releves : ancien comportement
+    if en_ligne:
         print("quelqu'un joue encore : on attend")
         return 0
+    # Les sessions restees ouvertes sont closes a la derniere trace du serveur :
+    # sans ca, la soiree n'aurait pas de fin et ne serait jamais racontee.
+    if restes:
+        dernier = cx.execute(
+            "SELECT max(horodatage) FROM evenements WHERE monde = ?",
+            (monde,)).fetchone()[0]
+        if dernier:
+            t = datetime.datetime.fromisoformat(dernier)
+            finies += [(sid, d, t) for sid, d in restes.items() if t > d]
     lots = blocs(finies)
     if not lots:
         return 0

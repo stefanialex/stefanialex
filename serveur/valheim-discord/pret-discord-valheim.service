@@ -1,0 +1,25 @@
+[Unit]
+Description=Annonce dans le salon que le serveur Valheim est joignable
+After=valheim.service
+# Lie au serveur : il part avec lui, a chaque demarrage. C'est le programme
+# lui-meme qui decide de se taire quand la version n'a pas change.
+PartOf=valheim.service
+
+[Service]
+Type=oneshot
+User=valheim
+Group=valheim
+StateDirectory=valheim-stats
+# Sans ce groupe, journalctl ne rend rien sous le compte valheim -- et tout ce
+# programme repose sur la lecture du journal. Oubli deja paye une fois, sur
+# l'oracle, le 2026-09-11.
+SupplementaryGroups=systemd-journal
+ExecStart=/usr/local/bin/pret-discord-valheim.py
+TimeoutStartSec=900
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=valheim.service
