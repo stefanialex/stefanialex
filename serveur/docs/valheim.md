@@ -1039,6 +1039,59 @@ marquees `RemoteCommand` dont la validation locale echoue, et le serveur les
 execute des qu'un admin a lance `devcommands`. La commande `spawn`, elle,
 exige `ZNet.IsServer()` et reste hors de portee d'un client.
 
+### Comment auditer un sac, et ce que « le monde est propre » ne dit pas
+
+Le 2026-09-13 vers 1 h du matin, Alexandre signale que son epee fait apparaitre
+des objets marques partout, y compris a la base, sur des cerfs et des
+sangliers — et **apres** la restauration. La surveillance, elle, affiche zero
+depuis 23:25. Les deux peuvent etre vrais en meme temps :
+
+**Un butin ramasse ne touche jamais le monde.** La creature est marquee, meurt,
+lache son butin, le joueur le ramasse dans la seconde. Ni le ZDO de la
+creature (detruit) ni les objets (jamais poses) n'atteignent une sauvegarde.
+Un monde a zero marque ne prouve donc **rien** sur ce que les joueurs portent.
+
+La seule facon d'auditer un sac est de le faire vider dans un coffre, puis
+d'attendre la sauvegarde suivante — le jeu ecrit toutes les dix minutes. Lire
+avant, c'est lire l'etat d'avant le depot et conclure a tort qu'il n'y a rien.
+
+Resultat de cet audit, en deux temps :
+
+```
+equipement complet (11 pieces, epee iron, maces, boucliers, armure, cape) : PROPRE
+butin entier rapporte du marais depuis le reset
+  (306 Entrails, 315 BoneFragments, 147 WitheredBone, 85 Bloodbag,
+   72 DeerHide, 59 Ooze, 13 TrophySkeleton, 16 TrophyDraugr, ...) : PROPRE
+```
+
+**Le drapeau ne se transmet pas par le personnage.** Aucune methode
+`Player::Save` ni `PlayerProfile` n'ecrit `cheated` : seuls les objets de
+l'inventaire le portent. Le drapeau qu'un joueur recoit sur son ZDO de
+personnage — `ApplyDamage` marque la victime, joueur compris — est **volatil**.
+Le ZDO d'un joueur est non persistant : le journal du serveur le dit a chaque
+deconnexion (« Destroying abandoned non persistent zdo »). Une reconnexion
+repart donc d'un personnage propre, et le redemarrage du serveur pendant une
+restauration remet tout le monde a zero.
+
+Consequence : il n'existe aucun etat « joueur contamine » durable. Ce qui
+voyage d'une session a l'autre, ce sont seulement les OBJETS du sac.
+
+**Pourquoi le message semble se repeter.** Le popup se declenche sur un
+CHANGEMENT d'etat de l'inventaire, pas sur chaque objet. Porter un objet
+marque et en ramasser d'autres donne l'impression que tout ce qu'on touche est
+contamine, alors que le message parle de l'etat du sac.
+
+**Conclusion du 2026-09-13 01:25.** Trois mesures independantes concordent :
+equipement propre, sac propre, monde a zero marque en continu de 23:25 a 01:25.
+La contamination n'a pas survecu a la restauration ; les symptomes decrits
+dataient d'avant. Il restait un seul objet marque dans tout le monde, la graine
+ancienne d'un joueur, dans un coffre.
+
+Ce qui a marque le Serpent a 21h20 ne sera jamais su : le fichier ne garde pas
+qui pose la marque. Ca n'a plus de portee pratique — la source a disparu avec
+la restauration, et la surveillance signale toute reapparition en un quart
+d'heure, avec le nom de l'objet et sa region.
+
 **Ce qu'aucun de ces outils ne voit : les sacs des joueurs.** Ils vivent dans
 les fichiers de personnage, chez chacun. Une restauration du monde ne les
 nettoie pas, et l'audit ne les lit pas. C'est la seule façon dont la
