@@ -693,13 +693,25 @@ marquée est donc marqué, sans que le joueur ait rien fait.
 Et c'est l'**attaquant** qui marque la créature, pas le monde :
 
 ```csharp
-si l'attaquant est un joueur et que :
-      son inventaire a un objet triché ET qui fait des dégâts, équipé
-   ou il est en vol de débogage        (IsDebugFlying)
-   ou il est en mode dieu              (InGodMode)
-   ou le coup dépasse 99999 de dégâts
-alors : ZDO de la créature -> cheated = true
+attaquant = hit.GetAttacker()
+joueurTriche =  arme trichée ET qui fait des dégâts, équipée
+             || IsDebugFlying || InGodMode || InGhostMode
+attaquantDéjàMarqué = ZDO de l'attaquant .cheated
+
+si (joueurTriche || attaquantDéjàMarqué || dégâts > 99999)
+   et que s_bypassCheatChecks est faux
+alors : ZDO de la VICTIME -> cheated = true
 ```
+
+**`attaquantDéjàMarqué` est le terme qui explique tout le reste** : une créature
+marquée marque celles qu'elle frappe. La contagion ne passe donc pas seulement
+par les joueurs, elle circule de mob à mob. Un squelette tout frais peut être
+marqué parce qu'il s'est battu contre un greydwarf qui l'était — sans que
+personne n'ait triché.
+
+C'est l'objection qu'Alexandre a soulevée le 2026-09-12 — « c'est un mob frais,
+je ne comprends pas » — et elle était juste : ma première lecture avait manqué
+ce terme, et `InGhostMode` avec.
 
 **La contagion a donc une porte, et une seule : une arme.** `CheatedDamagingItemEquipped`
 vérifie explicitement `GetDamage().GetTotalDamage() > 0` — un trophée, un
@@ -715,6 +727,20 @@ Dans le format de sauvegarde, c'est le **bit 0 du second masque** d'un objet,
 le tout dernier octet de son enregistrement. On peut donc auditer un monde
 entier sans le jeu.
 
+### Ce qui est bloqué, et pour qui
+
+```csharp
+Player.m_localPlayer.GetInventory().AnyCheatedItem()
+```
+
+**`m_localPlayer`** : le joueur LOCAL, chez lui. Chacun est jugé sur son propre
+sac et sur rien d'autre. Un objet marqué dans l'inventaire d'un joueur ne peut
+pas bloquer les succès des autres — il n'existe aucun mécanisme collectif.
+C'était la vraie inquiétude du groupe, et la réponse est non.
+
+Et le blocage ne vaut que **pendant** que l'objet est porté : le cache ne dure
+qu'une image. L'objet jeté, l'enregistrement des succès reprend a la seconde.
+
 ### L'audit, quand la question se repose
 
 ```bash
@@ -724,6 +750,15 @@ entier sans le jeu.
 
 Le 2026-09-12 : **0 objet marqué sur 3280** dans les coffres, supports et objets
 posés. Le trophée avait déjà été jeté.
+
+On peut aussi auditer les CRÉATURES et les objets du monde, dont le drapeau est
+un champ de ZDO repéré par `hash("cheated")` — soit `-153476768`. Chercher cet
+entier dans les `.chunk` donne les porteurs ; **l'octet qui suit est la valeur**,
+et il faut la lire : le champ existe parfois à `0`. Le 2026-09-12 sur
+NordheimV2 : trois occurrences, **une seule à 1**, vers `x=-1385, z=-2712`.
+
+Ce que le ZDO ne garde pas, et qu'aucune analyse ne rendra : **qui** a posé la
+marque. On peut dire quoi et où, jamais qui.
 
 Attention à la portée : cet audit ne voit **pas les inventaires personnels**,
 qui vivent dans les fichiers de personnage, chez chaque joueur. Si le message
