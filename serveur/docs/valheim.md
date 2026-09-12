@@ -690,6 +690,27 @@ propage à ce qu'elle laisse tomber — `DropItems(..., bool cheated)` recopie l
 drapeau dans chaque `ItemData.m_cheated`. Un trophée ramassé sur une créature
 marquée est donc marqué, sans que le joueur ait rien fait.
 
+Et c'est l'**attaquant** qui marque la créature, pas le monde :
+
+```csharp
+si l'attaquant est un joueur et que :
+      son inventaire a un objet triché ET qui fait des dégâts, équipé
+   ou il est en vol de débogage        (IsDebugFlying)
+   ou il est en mode dieu              (InGodMode)
+   ou le coup dépasse 99999 de dégâts
+alors : ZDO de la créature -> cheated = true
+```
+
+**La contagion a donc une porte, et une seule : une arme.** `CheatedDamagingItemEquipped`
+vérifie explicitement `GetDamage().GetTotalDamage() > 0` — un trophée, un
+minerai, une plante ne peuvent rien marquer. Ils bloquent l'enregistrement des
+succès tant qu'ils sont portés, et rien de plus.
+
+Ce qui propage, c'est une arme trichée équipée : chaque créature frappée est
+marquée, et ses butins avec. D'où l'importance d'auditer les coffres — et de
+faire vider les sacs par moitiés chez qui reçoit le message, le contrôle étant
+instantané.
+
 Dans le format de sauvegarde, c'est le **bit 0 du second masque** d'un objet,
 le tout dernier octet de son enregistrement. On peut donc auditer un monde
 entier sans le jeu.
@@ -709,17 +730,27 @@ qui vivent dans les fichiers de personnage, chez chaque joueur. Si le message
 revient chez quelqu'un, qu'il vide son sac progressivement — le contrôle étant
 instantané, on trouve le coupable en quelques essais.
 
-### La leçon d'exploitation
+### Deux mécanismes séparés, à ne pas confondre
 
-Les modificateurs `resources_more` et `raids_more`, posés le 2026-09-09,
-rendaient le monde « triché » au sens de ce contrôle — et les créatures tuées
-pendant cette période ont pu marquer leurs dépouilles. Le reset du 2026-09-12 à
-19 h 55 a nettoyé le monde (0 clé), mais les objets ramassés entretemps gardent
-leur marque.
+**Erreur commise le 2026-09-12, corrigée le jour même.** J'avais expliqué le
+trophée marqué par les modificateurs `resources_more` et `raids_more` posés le
+2026-09-09 : la coïncidence des dates était tentante. C'est faux, et la lecture
+du code le dit sans ambiguïté.
+
+| | ce qui le déclenche | ce que ça fait | comment ça s'annule |
+|---|---|---|---|
+| Monde triché | une clé globale de départ hors liste légitime | suspend l'enregistrement des succès | `-resetmodifiers` |
+| Objet triché | un attaquant en triche a marqué la créature | suspend les succès tant qu'il est porté ; propage s'il fait des dégâts | jeter l'objet |
+
+Les deux suspendent les succès, par le même `||`, mais ils n'ont **aucun lien de
+cause à effet**. Un modificateur de monde ne marque aucune créature.
 
 **Avant d'ajouter un modificateur à un monde où le groupe tient aux succès, il
 faut savoir que ça les suspend.** Et les retirer ne suffit pas : `SetKeys`
 n'ajoute que des clés, ne retire jamais. Seul `-resetmodifiers` efface.
+
+Pour l'objet triché, l'origine est forcément un joueur : mode dieu, vol de
+débogage, `devcommands`, ou une arme déjà marquée héritée de cette occasion.
 
 ---
 
