@@ -1,0 +1,14 @@
+[Unit]
+Description=Surveillance de la contamination « triche », toutes les 15 minutes
+
+# Quinze minutes, parce que la propagation est rapide : le 2026-09-12, le
+# monde est passe de 2 entites marquees a 23 en une quarantaine de minutes,
+# dont 21 pieces de construction. Une alerte horaire serait arrivee apres la
+# soiree ; une alerte a la minute reveillerait tout le monde pour rien.
+[Timer]
+OnBootSec=6min
+OnUnitActiveSec=15min
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target
