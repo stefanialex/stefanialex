@@ -713,7 +713,9 @@ C'est l'objection qu'Alexandre a soulevée le 2026-09-12 — « c'est un mob fra
 je ne comprends pas » — et elle était juste : ma première lecture avait manqué
 ce terme, et `InGhostMode` avec.
 
-**La contagion a donc une porte, et une seule : une arme.** `CheatedDamagingItemEquipped`
+**La contagion passe par une arme — mais pas seulement. Corrigé le 2026-09-12
+au soir : voir plus bas, `TryPlacePiece` et `DoCrafting` propagent aussi, par
+les matériaux.** `CheatedDamagingItemEquipped`
 vérifie explicitement `GetDamage().GetTotalDamage() > 0` — un trophée, un
 minerai, une plante ne peuvent rien marquer. Ils bloquent l'enregistrement des
 succès tant qu'ils sont portés, et rien de plus.
@@ -786,6 +788,105 @@ n'ajoute que des clés, ne retire jamais. Seul `-resetmodifiers` efface.
 
 Pour l'objet triché, l'origine est forcément un joueur : mode dieu, vol de
 débogage, `devcommands`, ou une arme déjà marquée héritée de cette occasion.
+
+### La nuit du 2026-09-12 : la contagion datée, et deux portes de plus
+
+Le soir même, la contamination s'est mise à grossir toute seule et la section
+ci-dessus s'est révélée incomplète sur deux points. Ce qui suit est mesuré.
+
+**Dater vaut mieux que supposer.** Le balayage des **120 archives**, du 28/08
+au 12/09, a donné une réponse nette là où quatre hypothèses successives
+s'étaient déjà trompées :
+
+| moment | entités marquées |
+|---|---|
+| 09/09 → 12/09 **21:00:42** | **0** — trois jours entiers |
+| 12/09 **21:32:26** | 2, toutes deux dans le marais |
+| 12/09 22:48 | 2 |
+| 12/09 **23:20** | **23**, dont 21 pièces de construction |
+
+Une archive coûte 1,4 s à dépouiller en flux, sans rien extraire sur le
+disque. Deux minutes pour cent vingt archives : c'est toujours moins cher que
+de raisonner à vide. Et ça a écarté d'un coup l'idée que le problème venait de
+l'épée fabriquée ce soir-là — le monde était déjà propre une demi-heure avant.
+
+**Deux portes de propagation manquaient**, lues dans l'IL :
+
+```csharp
+// Player::TryPlacePiece
+cheated = inventaire.ItemCheated(piece.m_resources) || joueur.NoCostCheat()
+// puis PlacePiece pose ZDO.cheated = true sur la construction
+
+// InventoryGui::DoCrafting : idem pour l'objet fabriqué
+```
+
+**Construire ou fabriquer avec un matériau marqué marque le résultat.** C'est
+ce qui a fait passer le monde de 2 à 23 marques en quarante minutes : le
+groupe avait rangé le butin contaminé dans des coffres, puis bâti avec. Et
+comme `Piece::DropResources` recopie le drapeau, casser un mur marqué rend du
+bois marqué. La boucle se referme.
+
+Conséquence pratique : **ranger un objet marqué dans un coffre n'est pas
+neutre**. C'est sans effet sur les succès — le contrôle ne regarde que le sac
+du joueur — mais le matériau reste disponible pour contaminer la prochaine
+construction. J'avais dit « les coffres sont inoffensifs » : c'est faux dès
+qu'on y puise.
+
+### Les clés `eventrate` et `resourcerate` suspendaient les succès
+
+Le `.fwl2` du monde contenait, jusqu'au 2026-09-12 19:52:53, deux clés de
+départ **non-preset** : `eventrate 60` et `resourcerate 150`. Or :
+
+```csharp
+foreach (string cle in world.m_startingGlobalKeys) {
+    if (cle.StartsWith("preset")) continue;
+    if (GetPossibleGlobalKeyValues().Contains(cle)) continue;
+    return true;   // monde triché
+}
+```
+
+La liste légitime est construite à partir des curseurs de modificateurs du
+jeu, dont les valeurs ont la forme `resources_more`. Un `resourcerate 150`
+n'en fait pas partie. **Aucun succès ne pouvait donc être enregistré** tant
+que ces clés étaient présentes. Le `-resetmodifiers` de 19:53 les a effacées :
+le fichier est passé de 1613 à 284 octets.
+
+C'est un effet de bord des réglages de serveur qu'on ne soupçonne pas : ces
+deux clés-là ne venaient pas de l'écran de création du monde.
+
+### La restauration, et la surveillance
+
+Le monde a été restauré à 23:21:41 depuis `valheim-20260912-210042.tar.gz`,
+dernière archive **prouvée saine** — 0 ZDO marqué, 0 objet marqué, aucune clé
+de modificateur. Coût : 2 h 40 de jeu. Après restauration : 557 163 ZDO
+rechargés, 0 marque.
+
+`restaure-monde-valheim.sh` fait ce travail avec deux garde-fous appris le
+soir même :
+
+- il **audite l'archive avant** de toucher au monde en place, et refuse sans
+  `--force` ;
+- il exige au moins un `.chunk` et un `.fwl2` dans l'extraction. Le premier
+  essai avait utilisé `--strip-components=2` là où il en faut **3** — le `./`
+  de tête compte comme un composant. L'audit avait alors répondu « 0 marque »
+  sur un dossier vide. Sans ce garde-fou, le monde se faisait écraser par du
+  vide, en silence, avec un message rassurant.
+
+Il **déplace** le monde courant au lieu de l'effacer : c'est la seule copie de
+ce qui a été joué depuis la dernière archive, et la pièce à conviction.
+
+`triche-valheim.py`, lancé toutes les 15 minutes, compte séparément les ZDO
+marqués et les piles d'objets marquées, les enregistre dans `triche_releves`,
+et publie sur Discord **dès que le compte monte**. Quinze minutes parce que la
+propagation va vite : 2 → 23 en quarante minutes. Une alerte horaire serait
+arrivée après la soirée.
+
+**Ce qu'aucun de ces outils ne voit : les sacs des joueurs.** Ils vivent dans
+les fichiers de personnage, chez chacun. Une restauration du monde ne les
+nettoie pas, et l'audit ne les lit pas. C'est la seule façon dont la
+contamination peut revenir après une restauration — et, la console étant hors
+de portée du groupe, l'hypothèse restante sur l'origine : un personnage
+utilisé sur un autre monde, dont les objets gardent leur drapeau.
 
 ---
 
