@@ -655,6 +655,74 @@ restauré est le bon.
 
 ---
 
+## Modificateurs de monde et succès Steam, le 2026-09-12
+
+Le groupe a reçu en jeu un message signalant un **objet de triche** — un trophée
+de squelette ramassé dans le marais. Panique légitime : est-ce que tous les
+succès tombent ? Non. Voici le mécanisme, lu dans `Achievements` et non déduit.
+
+### Ce que le jeu vérifie
+
+```csharp
+triche = IsWorldCheated() || joueur.GetInventory().AnyCheatedItem()
+```
+
+**Aucune des deux n'est un état permanent.**
+
+`IsWorldCheated()` ne regarde pas les objets : il appelle
+`WorldContainsCheatedModifiers(monde)`, qui parcourt les **clés globales de
+départ** du monde. Une clé qui ne commence pas par `preset` et qui ne figure pas
+dans la liste des valeurs légitimes rend le monde triché. C'est donc
+l'équivalent du bandeau « ceci désactivera les succès » de l'écran de création.
+
+`AnyCheatedItem()` regarde l'inventaire du joueur **à cet instant**, avec un
+cache d'une seule image. L'objet jeté, le contrôle redevient vert aussitôt.
+
+Le contrôle ne fait qu'une chose : bloquer l'**enregistrement** de nouveaux
+succès, par `ShouldSetPlatformStat`. **Rien ne retire un succès déjà acquis** —
+`Achievements::ResetAchievement(id)` existe mais n'est appelé que par la
+console, jamais par ce chemin.
+
+### Comment un objet se retrouve marqué
+
+`CharacterDrop.m_cheated` : c'est la **créature** qui porte le drapeau, et il se
+propage à ce qu'elle laisse tomber — `DropItems(..., bool cheated)` recopie le
+drapeau dans chaque `ItemData.m_cheated`. Un trophée ramassé sur une créature
+marquée est donc marqué, sans que le joueur ait rien fait.
+
+Dans le format de sauvegarde, c'est le **bit 0 du second masque** d'un objet,
+le tout dernier octet de son enregistrement. On peut donc auditer un monde
+entier sans le jeu.
+
+### L'audit, quand la question se repose
+
+```bash
+# tous les objets poses dans le monde, avec leur drapeau de triche
+# (le decodeur est dans artisan-valheim.py ; voir sa docstring pour le format)
+```
+
+Le 2026-09-12 : **0 objet marqué sur 3280** dans les coffres, supports et objets
+posés. Le trophée avait déjà été jeté.
+
+Attention à la portée : cet audit ne voit **pas les inventaires personnels**,
+qui vivent dans les fichiers de personnage, chez chaque joueur. Si le message
+revient chez quelqu'un, qu'il vide son sac progressivement — le contrôle étant
+instantané, on trouve le coupable en quelques essais.
+
+### La leçon d'exploitation
+
+Les modificateurs `resources_more` et `raids_more`, posés le 2026-09-09,
+rendaient le monde « triché » au sens de ce contrôle — et les créatures tuées
+pendant cette période ont pu marquer leurs dépouilles. Le reset du 2026-09-12 à
+19 h 55 a nettoyé le monde (0 clé), mais les objets ramassés entretemps gardent
+leur marque.
+
+**Avant d'ajouter un modificateur à un monde où le groupe tient aux succès, il
+faut savoir que ça les suspend.** Et les retirer ne suffit pas : `SetKeys`
+n'ajoute que des clés, ne retire jamais. Seul `-resetmodifiers` efface.
+
+---
+
 ## Reconstruire depuis rien — la machine est perdue
 
 Le cas que les archives horaires ne couvrent pas : la machine ne redémarre
