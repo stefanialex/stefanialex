@@ -33,14 +33,25 @@ Inventory::AnyCheatedItem sur l'inventaire du joueur, evalue en continu. Il
 empeche d'ENREGISTRER un nouveau succes tant qu'on porte un objet marque ; il
 n'en retire aucun. Poser l'objet suffit a redebloquer. Rien n'est perdu.
 
-Deux compteurs, a ne pas confondre :
+Trois compteurs, a ne pas confondre :
 
   - les ZDO marques : creatures, coffres, constructions. Champ « cheated »
     dans le ZDO, trouve par son hash stable.
-  - les objets marques : bit 0 du second masque, a la fin du blob ItemData.
+  - les objets EN COFFRE : bit 0 du second masque, a la fin du blob ItemData,
+    atteint depuis l'en-tete d'inventaire (int32 109 puis uint16 nombre).
+  - les objets AU SOL : le meme bit, mais sans en-tete d'inventaire.
+    ItemDrop::SaveToZDO ecrit un simple octet 0x6d -- la version -- puis
+    l'ItemData, dans le champ ZDO « itemData ». Une recherche ancree sur
+    l'en-tete d'inventaire ne les voit donc PAS.
+
+Cette troisieme mesure a ete ajoutee le 2026-09-13 apres qu'un agent eut
+trouve la faille : sans elle, l'archive de 21:32:26 semblait contenir zero
+objet marque alors qu'elle en contenait cinq, dont le trophee de squelette
+par lequel le groupe a decouvert le probleme. Le compteur disait « rien » et
+se trompait -- exactement la panne qu'on ne remarque jamais.
 
 Un monde sans ZDO marque peut contenir des objets marques, et l'inverse. Les
-deux sont donc releves separement.
+trois sont donc releves separement.
 
 Limite a connaitre : les sacs des joueurs ne sont PAS dans le fichier de
 monde. Ils vivent dans le fichier de personnage, chez chaque joueur. Ce
@@ -63,6 +74,14 @@ BASE = os.environ.get("STATE_DIRECTORY", "/var/lib/valheim-stats") + "/valheim.d
 SAVEDIR = "/var/lib/valheim/donnees/worlds_local"
 CONF = "/etc/valheim-discord.conf"
 ARTISAN = "/usr/local/bin/artisan-valheim.py"
+# La table des prefabs traduit un hash en nom d'objet. artisan-valheim.py la
+# cherche dans /var/tmp, ce qui ne convient pas a un service : « PrivateTmp »
+# lui donne un /var/tmp prive et vide, et /var/tmp est purge periodiquement.
+# Le service affichait alors « {'-500516295': 1} » au lieu de « AncientSeed »
+# -- une alerte Discord illisible, sans la moindre erreur pour le signaler.
+TABLES = ("/usr/local/share/valheim/prefabs.json.gz",
+          os.environ.get("STATE_DIRECTORY", "/var/lib/valheim-stats") + "/prefabs.json.gz",
+          "/var/tmp/valheim-prefabs.json.gz")
 AGENT = "valheim-serveur/1.0 (surveillance triche)"
 
 SCHEMA = """
@@ -187,6 +206,32 @@ def objets_marques(d, artisan, table):
                 compte["/".join(n) if isinstance(n, list) else n] += 1
 
 
+def objets_au_sol(d, artisan, table):
+    """Piles marquees posees dans le monde, hors conteneur.
+
+    Un objet au sol est precede du seul octet de version (0x6d), pas de
+    l'en-tete d'inventaire. On tente le decodage a chaque occurrence et on
+    ne retient que celles qui donnent un prefab connu : un faux depart ne
+    produit pas un hash de la table des 65 327 prefabs.
+    """
+    compte = collections.Counter()
+    if artisan is None:
+        return compte
+    i = -1
+    while True:
+        i = d.find(b"\x6d", i + 1)
+        if i < 0:
+            return compte
+        o, q = artisan.lis_objet(d, i + 1)
+        if o is None:
+            continue
+        n = table.get(o["prefab"]) if table else None
+        if not n:
+            continue
+        if d[q - 1] & 1:
+            compte["/".join(n) if isinstance(n, list) else n] += 1
+
+
 def releve(dossier, artisan, table):
     zdos = collections.Counter()
     objets = collections.Counter()
@@ -198,6 +243,7 @@ def releve(dossier, artisan, table):
         if n:
             zdos[region] += n
         objets.update(objets_marques(d, artisan, table) or {})
+        objets.update(objets_au_sol(d, artisan, table) or {})
     return zdos, objets
 
 
@@ -240,7 +286,15 @@ def main():
         return 1
 
     artisan = charge_artisan()
-    table = artisan.table_prefabs() if artisan else None
+    table = None
+    if artisan:
+        for chemin in TABLES:
+            table = artisan.table_prefabs(chemin)
+            if table:
+                break
+        if not table:
+            print("table des prefabs introuvable (%s) : les objets seront "
+                  "nommes par leur hash" % ", ".join(TABLES), file=sys.stderr)
     zdos, objets = releve(dossier, artisan, table)
     nz, no = sum(zdos.values()), sum(objets.values())
 

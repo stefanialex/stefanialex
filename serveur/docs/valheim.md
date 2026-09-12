@@ -881,12 +881,174 @@ et publie sur Discord **dès que le compte monte**. Quinze minutes parce que la
 propagation va vite : 2 → 23 en quarante minutes. Une alerte horaire serait
 arrivée après la soirée.
 
+### Douze agents, quatre conclusions cassees — la nuit du 2026-09-13
+
+Six pistes lancees en parallele, chacune suivie d'un agent charge de la
+**refuter**. Quatre conclusions sur six sont tombees, dont deux des miennes.
+Le dispositif a paye : les erreurs trouvees sont exactement du genre qui ne se
+voit jamais tout seul.
+
+**1. Mon lecteur d'objets etait aveugle aux objets AU SOL.** Un objet pose
+n'a pas l'en-tete d'inventaire (`int32 109` puis `uint16 nombre`) sur lequel
+je m'ancrais. `ItemDrop::SaveToZDO` (il.txt 250961) ecrit un simple **octet**
+`0x6d` puis l'`ItemData`, dans le champ ZDO `itemData`. Consequence chiffree :
+sur le monde de 23:21, je comptais **4** piles marquees, il y en avait **50**.
+Un facteur douze, et aucune erreur pour le signaler.
+
+C'est ainsi qu'on a retrouve, dans l'archive de 21:32:26, le
+`TrophySkeleton` par lequel le groupe avait decouvert le probleme — marque,
+par terre, la ou il avait ete jete.
+
+**2. La table des prefabs vivait dans `/var/tmp`.** Le service a
+`PrivateTmp=yes` : il voyait un `/var/tmp` prive et vide, et affichait
+`{'-500516295': 1}` au lieu de `AncientSeed`. Une alerte Discord illisible,
+sans la moindre erreur. La table est desormais cherchee dans
+`/usr/local/share/valheim/`, puis le `StateDirectory`, puis `/var/tmp` en
+dernier recours — et son absence est dite sur la sortie d'erreur. `/var/tmp`
+est de toute facon purge periodiquement.
+
+**3. « Un chunk reecrit = un joueur present » est faux.** Cinq sauvegardes
+depuis le 11/09 ont au moins un chunk sale avec zero joueur connecte. Et dans
+chaque chunk reecrit, 100 % des identifiants de connexion des spawners sont
+re-estampilles : un diff naif fait donc passer une region parfaitement inerte
+pour une region « reveillee ». Sur les trois regions que j'avais annoncees
+reveillees le soir du 12/09, **une seule l'etait vraiment**.
+
+Le bon test n'est pas l'horodatage du fichier, c'est le diff des ZDO :
+ajouts, suppressions, champs modifies. Sur `1e_24`, 15 641 ZDO, **0 ajout,
+0 suppression, aucun champ modifie**.
+
+**4. Le decodage region -> coordonnees est decale de 32 m** :
+`[1024·i − 32, 1024·(i+1) − 32]`, et non `[1024·i, 1024·(i+1)]`.
+
+**5. Une preuve circulaire, a ne pas refaire.** « La distribution du dernier
+octet est strictement binaire, donc c'est bien un drapeau » ne prouve rien :
+`lis_objet` rejette tout lot dont un `masque2` sort de `{0,1}`. C'est le
+lecteur qui impose la distribution. Verifie depuis en neutralisant le filtre :
+sur le monde vivant, `{0: 11618}` — le filtre ne perd rien ici, mais
+l'argument etait sans valeur.
+
+### La liste complete des ecritures du drapeau
+
+Enumeration exhaustive de l'assembly : **22 methodes**, pas une de plus.
+Celles qui manquaient a la section precedente :
+
+```
+Destructible::Destroy     attaquant est un Joueur && CheatedDamagingItemEquipped()
+                          -> abattre un arbre, casser un rocher avec une arme
+                             marquee marque ce qu'ils lachent
+Ragdoll::Setup/SpawnLoot  recopie depuis le cadavre
+ZoneSystem::SpawnLocation false en generation normale ; true seulement depuis
+                          TestSpawnLocation, une commande console
+Terminal g__spawn         marque TOUJOURS ce qu'elle cree
+```
+
+**Sur un objet, la marque est definitive.** Les dix ecritures de
+`ItemData::m_cheated` posent `true` ou recopient une valeur ; **aucune ne pose
+`false`**. Et `Inventory::AddItem` (il.txt 244402) propage :
+
+```csharp
+if (objet_entrant.m_cheated && !s_bypassCheatChecks)
+    pile_existante.m_cheated = true;
+```
+
+Empiler une unite marquee sur une pile propre contamine la pile. Le conseil
+qui circule sur les forums — « fusionner avec des objets propres enleve la
+marque » — est donc l'exact inverse de ce que fait le code, et aggrave le
+probleme. Le seul moyen de se debarrasser d'un objet marque est de le
+detruire.
+
+Detail au passage : a la deserialisation (il.txt 248291), un objet dont
+`GetTotalDamage() > 10000` est marque d'office. Seuil different du 99999 de
+`ApplyDamage`.
+
+### Un modificateur de monde PEUT marquer — mais pas celui du butin
+
+La question posee etait : « est-ce que ca vient du fait qu'on a augmente puis
+diminue le loot ? ». Reponse mesuree : **non**, et les deux chemins sont
+disjoints. Le taux s'applique dans `Game::ScaleDrops` pendant la generation
+de la liste de butin ; le drapeau est pose plus tard dans
+`CharacterDrop::DropItems` a partir du seul ZDO du cadavre.
+
+Mais le « categoriquement non, aucun modificateur ne peut marquer » etait
+trop large, et l'agent refuteur a eu raison de le casser :
+
+```
+Character::ApplyDamage
+  IL_0056  hit.ApplyModifier(Game::m_playerDamageRate)   <- cle « playerdamage »
+  ...
+  IL_017d  si hit.GetTotalDamage() > 99999  ->  ZDO.cheated = true
+```
+
+`trySetScalarKey` divise par 100 et **n'ecrete rien**. Une cle `playerdamage`
+extreme franchirait donc le seuil et marquerait la victime. Mesure : ce monde
+n'a jamais porte cette cle — seulement `eventrate 60`, `resourcerate 150` et
+des presets en `combat_default`. Le chemin existe, il n'etait pas arme.
+
+### Ce que le popup ne prouve pas
+
+Tant que `eventrate 60` et `resourcerate 150` etaient dans le `.fwl2`,
+`IsWorldCheated()` etait vrai, et le popup « objet triche ramasse » ne
+**pouvait pas** s'afficher : `Inventory` s'en sert pour ETEINDRE l'alerte.
+Il n'est redevenu possible qu'apres le `-resetmodifiers` de 19:53 le 12/09.
+Un joueur qui dit « on vient d'avoir un message » temoigne donc de la
+disponibilite du message, pas forcement de la nouveaute du probleme.
+
+### L'evenement du 2026-09-12, date et localise
+
+Diff des ZDO de `1a_1c` entre 21:00:42 et 21:32:26 : **494 apparitions et
+disparitions**, centrees sur `(-1250, -2600)`, a cote du `LocationProxy`
+Bonemass mesure a `(-1148.20, 30.10, -3014.62)`.
+
+```
++ 5 SerpentScale     <- un Serpent a ete tue
+− 5 Skeleton_Swamps
+− 5 Draugr
+− 20 Leech
+− 4 Greydwarf
+```
+
+Les deux premieres entites marquees du monde sortent de ce combat : le
+Serpent et un Blob. Le butin marque — 4 `Entrails` et le `TrophySkeleton` —
+est au sol au meme endroit.
+
+Le fichier ne dit pas **qui** tenait l'arme, et ne le dira jamais.
+
+### Ce que disent les autres joueurs
+
+Le groupe n'est pas un cas isole. Des fils Steam de septembre 2026 decrivent
+le meme symptome sur des **mondes vanilla neufs, sans mod** : du bois coupe,
+des pierres, des butins de greydwarfs et de greylings etiquetes « summoned
+through cheating means ». La theorie dominante y est celle a laquelle la
+lecture du code menait : un joueur amenant un ancien personnage sur un
+serveur neuf propage le statut. **Aucune communication d'Iron Gate** dans ces
+fils a la date du 2026-09-13.
+
+Deux conseils qui y circulent et que le code dement :
+
+- « fusionner avec des objets propres nettoie » : faux, voir plus haut ;
+- « la commande `devopts` reactive les succes » : elle n'existe pas en 1.0.12.
+  Le mecanisme reel est une cle de joueur, `bypasscheatchecks = "1"`, posee
+  par la commande `yesiuseddevcommandsbutiwantmyachievementsanyway`. Elle
+  n'efface rien de deja marque, elle empeche les marquages futurs — et c'est
+  un contournement delibere du controle.
+
+Enfin, l'hypothese « pas d'admin, donc pas de console » est plus faible qu'il
+n'y parait : `Terminal::TryRunCommand` **relaie au serveur** les commandes
+marquees `RemoteCommand` dont la validation locale echoue, et le serveur les
+execute des qu'un admin a lance `devcommands`. La commande `spawn`, elle,
+exige `ZNet.IsServer()` et reste hors de portee d'un client.
+
 **Ce qu'aucun de ces outils ne voit : les sacs des joueurs.** Ils vivent dans
 les fichiers de personnage, chez chacun. Une restauration du monde ne les
 nettoie pas, et l'audit ne les lit pas. C'est la seule façon dont la
-contamination peut revenir après une restauration — et, la console étant hors
-de portée du groupe, l'hypothèse restante sur l'origine : un personnage
-utilisé sur un autre monde, dont les objets gardent leur drapeau.
+contamination peut revenir après une restauration — et c'est l'hypothèse
+restante sur l'origine : un personnage utilisé sur un autre monde, dont les
+objets gardent leur drapeau. Verifie le 2026-09-13 : quatre comptes Steam
+seulement se sont jamais connectes, et aucun monde anterieur de cette machine
+(Midgard, NordheimV1 et leurs sauvegardes) ne porte la moindre marque — le
+hash `cheated` n'y apparait meme pas. L'origine est donc exterieure a cette
+machine.
 
 ---
 
