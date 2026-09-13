@@ -1103,6 +1103,89 @@ seulement se sont jamais connectes, et aucun monde anterieur de cette machine
 hash `cheated` n'y apparait meme pas. L'origine est donc exterieure a cette
 machine.
 
+### L'origine est un poste client — audit du 2026-09-13
+
+Le marquage vient de **l'attaquant**, par l'objet qu'il a equipe. Le serveur
+n'en est jamais la source : il enregistre ce que le client lui envoie. Chercher
+plus loin cote serveur ne peut donc rien donner tant que les postes ne sont pas
+passes au meme test.
+
+**Premier poste audite, celui d'Alexandre.** Un chargeur BepInEx y est en place
+depuis le 2025-08-28, et il est toujours actif :
+
+```
+.doorstop_version      4.4.0
+doorstop_config.ini    enabled = true
+                       target_assembly = BepInEx\core\BepInEx.Preloader.dll
+winhttp.dll            26 112 o
+doorstop_libs\         libdoorstop_x64.so / .dylib
+start_game_bepinex.sh  start_server_bepinex.sh
+changelog.txt          « 3 commits since v5.4.23.2 »
+```
+
+Le dossier `BepInEx\` lui-meme a ete supprime, et `valheim_Data\Managed` ne
+contient aucun assembly etranger — ni `0Harmony.dll`, ni `BepInEx.*.dll`. Le
+chargeur est donc **ampute** : `winhttp.dll` est charge a chaque lancement,
+doorstop cherche le preloader, ne le trouve pas, et echoue en silence.
+
+Ce que ca n'etablit pas : que ce poste est la cause du marquage. Un preloader
+dont la cible a disparu n'injecte rien. Ce que ca etablit : ce poste a heberge
+BepInEx, son etat actuel est un reliquat et non une installation propre, et il
+suffit d'y reposer un dossier `BepInEx\` pour que tout se recharge. « Vanilla »
+ne s'y verifie pas par l'absence de mods, seulement par l'absence de chargeur.
+
+**Empreinte du client**, a comparer sur les autres postes :
+
+```
+buildid (appmanifest_892970.acf)  25253764
+assembly_valheim.dll              2 568 192 o
+                                  sha256 27a766a8d23a7bd8...
+                                  2026-09-11 15:19:42
+```
+
+Une empreinte differente n'est pas suspecte si le buildid differe — Steam met a
+jour. C'est un binaire modifie **a buildid identique** qui serait le signal.
+
+### La commande de contournement, verifiee
+
+Ce qui etait annonce plus haut sur la foi des forums est desormais lu dans le
+binaire du client. Desassemblage IL de l'enregistrement des commandes console :
+
+```
+ldstr 'achievements'
+ldstr 'yesiuseddevcommandsbutiwantmyachievementsanyway'
+ldstr "[1 = true/ 0 = false] Normally cheated items / pieces don't trigger
+       achievements. Turn this on to disable cheat checks."
+ldstr 'getstat'
+```
+
+Syntaxe `yesiuseddevcommandsbutiwantmyachievementsanyway 1`, la valeur est
+persistee sous la cle joueur `bypasscheatchecks`, le retour console est
+`Set cheat bypass to true/false`. Le nom qui circule est donc exact,
+litteralement. Elle n'efface rien de deja marque : elle desactive les controles
+futurs.
+
+**Un piege de methode, qui a produit un faux negatif dans ce dossier.** Lire les
+chaines d'un assembly .NET en decodant le fichier entier en UTF-16 depuis
+l'octet 0 — `[Text.Encoding]::Unicode.GetString()`, ou tout equivalent — ne voit
+que les chaines a offset **pair**. Celles a offset impair disparaissent sans le
+moindre avertissement. Il faut chercher la sequence d'octets UTF-16 LE dans les
+octets bruts, aux deux alignements. Et un temoin ne vaut que s'il existe aux
+deux : `devcommands` existe en double cote client, un pair un impair, donc il
+ressort present quelle que soit la methode et ne valide rien.
+
+La copie serveur de `assembly_valheim.dll`, elle, ne contient reellement pas la
+chaine — verifie aux deux alignements sur les octets bruts. Elle est simplement
+anterieure au patch : 2 557 952 o, sha256 `6ebcb5ce3742b3f6...`, datee du
+2026-09-10, contre 2 568 192 o cote client le 11/09. Dix kilo-octets d'ecart, et
+`devcommands` en un seul exemplaire au lieu de deux.
+
+**Ce qui reste a faire :** les trois autres postes n'ont pas ete audites.
+Chargeur doorstop et empreinte du binaire, le meme test pour chacun. Tant que ce
+n'est pas fait, le combat du 2026-09-12 a 21h00 reste non attribue — et corriger
+le seul poste connu expose a voir le marquage revenir au combat suivant, puis a
+repartir sur la piste « bug d'Iron Gate ».
+
 ---
 
 ## Reconstruire depuis rien — la machine est perdue
