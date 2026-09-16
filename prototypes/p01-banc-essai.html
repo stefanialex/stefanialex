@@ -1,0 +1,575 @@
+<title>Engueulade Générale</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Spectral:ital,wght@0,400;1,400&display=swap">
+<style>
+:root{
+  --bg:#E8E9E4; --surf:#F4F5F1; --surf2:#DFE1DA;
+  --ink:#1B1D18; --dim:#6E7367; --line:#C6CABB; --line2:#A5AB98;
+  --acc:#5C3D99; --acc-pale:#5C3D9914;
+  --hot:#B03A2B; --ok:#3F6B4A;
+  --mono:"Courier Prime","Courier New",monospace;
+  --serif:"Spectral",Georgia,serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#131410; --surf:#1C1E18; --surf2:#26291F;
+  --ink:#E4E6DB; --dim:#909684; --line:#31352a; --line2:#474d3b;
+  --acc:#B79BF2; --acc-pale:#B79BF21F;
+  --hot:#E38874; --ok:#7FB08D;
+}}
+:root[data-theme="dark"]{
+  --bg:#131410; --surf:#1C1E18; --surf2:#26291F;
+  --ink:#E4E6DB; --dim:#909684; --line:#31352a; --line2:#474d3b;
+  --acc:#B79BF2; --acc-pale:#B79BF21F;
+  --hot:#E38874; --ok:#7FB08D;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:var(--bg);color:var(--ink);margin:0;
+  font-family:var(--mono);font-size:14px;line-height:1.5;
+  padding-inline:14px;padding-block:0 28px;
+  -webkit-font-smoothing:antialiased;
+}
+.rig{max-width:980px;margin:0 auto}
+
+.bandeau{
+  border-bottom:2px solid var(--line2);padding-block:18px 10px;
+  display:flex;flex-wrap:wrap;gap:6px 20px;align-items:baseline;justify-content:space-between;
+}
+.bandeau h1{font-size:15px;letter-spacing:.18em;text-transform:uppercase;margin:0;font-weight:700}
+.bandeau .cpt{font-size:11px;letter-spacing:.1em;color:var(--dim);display:flex;gap:16px;flex-wrap:wrap}
+.bandeau .cpt b{color:var(--acc);font-weight:700}
+
+.avis{
+  border:1px dashed var(--line2);padding:10px 13px;margin:14px 0 18px;
+  font-size:12px;color:var(--dim);line-height:1.6;
+}
+.avis b{color:var(--ink);font-weight:700}
+
+h2.sec{
+  font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
+  margin:20px 0 8px;font-weight:400;
+}
+
+/* unités */
+.rangee{display:grid;gap:8px;margin:0}
+.rangee.ennemis{grid-template-columns:repeat(3,minmax(0,1fr))}
+.rangee.heros{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:620px){
+  .rangee.heros{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:380px){
+  .rangee.ennemis{grid-template-columns:1fr}
+}
+.unite{
+  background:var(--surf);border:1px solid var(--line);padding:9px 10px 10px;
+  display:flex;flex-direction:column;gap:6px;text-align:left;
+  font:inherit;color:inherit;width:100%;
+}
+.unite .nom{font-size:11.5px;font-weight:700;letter-spacing:.04em;display:flex;justify-content:space-between;gap:6px}
+.unite .nom span{color:var(--dim);font-weight:400;font-size:10px}
+.unite .jauge{height:7px;background:var(--surf2);border:1px solid var(--line);position:relative;overflow:hidden}
+.unite .jauge i{display:block;height:100%;background:var(--ink);transition:width .18s linear}
+.unite .jauge.rousp i{background:var(--hot)}
+.unite .chiffres{font-size:10.5px;color:var(--dim);display:flex;justify-content:space-between;gap:8px;font-variant-numeric:tabular-nums}
+.unite .chiffres b{color:var(--ink);font-weight:400}
+.unite .res{font-size:10px;letter-spacing:.06em;color:var(--acc);text-transform:uppercase;min-height:1.2em}
+.unite.actif{outline:2px solid var(--acc);outline-offset:-1px}
+.unite.mort{opacity:.38}
+.unite.mort .nom{text-decoration:line-through}
+.unite.visable{cursor:pointer;border-color:var(--acc);background:var(--acc-pale)}
+.unite.visable:hover,.unite.visable:focus-visible{outline:2px solid var(--acc);outline-offset:-1px}
+.etiq{font-size:9.5px;letter-spacing:.08em;color:var(--hot);text-transform:uppercase;min-height:1.1em}
+
+/* actions */
+.actions{
+  border:1px solid var(--line2);background:var(--surf);
+  margin:14px 0 0;padding:11px 12px;
+}
+.actions .qui{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:9px}
+.actions .qui b{color:var(--acc)}
+.btns{display:flex;flex-wrap:wrap;gap:7px}
+button{
+  font:inherit;font-size:12.5px;background:var(--surf2);color:var(--ink);
+  border:1px solid var(--line2);padding:8px 12px;cursor:pointer;text-align:left;
+}
+button:hover:not(:disabled){border-color:var(--acc);color:var(--acc)}
+button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+button:disabled{opacity:.35;cursor:not-allowed}
+button .cout{font-size:10px;color:var(--dim);display:block}
+button.primaire{background:var(--acc);color:var(--bg);border-color:var(--acc);font-weight:700}
+button.primaire:hover{color:var(--bg);opacity:.88}
+
+/* journal */
+.journal{
+  border:1px solid var(--line);background:var(--surf);
+  height:230px;overflow-y:auto;padding:10px 12px;margin-top:8px;
+}
+.l{margin:0 0 7px;font-family:var(--serif);font-size:14.5px;line-height:1.5}
+.l:last-child{margin-bottom:0}
+.l .sp{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--acc);display:block}
+.l.sys{font-family:var(--mono);font-size:11.5px;color:var(--dim);font-style:normal}
+.l.sys b{color:var(--ink);font-weight:400}
+.l.coup{font-family:var(--mono);font-size:11.5px;color:var(--dim)}
+.l.alerte{font-family:var(--mono);font-size:11.5px;color:var(--hot);letter-spacing:.04em}
+.l.bon{font-family:var(--mono);font-size:11.5px;color:var(--ok)}
+
+/* overlay */
+.voile{
+  position:fixed;inset:0;background:color-mix(in srgb,var(--bg) 88%,transparent);
+  display:flex;align-items:center;justify-content:center;padding:16px;z-index:10;
+}
+.boite{
+  background:var(--surf);border:2px solid var(--acc);max-width:560px;width:100%;
+  padding:18px 18px 20px;max-height:88vh;overflow-y:auto;
+}
+.boite h3{
+  font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--acc);
+  margin:0 0 14px;font-weight:700;
+}
+.boite .ech{margin:0 0 14px}
+.boite .btns{flex-direction:column}
+.boite .btns button{width:100%}
+.fin dl{display:grid;grid-template-columns:auto 1fr;gap:3px 14px;font-size:12.5px;margin:0 0 16px}
+.fin dt{color:var(--dim)}
+.fin dd{margin:0;font-variant-numeric:tabular-nums}
+.crit{border-top:1px solid var(--line);padding-top:12px;margin-top:4px;font-size:12px;color:var(--dim);line-height:1.6}
+.crit b{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="rig">
+  <div class="bandeau">
+    <h1>Banc d'essai 01 · l'engueulade</h1>
+    <div class="cpt">
+      <span>tour <b id="cTour">1</b></span>
+      <span>engueulades <b id="cEng">0</b></span>
+      <span>ratés <b id="cRate">0</b></span>
+    </div>
+  </div>
+
+  <p class="avis">
+    <b>Prototype jetable.</b> Rectangles gris, chiffres visibles, aucun art. Il ne teste qu'une chose :
+    <b>est-ce que l'Engueulade est amusante ?</b> Jouez trois combats, puis demandez-vous si vous avez
+    relu le journal pour retrouver une réplique. Si non, la mécanique ne porte pas le jeu.
+  </p>
+
+  <h2 class="sec">Adversaires — gobelins syndiqués</h2>
+  <div class="rangee ennemis" id="ennemis"></div>
+
+  <h2 class="sec">Formation — rangs 1 à 4</h2>
+  <div class="rangee heros" id="heros"></div>
+
+  <div class="actions">
+    <div class="qui" id="qui">—</div>
+    <div class="btns" id="btns"></div>
+  </div>
+
+  <h2 class="sec">Journal</h2>
+  <div class="journal" id="journal"></div>
+</div>
+
+<div id="overlay"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+/* ---------- données ---------- */
+const HEROS=[
+ {id:'gue',nom:'Guérin',cls:'Chevalier blasé',rang:1,pvm:62,res:'Rancune',resv:0,resmax:10},
+ {id:'flo',nom:'Florimond',cls:'Barde critique',rang:2,pvm:40,res:'Matière',resv:2,resmax:8},
+ {id:'beu',nom:'Beuzelin',cls:'Roublard admin.',rang:3,pvm:42,res:'Formulaires',resv:2,resmax:5},
+ {id:'odo',nom:'Odon',cls:'Mage du dimanche',rang:4,pvm:34,res:'Confiance',resv:0,resmax:5},
+];
+
+const CAPA={
+ gue:[
+  {n:'Coup de bouclier',d:'5–8 dég. · 25 % étourdit',cible:'ennemi',cout:0},
+  {n:'Par pur dépit',d:'3 + 4 × Rancune · consomme tout',cible:'ennemi',cout:0,besoin:h=>h.resv>0}],
+ flo:[
+  {n:'Remarque appuyée',d:'allié +35 % dég. 2 t. · +15 rousp.',cible:'allie',cout:1},
+  {n:'Envenimer',d:'2 alliés +25 rousp. · oriente l\'engueulade',cible:'auto',cout:3}],
+ beu:[
+  {n:'Signification',d:'3–6 dég. · +1 Procédure',cible:'ennemi',cout:0},
+  {n:'Mise en demeure',d:'+2 Procédure · 0 dégât',cible:'ennemi',cout:1}],
+ odo:[
+  {n:'Boule de feu (probablement)',d:'instable · 8–14 dég. ou retour de flamme',cible:'ennemi',cout:0},
+  {n:'Petit sort de rien du tout',d:'2–4 dég. garantis · +1 Confiance',cible:'ennemi',cout:0}],
+};
+
+const BARKS={
+ rate:{
+  gue:["Voilà.","C'est exactement ce que je pensais.","Bon.","Je note que j'ai essayé."],
+  flo:["Ce n'est pas passé loin. Si.","J'ai visé la silhouette. C'était l'ombre.","Personne n'a vu ça.","On efface."],
+  beu:["Le document est parti de travers. Ça arrive.","Il y a un aléa de service.","Je le consigne comme incident.","Ce n'est pas un échec, c'est un report."],
+  odo:["C'est le vent.","Il y a un courant d'air terrible ici.","Ça n'a rien à voir avec moi.","Le sort est parti. Ailleurs, mais il est parti."]},
+ crit:{
+  gue:["Ça, c'était pour hier.","Je ne suis pas de bonne humeur.","Voilà. Content ?","Ça fait du bien. Ça ne change rien, mais ça fait du bien."],
+  flo:["Je m'étonne moi-même. Pas tant que ça.","Prenez-en de la graine. Ou pas.","Je précise que c'était volontaire.","Notez l'heure."],
+  beu:["Recevable.","Signifié en bonne et due forme.","Le dossier avance.","C'est le service qui gagne, pas moi."],
+  odo:["ÇA A MARCHÉ.","Vous avez vu ? Vous avez vu ?","J'ai rien changé pourtant.","Refaites-moi confiance. Une fois."]},
+ tue:{
+  gue:["Suivant.","Il en reste.","On avance.","Bien."],
+  flo:["Un de moins à supporter.","Il n'aurait pas dû se mettre là.","Voilà pour la strophe trois.","Je lui avais dit."],
+  beu:["Dossier clos.","Classé sans suite.","Je mets à jour l'effectif adverse.","Il n'était pas à jour de ses cotisations."],
+  odo:["Je crois que c'est moi qui ai fait ça.","Est-ce que quelqu'un a vu ?","Enfin.","Bon. Une fois sur deux, hein."]},
+ retour:{
+  odo:["Pardon. Pardon. PARDON.","Ce n'était pas la bonne page.","Il manque les pages 40 à 60, je rappelle.","Techniquement, le sort a fonctionné."]},
+ bas:{
+  gue:["Je tiens. Ça ne veut pas dire que je vais bien.","Quelqu'un pourrait m'aider. Quelqu'un.","J'ai connu pire. Pas beaucoup."],
+  flo:["Je saigne, et personne ne relève.","C'est fascinant, ce désintérêt général.","Je vais m'asseoir deux minutes."],
+  beu:["Je vais devoir déclarer un accident du travail.","La procédure prévoit un arrêt. La procédure.","Ceci sera imputé à quelqu'un."],
+  odo:["J'AVAIS DIT QUE J'ÉTAIS FROMAGER.","Je ne suis pas censé être au contact !","Pourquoi c'est toujours moi ?"]},
+ mort:{
+  gue:"Bon. Au moins, je ne participe plus.",
+  flo:"Voilà. Maintenant, plus personne ne vous dira la vérité.",
+  beu:"Le dossier est dans la sacoche. La sacoche est sur moi. Bon courage.",
+  odo:"J'AVAIS DIT QUE J'ÉTAIS FROMAGER !"},
+};
+
+/* ouvertures et répliques d'engueulade, par personnage */
+const ENG_OUVRE={
+ gue:["%s, ça fait trois tours que je prends tout. Trois.","Je ne dis rien depuis le début. Là je dis quelque chose, %s.","%s, tu étais où, exactement, pendant que je servais de porte ?","Je vais être très clair, %s : je n'ai pas signé pour ça."],
+ flo:["%s, je vais être honnête, et ça va faire mal.","On peut parler de ce que %s vient de faire ? On peut ?","%s, sur une échelle de un à dix, c'était en dessous.","Je documente, %s. Je documente tout, pour plus tard."],
+ beu:["%s, il va falloir justifier ça par écrit.","Je signale que %s n'a suivi aucune des étapes prévues.","%s, votre méthode n'est pas conforme. Elle n'est même pas une méthode.","Il y a un protocole, %s. Il tient sur une page."],
+ odo:["%s, tout le monde me regarde comme si c'était ma faute.","Je fais ce que je peux, %s ! Avec ce que j'ai !","%s, personne ici n'a lu mon grimoire. Personne.","C'est toujours moi, %s. C'est toujours moi."]};
+const ENG_REPOND={
+ gue:["Tu as fini ?","Je ne me justifierai pas devant toi.","Continue. Ça m'occupe.","C'est ça. Note-le quelque part."],
+ flo:["Je note que tu montes le ton. Ça te va bien.","Ah, on est passés aux reproches. Enfin du contenu.","Dis-le encore, j'écris une chanson.","Tu as raison. Ça ne change rien, mais tu as raison."],
+ beu:["Je prends acte.","Ce n'est pas le lieu. Ni le moment. Ni la procédure.","Vous pourrez le déposer par écrit, en bas, au guichet.","J'enregistre votre réclamation. Elle sera traitée."],
+ odo:["Vous êtes injustes. Tous.","Je vais m'en aller, moi, un jour.","C'était UNE FOIS.","Bon. Bon bon bon."]};
+
+const D8=[
+ {n:'On se calme',t:'Toute la Rouspétance du groupe −40. Rien d\'autre. Personne n\'ose parler.',f:S=>{S.heros.forEach(h=>h.rousp=Math.max(0,h.rousp-40))}},
+ {n:'Ça fait du bien de le dire',t:'Groupe : +30 % dégâts, −25 % précision, 2 tours.',f:S=>{S.buffGroupe={dmg:1.3,prec:-.25,t:2}}},
+ {n:'Bouderie',t:'Le vexé saute son prochain tour, puis revient avec un critique garanti.',f:(S,a,b)=>{b.saute=1;b.critGaranti=1}},
+ {n:'Coalition',t:'Les deux se liguent : +50 % de dégâts pour eux, −1 initiative pour les autres.',f:(S,a,b)=>{a.coal=3;b.coal=3}},
+ {n:'Le silence gênant',t:'Personne ne parle. +2 esquive pour tous, Moral en berne.',f:S=>{S.esquive=3}},
+ {n:'Escalade',t:'Un troisième s\'en mêle. Tout le monde +25 Rouspétance, mais une action en plus ce tour.',f:S=>{S.heros.forEach(h=>h.rousp=Math.min(100,h.rousp+25));S.bonusAction=1}},
+ {n:'Démission',t:'Le personnage quitte la formation 2 tours. Il reviendra à pleine santé, avec une note de frais.',f:(S,a,b)=>{b.parti=2}},
+ {n:'Réconciliation suspecte',t:'Les deux se soignent de 20 % et deviennent Complices jusqu\'à la fin du combat.',f:(S,a,b)=>{[a,b].forEach(h=>h.pv=Math.min(h.pvm,h.pv+Math.round(h.pvm*.2)));a.complice=b.id;b.complice=a.id}},
+];
+
+/* ---------- état ---------- */
+let S,dernierBark='';
+function init(){
+  S={
+    heros:HEROS.map(h=>({...h,pv:h.pvm,rousp:0,mort:false,buff:0,saute:0,critGaranti:0,coal:0,parti:0,complice:null,proc:0})),
+    ennemis:[0,1,2].map(i=>({id:'gob'+i,nom:'Gobelin '+(i+1),pv:26,pvm:26,mort:false,proc:0,etourdi:0,convoque:0})),
+    tour:1,file:[],idx:0,phase:'',capa:null,
+    nbEng:0,nbRate:0,choix:[],buffGroupe:null,esquive:0,bonusAction:0,oriente:false,fini:false
+  };
+  $('journal').innerHTML='';
+  log('sys','<b>Combat 1.</b> Quatre incapables, trois gobelins syndiqués. Objectif : vider la salle. Motif : la belle-mère du seigneur arrive dans trois semaines.');
+  nouveauTour();
+}
+
+function log(cls,html){
+  const p=document.createElement('p');p.className='l '+cls;p.innerHTML=html;
+  $('journal').appendChild(p);$('journal').scrollTop=$('journal').scrollHeight;
+}
+function dit(h,txt){
+  if(txt===dernierBark)return;dernierBark=txt;
+  log('',`<span class="sp">${h.nom}</span>${txt}`);
+}
+function bark(ev,h){const p=BARKS[ev]&&BARKS[ev][h.id];if(p)dit(h,pick(p));}
+
+/* ---------- rouspétance ---------- */
+function rousp(h,n,cause){
+  if(h.mort)return;
+  h.rousp=Math.max(0,Math.min(100,h.rousp+n));
+  if(n>0)h.grief=cause||h.grief;
+}
+function echecGroupe(){
+  S.nbRate++;
+  const f=S.heros.find(h=>h.id==='flo');
+  if(f&&!f.mort)f.resv=Math.min(f.resmax,f.resv+1);
+}
+
+/* ---------- tour ---------- */
+function nouveauTour(){
+  S.heros.forEach(h=>{
+    if(h.parti>0){h.parti--;if(h.parti===0&&!h.mort){h.pv=h.pvm;log('sys',`<b>${h.nom}</b> revient. Il a une note de frais.`);}}
+    if(h.coal>0)h.coal--;
+  });
+  if(S.buffGroupe){S.buffGroupe.t--;if(S.buffGroupe.t<=0)S.buffGroupe=null;}
+  if(S.esquive>0)S.esquive--;
+  const vivants=[...S.heros.filter(h=>!h.mort&&h.parti===0),...S.ennemis.filter(e=>!e.mort)];
+  S.file=vivants.map(u=>({u,ini:rnd(1,10)+(u.rang?6-u.rang:3)})).sort((a,b)=>b.ini-a.ini).map(x=>x.u);
+  S.idx=0;
+  $('cTour').textContent=S.tour;
+  suivant();
+}
+function suivant(){
+  if(S.fini)return;
+  if(S.ennemis.every(e=>e.mort))return finir(true);
+  if(S.heros.every(h=>h.mort))return finir(false);
+  const decl=S.heros.find(h=>!h.mort&&h.rousp>=100&&h.parti===0);
+  if(decl)return engueulade(decl);
+  if(S.idx>=S.file.length){S.tour++;return nouveauTour();}
+  const u=S.file[S.idx++];
+  if(u.mort||u.parti>0)return suivant();
+  if(u.saute>0){u.saute--;log('sys',`<b>${u.nom}</b> boude. Il passe son tour.`);return suivant();}
+  if(u.etourdi>0){u.etourdi--;log('sys',`<b>${u.nom}</b> est étourdi.`);return suivant();}
+  if(u.convoque>0){u.convoque--;log('sys',`<b>${u.nom}</b> est convoqué. Il est ailleurs.`);return suivant();}
+  S.actif=u;
+  if(u.rang){S.phase='select';rendre();}
+  else{S.phase='ennemi';rendre();setTimeout(()=>jouerEnnemi(u),520);}
+}
+
+/* ---------- combat ---------- */
+function touche(h){
+  let p=.78+(S.buffGroupe?S.buffGroupe.prec:0);
+  return Math.random()<p;
+}
+function degats(h,n){
+  let m=1;
+  if(S.buffGroupe)m*=S.buffGroupe.dmg;
+  if(h.buff>0)m*=1.35;
+  if(h.coal>0)m*=1.5;
+  return Math.max(1,Math.round(n*m));
+}
+function frapper(h,e,n,{critable=true}={}){
+  const crit=critable&&(h.critGaranti||Math.random()<.12);
+  if(h.critGaranti)h.critGaranti=0;
+  let d=degats(h,n);if(crit)d=Math.round(d*1.8);
+  e.pv-=d;
+  log('coup',`${h.nom} → ${e.nom} : <b>${d}</b>${crit?' (CRITIQUE)':''}`);
+  if(crit){rousp(h,-15);bark('crit',h);}
+  if(e.pv<=0){e.pv=0;e.mort=true;rousp(h,-10);log('bon',`${e.nom} est hors de combat.`);bark('tue',h);}
+}
+function rater(h,e){
+  log('alerte',`${h.nom} rate ${e?e.nom:'sa cible'}.`);
+  rousp(h,12,'a raté');echecGroupe();bark('rate',h);
+  S.heros.forEach(a=>{if(a!==h&&!a.mort)rousp(a,4);});
+  $('cRate').textContent=S.nbRate;
+}
+
+function agir(capa,cible){
+  const h=S.actif;
+  h.resv=Math.max(0,h.resv-(capa.cout||0));
+  if(h.id==='gue'){
+    if(capa.n==='Coup de bouclier'){
+      if(touche(h)){frapper(h,cible,rnd(5,8));if(Math.random()<.25&&!cible.mort){cible.etourdi=1;log('bon',`${cible.nom} est étourdi.`);}}
+      else rater(h,cible);
+    }else{
+      const r=h.resv;h.resv=0;
+      if(touche(h))frapper(h,cible,3+4*r);else rater(h,cible);
+      log('sys',`Rancune dépensée : <b>${r}</b>.`);
+    }
+  }
+  else if(h.id==='beu'){
+    if(capa.n==='Signification'){
+      if(touche(h)){frapper(h,cible,rnd(3,6));if(!cible.mort)procedure(cible,1);}else rater(h,cible);
+    }else{procedure(cible,2);log('sys',`Mise en demeure signifiée à <b>${cible.nom}</b>.`);}
+  }
+  else if(h.id==='odo'){
+    if(capa.n==='Petit sort de rien du tout'){
+      frapper(h,cible,rnd(2,4),{critable:false});
+      h.resv=Math.min(h.resmax,h.resv+1);
+    }else{
+      const p=.5+.05*h.resv;
+      if(Math.random()<p){frapper(h,cible,rnd(8,14));h.resv=Math.min(h.resmax,h.resv+1);}
+      else{
+        h.resv=0;
+        const v=pick(S.heros.filter(a=>!a.mort&&a!==h))||h;
+        v.pv-=6;log('alerte',`Retour de flamme : <b>${v.nom}</b> prend 6.`);
+        rousp(v,25,'a pris le sort d\'Odon');rousp(h,12,'a fait rater son sort');echecGroupe();
+        bark('retour',h);verifMort(v);
+        $('cRate').textContent=S.nbRate;
+      }
+    }
+  }
+  else if(h.id==='flo'){
+    if(capa.n==='Remarque appuyée'){
+      cible.buff=2;rousp(cible,15,'s\'est fait humilier par Florimond');
+      log('sys',`<b>${cible.nom}</b> : +35 % de dégâts pendant 2 tours.`);
+      dit(h,pick(["Vas-y, montre-nous. Pour une fois.","Ce n'est pas un compliment. Mais fais-en quelque chose.","Je ne te crois pas capable. Prouve-moi le contraire."]));
+    }else{
+      const c=S.heros.filter(a=>!a.mort&&a!==h).sort((a,b)=>b.rousp-a.rousp).slice(0,2);
+      c.forEach(a=>rousp(a,25,'a été monté contre les autres'));
+      S.oriente=true;
+      log('sys',`Engueulade orientée : <b>${c.map(x=>x.nom).join('</b> et <b>')}</b>.`);
+      dit(h,"Je ne déclenche rien. Je mets juste les gens en présence.");
+    }
+  }
+  finTour();
+}
+function procedure(e,n){
+  e.proc+=n;log('sys',`${e.nom} : Procédure <b>${e.proc}/3</b>.`);
+  if(e.proc>=3){e.proc=0;e.convoque=1;log('bon',`${e.nom} est convoqué. Il perd son tour.`);}
+}
+function verifMort(u){
+  if(u.pv<=0&&!u.mort){
+    u.pv=0;u.mort=true;
+    log('alerte',`<b>${u.nom}</b> est à terre.`);
+    if(BARKS.mort[u.id])dit(u,BARKS.mort[u.id]);
+    S.heros.forEach(a=>{if(!a.mort)rousp(a,20,'a vu tomber '+u.nom);});
+    echecGroupe();
+  }
+}
+function jouerEnnemi(e){
+  const vis=S.heros.filter(h=>!h.mort&&h.parti===0);
+  if(!vis.length)return finir(false);
+  const poids=vis.flatMap(h=>Array(Math.max(1,5-h.rang)).fill(h));
+  const c=pick(poids);
+  if(Math.random()<.74-(S.esquive?.15:0)){
+    const crit=Math.random()<.12;let d=rnd(5,9);if(crit)d=Math.round(d*1.8);
+    c.pv-=d;
+    log('coup',`${e.nom} → ${c.nom} : <b>${d}</b>${crit?' (CRITIQUE)':''}`);
+    if(crit)rousp(c,15,'a pris un critique');
+    if(c.id==='gue')c.resv=Math.min(c.resmax,c.resv+1);
+    if(c.complice){const o=S.heros.find(h=>h.id===c.complice);if(o&&!o.mort){o.pv-=Math.round(d/2);c.pv+=Math.round(d/2);log('sys',`Complices : les dégâts sont partagés.`);verifMort(o);}}
+    verifMort(c);
+    if(!c.mort&&c.pv<c.pvm*.3&&Math.random()<.5)bark('bas',c);
+  }else{
+    log('sys',`${e.nom} rate ${c.nom}.`);
+  }
+  finTour();
+}
+function finTour(){
+  S.heros.forEach(h=>{if(h.buff>0&&h!==S.actif)h.buff--;});
+  rendre();
+  if(S.bonusAction>0){S.bonusAction--;log('sys','Action supplémentaire pour le groupe.');}
+  setTimeout(suivant,S.phase==='ennemi'?360:240);
+}
+
+/* ---------- engueulade ---------- */
+function engueulade(a){
+  S.phase='eng';S.nbEng++;$('cEng').textContent=S.nbEng;
+  const autres=S.heros.filter(h=>!h.mort&&h!==a&&h.parti===0).sort((x,y)=>y.rousp-x.rousp);
+  if(!autres.length){a.rousp=40;return suivant();}
+  const b=autres[0];
+  const l1=pick(ENG_OUVRE[a.id]).replace('%s',b.nom);
+  const l2=pick(ENG_REPOND[b.id]);
+  log('alerte','— ENGUEULADE GÉNÉRALE —');
+  dit(a,l1);dit(b,l2);
+  ouvrir(`
+    <h3>Engueulade générale</h3>
+    <div class="ech">
+      <p class="l"><span class="sp">${a.nom}</span>${l1}</p>
+      <p class="l"><span class="sp">${b.nom}</span>${l2}</p>
+    </div>
+    <div class="btns">
+      <button data-c="a">Prendre parti pour ${a.nom}<span class="cout">${a.nom} : rouspétance à 0, +25 % dégâts 2 tours. ${b.nom} reste à 60.</span></button>
+      <button data-c="b">Prendre parti pour ${b.nom}<span class="cout">${b.nom} : rouspétance à 0, +25 % dégâts 2 tours. ${a.nom} reste à 60.</span></button>
+      <button data-c="x" class="primaire">« Vos gueules »<span class="cout">Les deux retombent à 40. On tire sur la table d8.${S.oriente?' Engueulade orientée : un relancer disponible.':''}</span></button>
+    </div>`,btn=>{
+      const c=btn.dataset.c;S.choix.push(c);
+      if(c==='a'||c==='b'){
+        const g=c==='a'?a:b,p=c==='a'?b:a;
+        g.rousp=0;g.buff=2;p.rousp=60;
+        log('sys',`Le joueur prend parti pour <b>${g.nom}</b>. ${p.nom} reste à 60.`);
+        dit(p,pick(ENG_REPOND[p.id]));
+        fermer();suivant();
+      }else{
+        a.rousp=40;b.rousp=40;tirer(a,b,S.oriente);
+      }
+    });
+}
+function tirer(a,b,relance){
+  const i=rnd(0,7),r=D8[i];
+  const corps=`
+    <h3>Résultat — d8 : ${i+1}</h3>
+    <div class="ech">
+      <p class="l" style="font-family:var(--mono);font-size:13px;letter-spacing:.06em"><b>${r.n.toUpperCase()}</b></p>
+      <p class="l">${r.t}</p>
+    </div>
+    <div class="btns">
+      ${relance?'<button data-c="r">Relancer (engueulade orientée)<span class="cout">Florimond avait préparé le terrain. Une seule fois.</span></button>':''}
+      <button data-c="ok" class="primaire">Accepter</button>
+    </div>`;
+  ouvrir(corps,btn=>{
+    if(btn.dataset.c==='r'){S.oriente=false;return tirer(a,b,false);}
+    r.f(S,a,b);
+    log('alerte',`d8 → <b>${r.n}</b>. ${r.t}`);
+    fermer();suivant();
+  });
+}
+
+/* ---------- interface ---------- */
+function ouvrir(html,cb){
+  $('overlay').innerHTML=`<div class="voile"><div class="boite">${html}</div></div>`;
+  $('overlay').querySelectorAll('button').forEach(b=>b.onclick=()=>cb(b));
+  const f=$('overlay').querySelector('button');if(f)f.focus();
+}
+function fermer(){$('overlay').innerHTML='';}
+
+function boite(u,extra){
+  const est=u.rang?'':'';
+  return `<div class="nom">${u.nom}<span>${u.rang?'rang '+u.rang:''}</span></div>
+    <div class="jauge"><i style="width:${Math.max(0,u.pv/u.pvm*100)}%"></i></div>
+    <div class="chiffres"><span>PV <b>${u.pv}</b>/${u.pvm}</span>${extra||''}</div>`;
+}
+function rendre(){
+  $('ennemis').innerHTML='';
+  S.ennemis.forEach(e=>{
+    const el=document.createElement(S.phase==='cible'&&S.capa.cible==='ennemi'&&!e.mort?'button':'div');
+    el.className='unite'+(e.mort?' mort':'')+(S.actif===e?' actif':'')+(S.phase==='cible'&&S.capa.cible==='ennemi'&&!e.mort?' visable':'');
+    el.innerHTML=boite(e,`<span>Proc. <b>${e.proc}</b>/3</span>`)+
+      `<div class="etiq">${e.convoque?'convoqué':e.etourdi?'étourdi':''}</div>`;
+    if(el.tagName==='BUTTON')el.onclick=()=>{S.phase='';agir(S.capa,e);};
+    $('ennemis').appendChild(el);
+  });
+  $('heros').innerHTML='';
+  S.heros.forEach(h=>{
+    const visable=S.phase==='cible'&&S.capa.cible==='allie'&&!h.mort&&h!==S.actif;
+    const el=document.createElement(visable?'button':'div');
+    el.className='unite'+(h.mort?' mort':'')+(S.actif===h?' actif':'')+(visable?' visable':'');
+    el.innerHTML=boite(h,`<span>${h.res} <b>${h.resv}</b></span>`)+
+      `<div class="jauge rousp"><i style="width:${h.rousp}%"></i></div>
+       <div class="res">rouspétance ${h.rousp}</div>
+       <div class="etiq">${h.parti?'démissionnaire':h.buff?'remonté':h.complice?'complice':h.coal?'coalisé':''}</div>`;
+    if(visable)el.onclick=()=>{S.phase='';agir(S.capa,h);};
+    $('heros').appendChild(el);
+  });
+  const btns=$('btns');btns.innerHTML='';
+  if(S.phase==='select'){
+    const h=S.actif;
+    $('qui').innerHTML=`Au tour de <b>${h.nom}</b> — ${h.cls} · ${h.res} ${h.resv}`;
+    CAPA[h.id].forEach(c=>{
+      const ok=(c.cout||0)<=h.resv&&(!c.besoin||c.besoin(h));
+      const b=document.createElement('button');
+      b.innerHTML=`${c.n}<span class="cout">${c.d}${c.cout?' · coût '+c.cout:''}</span>`;
+      b.disabled=!ok;
+      b.onclick=()=>{
+        if(c.cible==='auto'){S.phase='';agir(c,null);}
+        else{S.capa=c;S.phase='cible';$('qui').innerHTML=`<b>${c.n}</b> — choisissez une cible`;rendre();}
+      };
+      btns.appendChild(b);
+    });
+  }else if(S.phase==='cible'){
+    const b=document.createElement('button');b.textContent='Annuler';
+    b.onclick=()=>{S.phase='select';rendre();};btns.appendChild(b);
+  }else{
+    $('qui').textContent=S.phase==='ennemi'?'Tour adverse…':'…';
+  }
+}
+
+function finir(gagne){
+  if(S.fini)return;S.fini=true;S.phase='fin';rendre();
+  log(gagne?'bon':'alerte',gagne?'Salle vidée. Il reste à rédiger le rapport.':'Le groupe se replie. Personne ne dit rien sur le chemin du retour.');
+  const parti=S.choix.filter(c=>c!=='x').length,vg=S.choix.filter(c=>c==='x').length;
+  ouvrir(`
+    <h3>${gagne?'Fin de mission':'Repli'}</h3>
+    <div class="fin">
+      <dl>
+        <dt>Tours joués</dt><dd>${S.tour}</dd>
+        <dt>Engueulades</dt><dd>${S.nbEng}</dd>
+        <dt>« Vos gueules »</dt><dd>${vg}</dd>
+        <dt>Partis pris</dt><dd>${parti}</dd>
+        <dt>Attaques ratées</dt><dd>${S.nbRate}</dd>
+        <dt>Survivants</dt><dd>${S.heros.filter(h=>!h.mort).length}/4</dd>
+      </dl>
+      <p class="crit"><b>Critère du banc d'essai.</b> Avez-vous remonté le journal pour relire une réplique ?
+      Si la réponse est non après trois combats, la mécanique ne porte pas le jeu : on ne l'ajuste pas, on la remplace.</p>
+    </div>
+    <div class="btns"><button class="primaire">Relancer un combat</button></div>`,
+    ()=>{fermer();init();});
+}
+
+init();
+</script>
