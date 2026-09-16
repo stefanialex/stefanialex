@@ -232,6 +232,93 @@ Réussite : 25–40 dégâts sur tous les ennemis. Échec : Odon tombe à 1 PV, 
 
 ---
 
+## PIÈCE N°6-C — CAPACITÉS : FLORIMOND, LE BARDE CRITIQUE
+
+**Rangs 2–3 · Ressource : MATIÈRE (0–8)**
+
+> **Le problème à résoudre.** Un support dont les buffs coûtent de la Rouspétance n'a aucune raison d'exister si la Rouspétance est uniquement une punition. Florimond n'est jouable qu'à une condition : **il donne au joueur le contrôle de l'engueulade.** Sans lui, la dispute oppose les deux personnages les plus remontés, au hasard. Avec lui, le joueur choisit au moins un des deux protagonistes. Remplir la jauge cesse d'être un accident et devient un plan.
+
+**PASSIF · ÇA ME DONNE DE LA MATIÈRE**
+Chaque échec du groupe — attaque ratée, critique reçu, coffre vide, piège déclenché — donne +1 Matière (max 8). La Matière se conserve entre les combats d'un même run et se vide au camp.
+> *Il ne prend pas de notes. Il n'en a pas besoin.*
+
+**REMARQUE APPUYÉE** — Rangs 2–3 → un allié · Coût : 1 Matière
++35 % de dégâts pendant 2 tours sur l'allié ciblé. +15 Rouspétance sur ce même allié.
+> *Il ne dit jamais que c'était nul. Il dit que c'était courageux d'essayer.*
+
+**TU VAS PAS ME REFAIRE LE COUP** — Rangs 2–3 → un allié · Coût : 2 Matière
+La prochaine attaque de l'allié ne peut pas rater. Si elle touche, Florimond gagne +2 Matière. Si l'allié était déjà au-dessus de 60 de Rouspétance, l'attaque inflige aussi +50 % de dégâts.
+> *La menace n'est pas explicite. Elle n'a jamais besoin de l'être.*
+
+**COMPLIMENT INVOLONTAIRE** — Rangs 2–3 → un allié · 1 fois par combat
+−20 Rouspétance sur l'allié ciblé. +10 Rouspétance sur Florimond.
+> *Il a dit quelque chose de gentil. Il s'est repris tout de suite, mais c'était sorti.*
+
+**ENVENIMER** — Rangs 2–3 → deux alliés · Coût : 3 Matière
++25 Rouspétance sur les deux cibles. Si l'une d'elles atteint 100 pendant les 3 tours suivants, **le joueur désigne le second participant de l'Engueulade** au lieu de le subir.
+> *Florimond ne déclenche pas les disputes. Il les oriente.*
+
+**CHANSON DE GESTE (RÉVISÉE)** — Rangs 2–3 → tout le groupe · Coût : 4 Matière
+Florimond raconte le run en cours, avec ses échecs réels. +20 % de dégâts pendant 3 tours pour tout le groupe, +3 % supplémentaires par incident enregistré dans le run (plafond +45 %). +10 Rouspétance pour tout le monde.
+> *Toutes les strophes sont exactes. C'est précisément le problème.*
+
+**LE MOT DE TROP** — Ultime · 1 fois par run · Coût : toute la Matière (minimum 6)
+Déclenche immédiatement une Engueulade Générale. Le joueur choisit **les deux protagonistes** et **deux résultats** dans la table d8, puis garde celui qu'il préfère. Tous les autres membres : +30 Rouspétance.
+> *Il l'avait préparé. Il l'avait gardé. Il attendait le bon moment, et le bon moment est toujours le pire.*
+
+**Réplique de mort :** « Voilà. Maintenant, plus personne ne vous dira la vérité. »
+
+---
+
+## PIÈCE N°6-D — CAPACITÉS : BEUZELIN, LE ROUBLARD ADMINISTRATIF
+
+**Rangs 3–4 · Ressources : FORMULAIRES (0–5) et LA CAISSE**
+
+> **Le problème à résoudre.** Voler ses propres alliés est une blague à usage unique : à la dixième fois, ce n'est plus un gag, c'est un prélèvement. Le vol ne fonctionne que s'il **convertit** — l'or pris aux alliés ne disparaît pas, il alimente **La Caisse**, une réserve que Beuzelin seul peut dépenser en plein combat. Le joueur n'est pas volé : il est réaffecté. Il déteste quand même ça, mais il comprend pourquoi il le fait.
+
+**PASSIF · FRAIS DE DOSSIER**
+Tout l'or pris par Beuzelin — aux ennemis comme aux alliés — est versé à La Caisse. À la fin du run, le solde de La Caisse rejoint le butin du groupe, **minoré de 15 % de frais de dossier**. Ces 15 % ne sont jamais récupérables et ne sont jamais justifiés.
+> *L'argent n'a pas disparu. Il a changé de ligne budgétaire.*
+
+**PILES DE PROCÉDURE** — mécanique de classe
+Chaque pile ralentit la cible (−1 initiative). À 3 piles, l'ennemi est **convoqué** : il perd son tour et devient inciblable pendant ce tour — il est ailleurs. Les piles persistent jusqu'à la fin du combat.
+
+**SIGNIFICATION** — Rangs 3–4 → cibles 1–4 · Sans coût
+3–6 dégâts. +1 pile de Procédure.
+> *Le document est recevable. Le lancer, un peu moins.*
+
+**MISE EN DEMEURE** — Rangs 3–4 → une cible · Coût : 1 Formulaire
++2 piles de Procédure. Aucun dégât.
+> *Convoqué, pas tué. Il y a une différence, et elle est administrative.*
+
+**PRÉLÈVEMENT À LA SOURCE** — Rangs 3–4 → un allié · Sans coût
+Prend 40 % de l'or porté par un allié et le verse à La Caisse. L'allié : +20 Rouspétance. Beuzelin : +1 Formulaire.
+> *Ce n'est pas du vol. C'est une avance sur la répartition finale.*
+
+**NOTE DE FRAIS** — Action · Dépense de La Caisse
+Au choix : soigner un allié de 15 % (100 po), gagner 1 Formulaire (60 po), ou annuler la prochaine attaque ennemie (200 po). **Chaque usage dans le même combat augmente tous les tarifs de 25 %.**
+> *Tout est remboursable. Rien n'est remboursé.*
+
+**CONTRÔLE INOPINÉ** — Rangs 3–4 → tous les ennemis · Coût : 2 Formulaires
++1 pile de Procédure à tous. Les ennemis porteurs d'or en perdent 25 %, versés à La Caisse. Les gobelins syndiqués répondent par un préavis de grève immédiat — c'est le risque, et il est annoncé dans l'infobulle.
+> *Bonjour. Je ne vous retiendrai pas longtemps. Si.*
+
+**CLASSEMENT SANS SUITE** — Ultime · 1 fois par run · Coût : 3 Formulaires
+Retire définitivement du combat un ennemi non-boss, quel que soit son nombre de PV. Aucun butin, aucune expérience : le dossier est clos, pas gagné. Sur un boss : 3 piles de Procédure et −30 % de dégâts pendant 2 tours.
+> *L'affaire n'a pas été jugée. Elle a été rangée.*
+
+**Réplique de mort :** « Le dossier est dans la sacoche. La sacoche est sur moi. Bon courage. »
+
+---
+
+### SYNERGIE RÉPERTORIÉE — « L'ÉQUIPE DE NUIT »
+
+Florimond et Beuzelin ensemble constituent la composition la plus instable du jeu, et c'est délibéré : le Barde remplit les jauges, le Roublard vide les poches. Chaque Prélèvement à la Source donne de la Matière au Barde (c'est un échec du groupe), et chaque Remarque Appuyée rapproche l'équipe de l'Engueulade que Florimond aura orientée.
+
+Le groupe gagne vite, ou se dissout en quatre tours. Il n'y a pas de troisième issue, et c'est la composition que l'on recommandera dans le tutoriel avancé.
+
+---
+
 ## PIÈCE N°7 — BESTIAIRE (extraits)
 
 **GOBELINS SYNDIQUÉS.** Combattants médiocres, organisation exemplaire. Tuer deux gobelins dans le même tour déclenche un **préavis de grève** : les survivants sautent un tour, puis reviennent à +30 % de dégâts jusqu'à la fin du combat. Le Roublard peut ouvrir une **négociation** (coût : Ferraille) pour lever le préavis. Personne n'aime payer. Tout le monde paie.
