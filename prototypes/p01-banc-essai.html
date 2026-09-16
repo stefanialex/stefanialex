@@ -532,7 +532,14 @@ const BARKS={
   odo:["J'AVAIS DIT QUE J'ÉTAIS FROMAGER.","Je ne suis pas censé être au contact !","Pourquoi c'est toujours moi ?"]},
  mort:{gue:"Bon. Au moins, je ne participe plus.",flo:"Voilà. Maintenant, plus personne ne vous dira la vérité.",
   beu:"Le dossier est dans la sacoche. La sacoche est sur moi. Bon courage.",odo:"J'AVAIS DIT QUE J'ÉTAIS FROMAGER !"},
- gob:["On avait dit pas avant 14 h.","Je suis pas payé pour ça.","Vous avez un rendez-vous ?","C'est noté au registre, ça ?"],
+ gob:["Vous avez un numéro ?","Ce n'est pas ce guichet.","Il fallait venir avant onze heures.",
+  "Je ne peux rien faire sans le tampon.","Le collègue qui s'occupe de ça est en formation.",
+  "On ne traite pas les dossiers incomplets.","Vous auriez dû être convoqués. Vous n'avez pas été convoqués ?",
+  "Moi je veux bien, mais ce n'est pas moi qui fais les règles.",
+  "C'est fermé entre midi et deux. Et entre deux et cinq, c'est sur rendez-vous.",
+  "Repassez lundi. On est lundi. Repassez lundi prochain.",
+  "Votre demande a bien été enregistrée. Elle ne sera pas traitée.",
+  "Ah non. Ça, c'est l'ancien formulaire.","On avait dit pas avant 14 h.","Je suis pas payé pour ça."],
 };
 
 /* ---- registre rôliste : situations de table transposées dans la fiction.
@@ -570,6 +577,31 @@ BARKS.fouille={
  flo:["Il avait des bottes. Il n'en a plus.","Regardez-moi cette qualité de gilet. Non. Ne regardez pas."],
  beu:["Je procède à l'inventaire du défunt.","Deux pièces, un sifflet, une carte de membre. Je consigne.","Ceci relève de la succession. Techniquement."],
  odo:["On a le droit de faire ça ?","Je préfère ne pas regarder.","Il y a quelque chose dans sa poche. C'est mouillé."]};
+
+
+/* ---- registre administratif : des mécaniques, jamais des noms réels.
+   Aucune institution, aucun acronyme, aucune référence datable. ---- */
+BARKS.attente={
+ gue:["Voilà. On attend.","Je suis debout depuis ce matin. Debout.","On m'a dit de patienter. Je patiente."],
+ flo:["On patiente. C'est ce qu'on fait le mieux.","Personne ne bouge. C'est presque reposant.","J'en profite pour ne rien faire, comme tout le monde."],
+ beu:["Le temps d'attente est normal. Il est même prévu au règlement.","Ce délai est incompressible. On me l'a confirmé par écrit.","Nous sommes dans les délais. C'est ça, le pire."],
+ odo:["On peut faire autre chose en attendant ? Non ?","Il se passe quelque chose, là, ou pas ?","Moi j'ai fini, hein."]};
+
+BARKS.convoque={
+ gue:["Il reviendra. Ils reviennent toujours.","Un de moins à l'ordre du jour.","Bon. Ça nous fait des vacances."],
+ flo:["Regardez-le partir. Il croit encore que ça va se régler.","Il est parti chercher un papier. Il ne reviendra pas avec.","Il va faire la queue. C'est déjà une punition."],
+ beu:["Il a rendez-vous. Il ne sait pas encore avec qui.","Convoqué pour complément de dossier. Le dossier n'existe pas.","Il devra revenir avec une pièce qu'on ne délivre plus."],
+ odo:["Il est où, là ?","On a le droit de faire disparaître les gens ?","Il va bien, au moins ?"]};
+
+BARKS.victoire={
+ gue:["On a vidé la salle. Il en reste onze.","Voilà. Personne ne nous remerciera.","On rentre. Sans courir."],
+ flo:["Et maintenant, le meilleur moment : le rapport.","Notez que j'ai contribué. Notez-le vraiment.","On aura tout entendu. Moi surtout."],
+ beu:["Je clôture. Dossier complet, sous réserve des pièces manquantes.","Intervention terminée. Le classement prendra trois jours.","Je rappelle que le solde de La Caisse sera minoré des frais de dossier."],
+ odo:["On peut rentrer ? On peut rentrer ?","J'ai fait des trucs ! Vous avez vu ? J'ai fait des trucs !","Personne n'est mort. Enfin, personne d'important."]};
+
+BARKS.defaite=["Votre dossier est classé sans suite.","Repassez avec les pièces manquantes.",
+ "Vous n'étiez pas sur la liste.","Une notification vous sera adressée. Sous six semaines.",
+ "Le recours est possible. Il n'aboutira pas."];
 
 const ENG_A={
  gue:["%s, ça fait trois tours que je prends tout. Trois.","Je ne dis rien depuis le début. Là, je dis quelque chose, %s.","%s, tu étais où, exactement, pendant que je servais de porte ?","Je vais être clair, %s : je n'ai pas signé pour ça."],
@@ -767,7 +799,8 @@ async function chute(u){
 }
 async function proc(e,n){
   e.proc+=n;log('sys',`${e.nom} : Procédure <b>${e.proc}/3</b>.`);flotte(e,'+'+n+' proc.','rou');rendre();
-  if(e.proc>=3){e.proc=0;e.convoque=1;log('ok',`${e.nom} est convoqué : il perd son tour.`);rendre()}
+  if(e.proc>=3){e.proc=0;e.convoque=1;log('ok',`${e.nom} est convoqué : il perd son tour.`);rendre();
+    await dodo(400);const o=pick(S.heros.filter(a=>!a.mort));if(o)await bark('convoque',o);return}
   await dodo(480);
 }
 
@@ -930,7 +963,8 @@ async function boucle(){
       if(d)await engueulade(d);
       if(u.mort||u.parti)continue;
       S.actif=u;rendre();
-      if(u.saute){u.saute--;phase(`Tour ${S.tour}`,`${u.nom} boude`);log('sys',`<b>${u.nom}</b> boude et passe son tour.`);await dodo(850);continue}
+      if(u.saute){u.saute--;phase(`Tour ${S.tour}`,`${u.nom} boude`);log('sys',`<b>${u.nom}</b> boude et passe son tour.`);await dodo(700);
+        if(Math.random()<.5){const o=pick(S.heros.filter(a=>!a.mort&&a!==u));if(o)await bark('attente',o)}continue}
       if(u.etourdi){u.etourdi--;phase(`Tour ${S.tour}`,`${u.nom} est étourdi`);await dodo(850);continue}
       if(u.convoque){u.convoque--;phase(`Tour ${S.tour}`,`${u.nom} est convoqué`);log('sys',`<b>${u.nom}</b> est ailleurs.`);await dodo(850);continue}
       if(u.rang){
@@ -947,10 +981,13 @@ async function boucle(){
     S.tour++;
   }
 }
-function fin(gagne){
+async function fin(gagne){
   if(S.fini)return;S.fini=true;S.actif=null;rendre();$('couche').innerHTML='';bulleVide();
   phase(gagne?'<b>Salle vidée</b>':'<b>Repli</b>','');
   log(gagne?'ok':'hot',gagne?'Salle vidée. Il reste à rédiger le rapport.':'Le groupe se replie. Personne ne dit rien sur le chemin du retour.');
+  if(gagne){const h=pick(S.heros.filter(x=>!x.mort));if(h)await bark('victoire',h)}
+  else{const e=S.ennemis.find(x=>!x.mort);if(e)await dit(e,pick(BARKS.defaite))}
+  bulleVide();$('couche').innerHTML='';
   const vg=S.choix.filter(c=>c==='x').length,pp=S.choix.length-vg;
   modale(`<h3>${gagne?'Fin de mission':'Repli'}</h3><div class="fin"><dl>
     <dt>Tours joués</dt><dd>${S.tour}</dd>

@@ -117,6 +117,60 @@ Une conclusion désagréable mais nécessaire : ce ton ne s'obtient pas en brief
 
 ---
 
+## PIÈCE N°2-C — BANQUE DE SITUATIONS ADMINISTRATIVES
+
+**Le titre est arrêté : *DONJON & PAPERASSE*.** Il est verrouillé, et il porte un avantage qui n'était pas prévu : *Dungeon & Paperwork* fonctionne à l'identique en anglais. Le risque « la traduction tue l'humour », classé Élevé en pièce n°10, descend d'un cran pour tout ce qui relève de ce registre.
+
+> **Règle de non-nommage, non négociable.** Aucune institution réelle, aucun acronyme, aucun sigle, aucun nom de formulaire existant. Trois raisons cumulées : ça date le jeu, ça le fait basculer du sketch, et c'est précisément la part qui ne survivra pas à la localisation.
+>
+> Ce qui est universel n'est pas le nom du guichet, c'est **la forme du blocage**. Un Allemand, un Italien ou un Brésilien reconnaîtra la boucle impossible sans connaître l'administration qui la produit. On écrit donc des **mécaniques**, jamais des références.
+
+### Les douze mécaniques du non-sens administratif
+
+| Mécanique | Ce qu'elle produit | Où elle vit déjà dans le jeu |
+|---|---|---|
+| **1. La boucle impossible** | Le document A exige le document B, qui n'est délivré que sur présentation du document A | Le Bureau des Réclamations exige un formulaire de réclamation, qu'il est le seul à délivrer |
+| **2. Le renvoi** | « Ce n'est pas mon service » — répété par chaque service | Les gobelins syndiqués se renvoient le joueur entre eux, en cercle |
+| **3. L'horaire hostile** | Ouvert quand vous travaillez, fermé quand vous arrivez | Le système des Horaires du biome 1 ; le Bureau ouvre à 18 h et ferme à 18 h 05 |
+| **4. Le justificatif du justificatif** | Il faut prouver qu'on a le droit de demander la preuve | Un objet réclame sa preuve d'achat, laquelle est fournie avec l'objet |
+| **5. Le formulaire abrogé, toujours exigé** | Plus en vigueur, mais sans lui rien n'avance | La Note de service n°4417 : personne ne l'a lue, tout le monde l'applique |
+| **6. Le délai à échéance inconnue** | « Avant le 31. » — Le 31 de quoi ? | Vermicule et son formulaire D-12 |
+| **7. La règle non écrite, appliquée strictement** | Elle n'existe nulle part ; la demander ne la produit pas | Les gobelins invoquent des articles introuvables et s'y tiennent |
+| **8. Le dossier jamais reçu** | Il a été envoyé. Il n'est pas arrivé. Personne n'est responsable | La jauge de Suspicion et le contrôle qui en découle |
+| **9. Le silence qui vaut décision** | Sans réponse, c'est accepté. Ou refusé. Selon le cas | Une salle d'événement où ne rien faire produit un effet, révélé après coup |
+| **10. L'interlocuteur unique, absent** | Une seule personne peut traiter le dossier. Elle est en formation | Frère Anselme : cité partout, jamais présent, remplacé par un intérimaire |
+| **11. La pièce complémentaire après clôture** | Le dossier est clos, il manque une pièce | Dame Perrine réclame un consommable une fois le combat terminé |
+| **12. « Il fallait le signaler avant »** | Avant quoi — jamais précisé | Réplique récurrente des gobelins, jamais explicitée |
+
+### Le gobelin syndiqué comme incarnation du guichet
+
+C'est l'ennemi le plus fréquent du jeu, donc celui qu'on entend le plus. Son registre est désormais fixé : **il ne menace jamais, il oppose une procédure.** Il n'est pas hostile, il est indifférent, et c'est bien pire. Extraits du pool implémenté dans le prototype :
+
+> « Vous avez un numéro ? »
+> « Ce n'est pas ce guichet. »
+> « Le collègue qui s'occupe de ça est en formation. »
+> « Moi je veux bien, mais ce n'est pas moi qui fais les règles. »
+> « Repassez lundi. On est lundi. Repassez lundi prochain. »
+> « Votre demande a bien été enregistrée. Elle ne sera pas traitée. »
+> « Ah non. Ça, c'est l'ancien formulaire. »
+
+Et en cas de défaite du groupe, c'est un gobelin qui prononce la dernière réplique du combat — jamais un héros :
+
+> « Votre dossier est classé sans suite. »
+> « Une notification vous sera adressée. Sous six semaines. »
+
+### Deux registres à tenir séparés
+
+Le document distingue désormais trois sources d'humour, et elles ne doivent pas se mélanger dans une même réplique :
+
+1. **L'administratif** — porté par les ennemis, les institutions, les objets. Impersonnel, froid, indifférent.
+2. **Le rôliste** — porté par le groupe. Il porte sur l'échec, la série noire, le pillage, le plan raté.
+3. **Le domestique** — porté par les personnages entre eux. La fatigue, la rancune, le repas, l'heure qu'il est.
+
+Une réplique qui tient les trois à la fois n'est pas trois fois plus drôle : elle est illisible. **Un registre par réplique.**
+
+---
+
 ## PIÈCE N°3 — BOUCLE DE JEU
 
 ### Vue d'ensemble (un run = 25 à 40 minutes)
