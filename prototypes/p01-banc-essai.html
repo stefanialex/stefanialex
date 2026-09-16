@@ -437,9 +437,15 @@ const FIG={
 /* ================= décor ================= */
 function poserDecor(){
   $('decor').innerHTML=`<style>
-    .flamme{transform-origin:center bottom;animation:flam .5s ease-in-out infinite alternate}
-    .flamme.b{animation-duration:.66s}
-    @keyframes flam{to{transform:scaleY(1.22) scaleX(.9) translateY(-1px)}}
+    /* transform-box:fill-box est indispensable : sans lui, transform-origin
+       se résout sur le viewBox entier et la flamme se déplace au lieu de vaciller. */
+    .flamme{transform-box:fill-box;transform-origin:50% 100%;animation:flam 1.9s ease-in-out infinite}
+    .flamme.b{animation-duration:2.4s;animation-delay:-.8s}
+    @keyframes flam{0%,100%{transform:scaleY(1) scaleX(1)}
+      32%{transform:scaleY(1.07) scaleX(.975)}64%{transform:scaleY(.965) scaleX(1.025)}}
+    .halo{transform-box:fill-box;animation:halofeu 2.6s ease-in-out infinite}
+    .halo.b{animation-duration:3.4s;animation-delay:-1.3s}
+    @keyframes halofeu{0%,100%{opacity:.5}44%{opacity:.82}}
   </style>
   <svg viewBox="0 0 800 400" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
    <defs>
@@ -449,6 +455,9 @@ function poserDecor(){
       <rect x="32" y="17" width="31" height="16" fill="#2F3827"/>
       <rect x="1" y="17" width="30" height="16" fill="#313A29"/>
     </pattern>
+    <radialGradient id="gFeu"><stop offset="0" stop-color="#FFC24A" stop-opacity=".62"/>
+      <stop offset="55%" stop-color="#FF8F2B" stop-opacity=".2"/>
+      <stop offset="100%" stop-color="#FF8F2B" stop-opacity="0"/></radialGradient>
    </defs>
    <rect width="800" height="400" fill="url(#pierre)"/>
    <rect width="800" height="400" fill="#0E1209" opacity=".34"/>
@@ -475,12 +484,14 @@ function poserDecor(){
    </g>
    <!-- torches -->
    <g transform="translate(140,120)">
+     <circle class="halo" cx="0" cy="-16" r="72" fill="url(#gFeu)"/>
      <rect x="-5" y="0" width="10" height="34" fill="#4A4032" stroke="#231D14" stroke-width="2"/>
      <ellipse cx="0" cy="0" rx="12" ry="7" fill="#2A2418" stroke="#231D14" stroke-width="2"/>
      <g class="flamme"><path d="M0 -34 q13 16 0 32 q-13 -16 0 -32z" fill="#FF9A2B" opacity=".92"/>
      <path d="M0 -22 q7 10 0 20 q-7 -10 0 -20z" fill="#FFE07A"/></g>
    </g>
    <g transform="translate(660,120)">
+     <circle class="halo b" cx="0" cy="-15" r="66" fill="url(#gFeu)"/>
      <rect x="-5" y="0" width="10" height="34" fill="#4A4032" stroke="#231D14" stroke-width="2"/>
      <ellipse cx="0" cy="0" rx="12" ry="7" fill="#2A2418" stroke="#231D14" stroke-width="2"/>
      <g class="flamme b"><path d="M0 -32 q12 15 0 30 q-12 -15 0 -30z" fill="#FF9A2B" opacity=".92"/>
@@ -986,7 +997,7 @@ function rapport(gagne){
     <div class="champ"><label>Remarque libre (facultatif)</label>
       <input id="rRem" maxlength="180" placeholder="ce qui vous a gêné, ce qui vous a fait rire"></div>
     <div class="btns"><button class="act primaire" data-c="ok">Établir le rapport</button></div>`,
-  ()=>{
+  async ()=>{
     const v=n=>document.querySelector(`input[name="${n}"]:checked`).value;
     const t=[
       "■ RAPPORT D'INCIDENT — DONJON & PAPERASSE (banc d'essai 01)",
@@ -1002,8 +1013,27 @@ function rapport(gagne){
       "Relancerait : "+v('rRej'),
       "Remarque : "+((document.getElementById('rRem').value||'—').trim()),
     ].join("\n");
-    modale(`<h3>Rapport établi</h3>
-      <p class="l" style="font-size:14.5px;margin-bottom:10px">Copiez ce bloc et collez-le dans le salon Discord. C'est tout.</p>
+    const brut={agent:(document.getElementById('rNom').value||'').trim(),
+      issue:gagne?'victoire':'repli',tours:S.tour,minutes:Math.round((Date.now()-S.debut)/60000),
+      engueulades:S.nbEng,vosGueules:S.choix.filter(c=>c==='x').length,
+      partisPris:S.choix.length-S.choix.filter(c=>c==='x').length,
+      rates:S.nbRate,survivants:S.heros.filter(h=>!h.mort).length,
+      lignes:S.lignes,lues:lus,pourcentLues:pc,journal:journalOuvert,rythme:mode,
+      citation:(document.getElementById('rCit').value||'').trim(),
+      decrochage:v('rDec'),relancerait:v('rRej'),
+      remarque:(document.getElementById('rRem').value||'').trim(),texte:t};
+    /* Si la page est servie par un serveur à nous, on envoie le rapport tout seul.
+       Sur claude.ai l'appel échoue sans bruit et on retombe sur le copier-coller. */
+    let envoye=false;
+    try{
+      const r=await fetch('rapport',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(brut)});
+      envoye=r.ok;
+    }catch(e){}
+    modale(`<h3>Rapport ${envoye?'transmis':'établi'}</h3>
+      <p class="l" style="font-size:14.5px;margin-bottom:10px">${envoye
+        ?'Le rapport a été transmis au service compétent. Vous n\'avez plus rien à faire.'
+        :'Copiez ce bloc et collez-le dans le salon Discord. C\'est tout.'}</p>
       <textarea class="rap" id="rTxt" readonly>${t.replace(/</g,'&lt;')}</textarea>
       <div class="btns" style="margin-top:12px">
         <button class="act primaire" data-c="cp">Copier le rapport</button>
