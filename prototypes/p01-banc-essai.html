@@ -1,4 +1,4 @@
-<title>Engueulade Générale</title>
+<title>Donjon &amp; Paperasse</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:ital,wght@0,500;0,700;1,400&family=Spectral:ital,wght@0,400;0,500;1,400&family=Courier+Prime:wght@400;700&display=swap">
@@ -35,6 +35,11 @@ body{
   padding-block:16px 12px;border-bottom:2px solid var(--line2)}
 .barre h1{font-family:var(--slab);font-size:17px;font-weight:700;margin:0;letter-spacing:-.01em}
 .barre h1 em{font-style:normal;color:var(--acc)}
+.ident{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px}
+.barre h1{font-family:var(--slab);font-size:22px;font-weight:700;margin:0;letter-spacing:-.015em}
+.barre .etape{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);border:1px solid var(--line2);padding:3px 7px;white-space:nowrap}
+
 .cpts{display:flex;gap:14px;font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.06em}
 .cpts b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
 .vitesse{display:flex;border:1px solid var(--line2)}
@@ -276,7 +281,10 @@ details.jr[open] summary{border-bottom:1px solid var(--line)}
 
 <div class="jeu">
   <div class="barre">
-    <h1>Banc d'essai <em>01</em> — l'Engueulade</h1>
+    <div class="ident">
+      <h1>Donjon <em>&amp;</em> Paperasse</h1>
+      <span class="etape">banc d'essai 01 · l'engueulade</span>
+    </div>
     <div class="cpts">
       <span>tour <b id="cTour">1</b></span>
       <span>engueulades <b id="cEng">0</b></span>
