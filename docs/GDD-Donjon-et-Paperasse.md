@@ -319,6 +319,158 @@ Le groupe gagne vite, ou se dissout en quatre tours. Il n'y a pas de troisième 
 
 ---
 
+## PIÈCE N°6-E — MÉTA-PROGRESSION : L'EFFECTIF DÉBLOCABLE
+
+> **Doctrine.** Une classe débloquable qui est simplement plus forte rend les quatre classes de départ obsolètes, et le joueur cesse de jouer les trois quarts du jeu qu'on a construit. Règle appliquée ici : **chaque classe débloquable confisque un système actuellement orphelin** — le Moral, les pièges hors service, la mort des personnages, le rapport de fin de run — au lieu d'augmenter le plafond de dégâts. Aucune n'est meilleure que les quatre de base. Toutes changent la façon dont on joue un run.
+>
+> Corollaire sur les conditions de déblocage : elles vérifient qu'on a **compris** un système, jamais qu'on a joué longtemps. Un déblocage à la durée est un abonnement, pas une récompense.
+
+| Classe | Système confisqué | Condition de déblocage |
+|---|---|---|
+| **L'Aumônier intérimaire** | Le Moral collectif | Terminer un run avec les quatre membres au-dessus de 80 de Rouspétance — *« quelqu'un a signalé l'ambiance »* |
+| **Le Géomètre assermenté** | Les pièges et la carte | Déclencher 20 pièges hors service — *« un signalement a été transmis au cadastre »* |
+| **Maître Gisèle, notaire** | La mort des personnages | Perdre trois personnages dans un même run — *« il y a des formalités »* |
+| **Le Stagiaire** | Le rapport de fin de run | Résoudre Vermicule par le formulaire D-12 — *« il a lu le dossier. Il a trouvé ça passionnant »* |
+
+---
+
+## PIÈCE N°6-F — FRÈRE COLAS, L'AUMÔNIER INTÉRIMAIRE
+
+**Rangs 2–3 · Ressource : FOI (0–4)**
+
+Il remplace Frère Anselme, parti en formation. Il ne sait pas exactement pour combien de temps, ni pour quelle divinité — le diocèse n'a pas été clair. C'est le premier soigneur du jeu, et il peut démissionner en cours de run.
+
+**PASSIF · CONTRAT À DURÉE DÉTERMINÉE**
+Colas gagne +1 Foi chaque fois qu'un allié passe sous 30 % de PV — il n'est utile que quand ça va mal, et il le sait. Il n'a pas de jauge de Rouspétance : il a un compteur de **Fin de Mission**. À la fin de chaque étage, 20 % de chances qu'il annonce que sa mission s'achève et qu'il quitte le run.
+> *Il est là jusqu'à nouvel ordre. L'ordre peut tomber n'importe quand.*
+
+**BÉNÉDICTION SOUS RÉSERVE** — Rangs 2–3 → un allié · Sans coût
+Soigne 20 % des PV, +5 % par point de Foi.
+> *Il bénit. Il précise ensuite qu'il n'est pas habilité.*
+
+**MÉDIATION** — Pendant une Engueulade Générale · Coût : 1 Foi
+Met fin à l'Engueulade immédiatement, sans jet et sans aucun effet. Moral −20.
+> *Il a désamorcé la dispute. C'était la meilleure partie de la journée.*
+
+**SERMON DE CIRCONSTANCE** — Rangs 2–3 → tout le groupe · Coût : 2 Foi
+Moral +25. Mais tout allié déjà au-dessus de 50 de Rouspétance gagne +10 Rouspétance au lieu du bénéfice.
+> *Il a préparé trois sermons. Il choisit systématiquement le mauvais.*
+
+**ALORS MOI JE NE SUIS PAS CENSÉ FAIRE ÇA** — 1 fois par run · Coût : 3 Foi
+Relève un allié à terre avec 20 % de ses PV. Tout le groupe : +25 Rouspétance — ils ont vu.
+> *Personne ne doit le savoir. Tout le monde l'a vu.*
+
+**PRIÈRE POUR LE MATÉRIEL** — 1 fois par run · Sans coût
+Restaure un consommable déjà utilisé, ou répare un équipement endommagé.
+> *Il prie surtout pour la charrette.*
+
+**Réplique de mort :** « Je ne devais rester qu'une semaine. »
+
+> **Note de design.** Colas est l'anti-Florimond, frontalement : l'un vend l'engueulade au joueur, l'autre la lui confisque. Les avoir tous les deux dans la même formation est jouable, coûteux, et c'est exactement la conversation qu'on veut voir sur les forums.
+
+---
+
+## PIÈCE N°6-G — JOSSELIN, LE GÉOMÈTRE ASSERMENTÉ
+
+**Rangs 2–4 · Ressource : RELEVÉS (0–6)**
+
+Il n'a pas été envoyé se battre. Il a été envoyé constater. Il constate, effectivement, et signale à voix haute chaque défaut de construction du donjon, dont il est le seul à être sincèrement affecté.
+
+**PASSIF · TOUT EST DE TRAVERS**
+Révèle en permanence les deux prochains nœuds de la carte **et leur contenu**. +1 Relevé à chaque nouvelle salle visitée, +1 supplémentaire par piège désamorcé.
+> *Le donjon penche de trois degrés vers le sud. Il en parlera.*
+
+**JALON** — Rangs 2–4 → cibles 1–4 · Sans coût
+4–8 dégâts. Repousse la cible d'un rang vers l'arrière.
+> *L'instrument est un outil de mesure. Il fait néanmoins un bruit très satisfaisant.*
+
+**NON-CONFORMITÉ DE PLACEMENT** — Rangs 2–4 → formation ennemie · Coût : 2 Relevés
+Réorganise entièrement les rangs adverses. Les lanceurs se retrouvent devant, les brutes derrière.
+> *Leur disposition n'est pas réglementaire. Il corrige.*
+
+**REMISE EN SERVICE** — Salles à piège uniquement · Coût : 3 Relevés
+Répare le piège hors service de la salle et le retourne contre les ennemis : 12–20 dégâts de zone. Une fois par salle.
+> *Le piège fonctionnait très bien. Il manquait juste l'entretien.*
+
+**CONDAMNATION DE SALLE** — Hors combat · Coût : 4 Relevés
+Déclare une salle non conforme : elle disparaît de la carte. On perd son butin, on évite son contenu.
+> *Il ne l'a pas vidée. Il l'a fermée.*
+
+**LEVÉ TOPOGRAPHIQUE** — Ultime · 1 fois par run · Coût : tous les Relevés (min. 5)
+Révèle l'étage entier, boss et phases compris. +2 initiative pour tout le groupe au prochain combat.
+> *Il a tout mesuré. Il est le seul à savoir ce qu'il y a derrière le mur ouest, et ça le rend insupportable.*
+
+**Réplique de mort :** « La cote de 4,20 m… était fausse… »
+
+---
+
+## PIÈCE N°6-H — MAÎTRE GISÈLE, NOTAIRE DE CAMPAGNE
+
+**Rangs 3–4 · Ressource : SUCCESSIONS (0–3)**
+
+Elle a pris les mesures de tout le monde dès le premier jour. Elle n'est pas macabre : elle est prévoyante, et elle trouve que la distinction est évidente. C'est la seule classe du jeu pour qui un allié à terre est un actif.
+
+**PASSIF · TESTAMENT ANTICIPÉ**
+Au début de chaque combat, Gisèle enregistre les dernières volontés d'un allié désigné par le joueur. Si cet allié tombe, elle **hérite d'une de ses capacités** jusqu'à la fin du combat et gagne +1 Succession.
+> *Ce n'est pas un mauvais présage. C'est une bonne pratique.*
+
+**CLAUSE DE SAUVEGARDE** — 1 fois par run · Sans coût
+Un allié à terre est relevé à 10 % de ses PV.
+> *Le décès n'est pas constaté tant que le document n'est pas signé.*
+
+**PARTAGE** — Rangs 3–4 → tout le groupe · Coût : 1 Succession
+Redistribue équitablement tous les buffs et débuffs du groupe entre ses quatre membres.
+> *Personne n'est content. C'est comme ça qu'on sait que c'est équitable.*
+
+**INDIVISION** — Rangs 3–4 → deux alliés · Coût : 2 Successions
+Pendant 3 tours, les deux cibles partagent une réserve de PV commune et encaissent tous les dégâts à parts égales.
+> *Techniquement, ce ne sont plus deux personnes. Techniquement.*
+
+**LIQUIDATION DE SUCCESSION** — Coût : 3 Successions
+Retire **définitivement** un allié à terre de l'effectif — il ne revient pas au camp — et convertit ses biens : 40–70 dégâts sur tous les ennemis, et tout son or versé à La Caisse.
+> *Il ne reviendra pas. Ses affaires, si.*
+
+**ACTE AUTHENTIQUE** — Ultime · 1 fois par run · Coût : 2 Successions
+Fige l'état du combat pendant un tour complet : aucun point de vie ne peut être perdu, des deux côtés.
+> *Rien ne bouge tant que tout le monde n'a pas paraphé chaque page.*
+
+**Réplique de mort :** « Ma propre succession… est en ordre. Évidemment. »
+
+---
+
+## PIÈCE N°6-I — AUBIN, LE STAGIAIRE
+
+**Tous rangs · Ressource : ZÈLE (0–10) · Non rémunéré**
+
+La classe la plus dangereuse du jeu, et celle qui commence avec le moins. Aubin ne sait rien faire. Aubin apprend vite. C'est un problème que personne n'avait anticipé.
+
+**PASSIF · APPRENTISSAGE SUR LE TAS**
+Aubin commence chaque run **sans aucune capacité offensive**. Chaque fois qu'un allié utilise trois fois la même capacité devant lui, Aubin l'acquiert, à 60 % de sa puissance. Maximum quatre capacités apprises par run.
+Il n'a pas de jauge de Rouspétance : il ne se plaint jamais. En contrepartie, **tous les autres membres gagnent +5 Rouspétance par tour** tant qu'Aubin est en vie.
+> *Il est ravi d'être là. C'est insoutenable.*
+
+**JE PEUX AIDER ?** — Tous rangs → cibles 1–4 · Sans coût · Seule capacité de départ
+1–2 dégâts. +2 Zèle. Si le coup tue un ennemi : +5 Zèle, et tous les alliés +15 Rouspétance.
+> *Il a porté le coup fatal. Il ne sait pas encore que c'est un problème.*
+
+**INITIATIVE MALHEUREUSE** — Coût : 3 Zèle
+Aubin agit immédiatement, hors de son tour, avec une capacité apprise. 25 % de chances qu'il choisisse la mauvaise cible.
+> *Il n'a pas attendu qu'on lui demande. On ne lui demande jamais rien.*
+
+**NOTES DU STAGIAIRE** — Coût : 5 Zèle
+Acquiert immédiatement une capacité alliée, sans attendre les trois usages.
+> *Il prend des notes. Beaucoup de notes. Sur tout le monde.*
+
+**RAPPORT DE STAGE** — Fin de run · Automatique
+Si Aubin survit au run : +50 % de Paperasse. S'il meurt : le groupe perd **la totalité** de la Paperasse du run. Il y a une enquête.
+> *C'est le seul document que personne ne veut avoir à rédiger.*
+
+**Réplique de mort :** « Est-ce que ça compte quand même pour la convention ? »
+
+> **Note de design.** Aubin n'est pas une classe plus forte, c'est un **échange de tempo** : un emplacement de formation gaspillé pendant le premier tiers du run, la meilleure unité du terrain sur le dernier. Le joueur qui le prend accepte de mal jouer pendant dix minutes. S'il finit la campagne avec Aubin vivant, l'épilogue est qu'il est embauché — et qu'il remplace le seigneur Aymeric.
+
+---
+
 ## PIÈCE N°7 — BESTIAIRE (extraits)
 
 **GOBELINS SYNDIQUÉS.** Combattants médiocres, organisation exemplaire. Tuer deux gobelins dans le même tour déclenche un **préavis de grève** : les survivants sautent un tour, puis reviennent à +30 % de dégâts jusqu'à la fin du combat. Le Roublard peut ouvrir une **négociation** (coût : Ferraille) pour lever le préavis. Personne n'aime payer. Tout le monde paie.
