@@ -253,6 +253,24 @@ details.jr[open] summary{border-bottom:1px solid var(--line)}
 .crit b{color:var(--ink)}
 .avis{font-family:var(--mono);font-size:11.5px;color:var(--dim);line-height:1.7;border:1px dashed var(--line2);padding:10px 12px;margin:12px 0 0}
 .avis b{color:var(--ink)}
+
+/* ---------- rapport ---------- */
+.champ{margin:0 0 12px}
+.champ label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--dim);margin-bottom:4px}
+.champ input,.champ textarea,.champ select{
+  width:100%;font-family:var(--serif);font-size:15px;color:var(--ink);
+  background:var(--pap);border:1px solid var(--line2);padding:8px 10px;border-radius:0}
+.champ textarea{min-height:64px;resize:vertical}
+.champ input:focus,.champ textarea:focus,.champ select:focus{outline:2px solid var(--acc);outline-offset:-1px}
+.radios{display:flex;flex-wrap:wrap;gap:6px}
+.radios label{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;
+  letter-spacing:.04em;text-transform:none;color:var(--ink);border:1px solid var(--line2);
+  padding:6px 10px;cursor:pointer;margin:0}
+.radios input{width:auto}
+.rap{width:100%;min-height:210px;font-family:var(--mono);font-size:12px;line-height:1.55;
+  background:var(--pap);color:var(--ink);border:1px solid var(--line2);padding:10px;resize:vertical}
+
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
@@ -625,7 +643,7 @@ const D8=[
 ];
 
 /* ================= rythme ================= */
-let mode='normal',resoudre=null,minuteur=null,finTexte=null;
+let mode='normal',resoudre=null,minuteur=null,finTexte=null,journalOuvert=false;
 function duree(t){const b=900+(t?t.length*22:0);return mode==='rapide'?b*.55:b}
 function attendre(ms){
   return new Promise(res=>{
@@ -652,10 +670,10 @@ function machine(bulle,txt){
     if(RM){n.textContent=txt;bulle.classList.add('fini');return res()}
     let i=0;const v=mode==='rapide'?9:21;
     $('couche').innerHTML='<div class="avance" id="avc"></div>';
-    const fin=()=>{clearInterval(t);finTexte=null;n.textContent=txt;bulle.classList.add('fini');
-      $('couche').innerHTML='';res()};
-    finTexte=fin;$('avc').onclick=fin;
-    const t=setInterval(()=>{n.textContent=txt.slice(0,++i);if(i>=txt.length)fin()},v);
+    const fin=saute=>{clearInterval(t);finTexte=null;n.textContent=txt;bulle.classList.add('fini');
+      if(saute&&S)S.sautees++;$('couche').innerHTML='';res()};
+    finTexte=()=>fin(true);$('avc').onclick=()=>fin(true);
+    const t=setInterval(()=>{n.textContent=txt.slice(0,++i);if(i>=txt.length)fin(false)},v);
   });
 }
 
@@ -664,7 +682,9 @@ let S;
 async function init(){
   S={heros:HEROS.map(h=>({...h,pv:h.pvm,rousp:0,mort:false,buff:0,saute:0,critG:0,coal:0,parti:0,comp:null})),
      ennemis:[0,1,2].map(i=>({id:'g'+i,nom:'Gobelin '+(i+1),fig:'gob',pv:26,pvm:26,mort:false,proc:0,etourdi:0,convoque:0})),
-     tour:1,file:[],actif:null,nbEng:0,nbRate:0,serie:0,choix:[],buffG:null,esq:0,oriente:false,fini:false};
+     tour:1,file:[],actif:null,nbEng:0,nbRate:0,serie:0,choix:[],buffG:null,esq:0,oriente:false,fini:false,
+     lignes:0,sautees:0,debut:Date.now()};
+  journalOuvert=false;
   $('journal').innerHTML='';$('modale').innerHTML='';$('couche').innerHTML='';
   poserDecor();
   log('sys',"<b>Combat.</b> Quatre incapables, trois gobelins syndiqués. Objectif : vider la salle. Motif : la belle-mère du seigneur arrive dans trois semaines.");
@@ -718,7 +738,7 @@ async function dit(u,txt){
     b.innerHTML=`<div class="qui">${FIG[u.fig||u.id]}${u.nom}</div><span class="txt"></span>`;
     f.appendChild(b);
   }
-  log('',`<span class="sp">${u.nom}</span>${txt}`);
+  log('',`<span class="sp">${u.nom}</span>${txt}`);S.lignes++;
   if(b)await machine(b,txt);
   await attendre(duree(txt));
   bulleVide();
@@ -942,6 +962,67 @@ async function tirer(a,b,relance){
   r.f(S,a,b);log('hot',`d8 → <b>${r.n}</b>. ${r.t}`);rendre();await dodo(400);
 }
 
+
+/* ================= rapport d'incident ================= */
+function rapport(gagne){
+  const lus=S.lignes-S.sautees, pc=S.lignes?Math.round(lus/S.lignes*100):0;
+  modale(`<h3>Rapport d'incident — à remplir en un exemplaire</h3>
+    <div class="champ"><label>Nom de l'agent</label><input id="rNom" maxlength="30" placeholder="prénom, pseudo, matricule"></div>
+    <div class="champ"><label>Sans rouvrir le journal : citez une réplique</label>
+      <textarea id="rCit" maxlength="240" placeholder="même approximative — ou laissez vide si aucune ne revient"></textarea></div>
+    <div class="champ"><label>À quel moment avez-vous décroché ?</label>
+      <div class="radios">
+        <label><input type="radio" name="rDec" value="jamais" checked> jamais</label>
+        <label><input type="radio" name="rDec" value="dès le début"> dès le début</label>
+        <label><input type="radio" name="rDec" value="au milieu"> au milieu</label>
+        <label><input type="radio" name="rDec" value="vers la fin"> vers la fin</label>
+      </div></div>
+    <div class="champ"><label>Vous relanceriez une partie ?</label>
+      <div class="radios">
+        <label><input type="radio" name="rRej" value="oui" checked> oui</label>
+        <label><input type="radio" name="rRej" value="non"> non</label>
+        <label><input type="radio" name="rRej" value="peut-être"> peut-être</label>
+      </div></div>
+    <div class="champ"><label>Remarque libre (facultatif)</label>
+      <input id="rRem" maxlength="180" placeholder="ce qui vous a gêné, ce qui vous a fait rire"></div>
+    <div class="btns"><button class="act primaire" data-c="ok">Établir le rapport</button></div>`,
+  ()=>{
+    const v=n=>document.querySelector(`input[name="${n}"]:checked`).value;
+    const t=[
+      "■ RAPPORT D'INCIDENT — DONJON & PAPERASSE (banc d'essai 01)",
+      "Agent : "+((document.getElementById('rNom').value||'non renseigné').trim()),
+      "Issue : "+(gagne?'salle vidée':'repli')+" · "+S.tour+" tours · "+Math.round((Date.now()-S.debut)/60000)+" min",
+      "Engueulades : "+S.nbEng+"  (« vos gueules » : "+S.choix.filter(c=>c==='x').length+" · partis pris : "+(S.choix.length-S.choix.filter(c=>c==='x').length)+")",
+      "Ratés : "+S.nbRate+" · Survivants : "+S.heros.filter(h=>!h.mort).length+"/4",
+      "Répliques affichées : "+S.lignes+" — lues en entier : "+lus+" ("+pc+" %)",
+      "Journal rouvert : "+(journalOuvert?'oui':'non')+" · Rythme : "+mode,
+      "—",
+      "Réplique citée : "+((document.getElementById('rCit').value||'AUCUNE').trim()),
+      "Décrochage : "+v('rDec'),
+      "Relancerait : "+v('rRej'),
+      "Remarque : "+((document.getElementById('rRem').value||'—').trim()),
+    ].join("\n");
+    modale(`<h3>Rapport établi</h3>
+      <p class="l" style="font-size:14.5px;margin-bottom:10px">Copiez ce bloc et collez-le dans le salon Discord. C'est tout.</p>
+      <textarea class="rap" id="rTxt" readonly>${t.replace(/</g,'&lt;')}</textarea>
+      <div class="btns" style="margin-top:12px">
+        <button class="act primaire" data-c="cp">Copier le rapport</button>
+        <button class="act" data-c="go">Relancer un combat</button></div>`,
+    b=>{
+      if(b.dataset.c==='cp'){
+        const z=document.getElementById('rTxt');z.focus();z.select();
+        let ok=false;
+        try{ok=document.execCommand('copy')}catch(e){}
+        if(navigator.clipboard&&navigator.clipboard.writeText)
+          navigator.clipboard.writeText(t).then(()=>{b.textContent='Copié'},()=>{});
+        b.textContent=ok?'Copié':'Sélectionné — Ctrl/Cmd + C';
+        return;
+      }
+      $('modale').innerHTML='';init();
+    });
+  });
+}
+
 /* ================= boucle ================= */
 async function boucle(){
   while(!S.fini){
@@ -998,8 +1079,11 @@ async function fin(gagne){
     <dt>Survivants</dt><dd>${S.heros.filter(h=>!h.mort).length}/4</dd></dl>
     <p class="crit"><b>Critère du banc d'essai.</b> Journal fermé : pouvez-vous citer une réplique ?
     Si personne n'en retient une seule après trois combats, la mécanique ne porte pas le jeu — on ne l'ajuste pas, on la remplace.</p></div>
-    <div class="btns"><button class="act primaire" data-c="go">Relancer un combat</button></div>`,
-    ()=>{$('modale').innerHTML='';init()});
+    <div class="btns">
+      <button class="act primaire" data-c="rap">Remplir le rapport d'incident<span>Deux minutes. C'est la seule donnée qui compte.</span></button>
+      <button class="act" data-c="go">Relancer un combat</button></div>`,
+    b=>{if(b.dataset.c==='rap')return rapport(gagne);$('modale').innerHTML='';init()});
 }
+document.querySelector('details.jr').addEventListener('toggle',e=>{if(e.target.open)journalOuvert=true});
 init();
 </script>
