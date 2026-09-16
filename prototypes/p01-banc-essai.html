@@ -386,6 +386,43 @@ const BARKS={
   beu:"Le dossier est dans la sacoche. La sacoche est sur moi. Bon courage.",odo:"J'AVAIS DIT QUE J'ÉTAIS FROMAGER !"},
  gob:["On avait dit pas avant 14 h.","Je suis pas payé pour ça.","Vous avez un rendez-vous ?","C'est noté au registre, ça ?"],
 };
+
+/* ---- registre rôliste : situations de table transposées dans la fiction.
+   Aucun clin d'oeil, aucune mention de dés ni de règles : les personnages
+   ne savent pas qu'ils sont dans un jeu. ---- */
+const PLUS={
+ rate:{gue:["Il a bougé.","Ce n'est pas moi, c'est le placement."],
+  flo:["J'ai annoncé l'intention. L'intention était bonne."],
+  beu:["L'acte est nul. Il a néanmoins été accompli.","Je demande à ce que la tentative figure au registre."],
+  odo:["Je vais recommencer. Pareil, mais mieux."]},
+ crit:{gue:["Voilà ce qui arrive."],
+  flo:["Ne me remerciez pas. Personne n'allait le faire."],
+  beu:["Je précise que c'était calculé.","Exécution conforme au prévisionnel."],
+  odo:["Deux fois de suite ! Personne ne l'a vu venir. Moi non plus."]},
+ tue:{gue:["Il en reste deux. J'ai compté."],
+  flo:["Il manquera à quelqu'un. Probablement."],
+  beu:["Radiation effective immédiatement."],
+  odo:["J'ai visé ! J'ai visé quelque chose !"]}};
+Object.entries(PLUS).forEach(([k,o])=>Object.entries(o).forEach(([i,a])=>BARKS[k][i]=BARKS[k][i].concat(a)));
+
+BARKS.ouverture={
+ gue:["Bon. Comme d'habitude : je prends devant, vous improvisez derrière.","Ils sont trois. Ça devrait aller. Ça ne va jamais.","On avait dit qu'on ne recommençait pas. On recommence."],
+ flo:["Quelqu'un a un plan ? Personne ? Parfait, on est raccord.","J'annonce tout de suite que je ne porterai personne.","Pour la postérité : j'étais contre l'itinéraire."],
+ beu:["Le plan a été distribué hier. En trois exemplaires.","J'ouvre le procès-verbal d'intervention. Heure de début : maintenant.","Je rappelle que toute perte de matériel devra être justifiée."],
+ odo:["Moi j'ai pas eu le plan.","On peut redire l'objectif ? Vite fait ?","Je me mets où, déjà ?"]};
+
+BARKS.poisse={
+ gue:["Trois fois de suite. Trois. Il y a quelqu'un qui truque quelque chose.","À un moment, ça ne relève plus de nous. Ça relève d'une enquête.","J'aimerais qu'on note l'heure. Pour plus tard."],
+ flo:["Ce n'est plus de la malchance, c'est une orientation.","On assiste à quelque chose. Je ne sais pas encore à quoi.","Continuez. Je prends des notes pour la chanson."],
+ beu:["Ce que nous venons de faire ne devrait pas exister.","Je signale une anomalie de série. Elle sera remontée.","Trois échecs consécutifs déclenchent normalement un audit."],
+ odo:["Vous croyez que c'est le lieu ? Moi je crois que c'est le lieu.","Bon. Au moins, ce n'est pas que moi.","Voilà. VOILÀ."]};
+
+BARKS.fouille={
+ gue:["Prends tout. Il ne réclamera pas.","Fouille. On ne va pas laisser ça là.","Vite. Avant que l'autre revienne."],
+ flo:["Il avait des bottes. Il n'en a plus.","Regardez-moi cette qualité de gilet. Non. Ne regardez pas."],
+ beu:["Je procède à l'inventaire du défunt.","Deux pièces, un sifflet, une carte de membre. Je consigne.","Ceci relève de la succession. Techniquement."],
+ odo:["On a le droit de faire ça ?","Je préfère ne pas regarder.","Il y a quelque chose dans sa poche. C'est mouillé."]};
+
 const ENG_A={
  gue:["%s, ça fait trois tours que je prends tout. Trois.","Je ne dis rien depuis le début. Là, je dis quelque chose, %s.","%s, tu étais où, exactement, pendant que je servais de porte ?","Je vais être clair, %s : je n'ai pas signé pour ça."],
  flo:["%s, je vais être honnête, et ça va faire mal.","On peut parler de ce que %s vient de faire ? On peut ?","%s, sur une échelle de un à dix, c'était en dessous.","Je documente, %s. Je documente tout, pour plus tard."],
@@ -432,13 +469,15 @@ $('vM').onclick=()=>setMode('manuel');$('vN').onclick=()=>setMode('normal');$('v
 
 /* ================= état ================= */
 let S;
-function init(){
+async function init(){
   S={heros:HEROS.map(h=>({...h,pv:h.pvm,rousp:0,mort:false,buff:0,saute:0,critG:0,coal:0,parti:0,comp:null})),
      ennemis:[0,1,2].map(i=>({id:'g'+i,nom:'Gobelin '+(i+1),fig:'gob',pv:26,pvm:26,mort:false,proc:0,etourdi:0,convoque:0})),
      tour:1,file:[],actif:null,nbEng:0,nbRate:0,choix:[],buffG:null,esq:0,oriente:false,fini:false};
   $('journal').innerHTML='';$('modale').innerHTML='';$('couche').innerHTML='';
   log('sys',"<b>Combat.</b> Quatre incapables, trois gobelins syndiqués. Objectif : vider la salle. Motif : la belle-mère du seigneur arrive dans trois semaines.");
-  rendre();boucle();
+  rendre();
+  const o=pick(S.heros);await dit(o,pick(BARKS.ouverture[o.id]));
+  boucle();
 }
 function log(c,h){const p=document.createElement('p');p.className='l '+c;p.innerHTML=h;
   $('journal').appendChild(p);$('journal').scrollTop=$('journal').scrollHeight;}
@@ -505,25 +544,27 @@ function phase(g,d){$('phG').innerHTML=g;$('phD').innerHTML=d||''}
 /* ================= règles ================= */
 function rousp(h,n){if(h.mort)return;const av=h.rousp;h.rousp=Math.max(0,Math.min(100,h.rousp+n));
   if(n>0&&h.rousp!==av)flotte(h,'+'+n+' rousp.','rou');}
-function echec(){S.nbRate++;const f=S.heros.find(h=>h.id==='flo');if(f&&!f.mort)f.resv=Math.min(f.resmax,f.resv+1);}
+function echec(){S.nbRate++;S.serie=(S.serie||0)+1;const f=S.heros.find(h=>h.id==='flo');if(f&&!f.mort)f.resv=Math.min(f.resmax,f.resv+1);}
 function degats(h,n){let m=1;if(S.buffG)m*=S.buffG.dmg;if(h.buff>0)m*=1.35;if(h.coal>0)m*=1.5;return Math.max(1,Math.round(n*m))}
 
 async function frapper(h,e,n,critable=true){
   anim(h,'charge');await attendre(RM?120:240);
   const crit=critable&&(h.critG||Math.random()<.12);if(h.critG)h.critG=0;
   let d=degats(h,n);if(crit)d=Math.round(d*1.8);
-  e.pv=Math.max(0,e.pv-d);
+  S.serie=0;e.pv=Math.max(0,e.pv-d);
   anim(e,'frappe');flotte(e,'−'+d,crit?'crit':'deg');
   log('sys',`${h.nom} → ${e.nom} : <b>${d}</b>${crit?' (critique)':''}`);
   rendre();await attendre(700);
   if(crit){rousp(h,-15);await bark('crit',h);}
-  if(e.pv<=0&&!e.mort){e.mort=true;rousp(h,-10);log('ok',`${e.nom} est hors de combat.`);rendre();await bark('tue',h);}
+  if(e.pv<=0&&!e.mort){e.mort=true;rousp(h,-10);log('ok',`${e.nom} est hors de combat.`);rendre();await bark('tue',h);
+    if(Math.random()<.45){const o=pick(S.heros.filter(a=>!a.mort&&a!==h));if(o)await bark('fouille',o);}}
 }
 async function rater(h,e){
   anim(h,'charge');flotte(e||h,'RATÉ','rate');
   log('hot',`${h.nom} rate ${e?e.nom:'sa cible'}.`);
   rousp(h,12);echec();S.heros.forEach(a=>{if(a!==h&&!a.mort)rousp(a,4)});
   rendre();await attendre(560);await bark('rate',h);
+  if((S.serie||0)>=3){S.serie=0;const o=pick(S.heros.filter(a=>!a.mort&&a!==h));if(o)await bark('poisse',o);}
 }
 async function chute(u){
   if(u.pv>0||u.mort)return;

@@ -56,6 +56,67 @@ Un même déclencheur (« attaque ratée d'un allié ») produit quatre lignes t
 
 ---
 
+## PIÈCE N°2-B — GRILLE D'ÉCRITURE : LES MÉCANISMES
+
+> **Position juridique, tranchée une fois pour toutes.** Aucune réplique de *Kaamelott*, *Hero Corp*, ou de quelque œuvre protégée que ce soit, n'entre dans ce jeu — ni citée, ni « adaptée », ni déguisée. Les dialogues sont protégés, les auteurs sont vivants, et le droit français n'offre rien d'équivalent au *fair use* : l'exception de courte citation ne couvre pas un jeu commercial qui réemploie des répliques comme les siennes. Un éditeur fera l'audit avant signature.
+>
+> Ce qui s'emprunte légitimement, ce sont les **mécanismes comiques**. Un procédé n'est pas protégeable ; une réplique l'est. On étudie donc la machine, on n'emporte pas les pièces.
+
+### Les sept mécanismes d'Astier, et ce qu'on en garde
+
+| Mécanisme | Ce qu'il fait | Application dans le jeu |
+|---|---|---|
+| **Le télescopage de registres** | Un langage contemporain, souvent administratif ou managérial, dans un décor qui ne le supporte pas | Vermicule invoque sa convention collective ; Perrine réclame un registre d'entrée |
+| **L'anticlimax** | La tension monte, puis retombe sur un détail domestique ou une question de procédure | Toute scène de boss doit se terminer sur un problème de calendrier, jamais sur un cri de guerre |
+| **Le dialogue de sourds** | Deux personnages tiennent deux conversations différentes sans s'en apercevoir | Odon répond systématiquement à une question que personne n'a posée |
+| **Le déraillement** | Une discussion importante part sur un détail secondaire et n'y revient jamais | Les Engueulades doivent bifurquer, pas se résoudre |
+| **L'incompétent en position d'autorité** | Le pouvoir est détenu par quelqu'un qui ne le mérite pas et le sait | Le seigneur Aymeric, Grzznak, Frère Colas |
+| **Le silence** | Le temps mort fait la moitié du travail comique | Techniquement imposé : un pool de barks épuisé se tait, il ne se répète pas |
+| **La répétition excédée** | La même chose, redite, une fois de trop | Les barks de série (3 ratés d'affilée) sont construits là-dessus |
+
+### Ce que *Hero Corp* ajoute, et qui manque encore au document
+
+Le registre y est moins chevaleresque et plus **provincial** : le fantastique est écrasé par la banalité municipale, et le groupe fonctionne comme une thérapie collective ratée. Trois choses à importer dans le ton, sans rien emprunter d'autre :
+
+- **Le déclassement.** Les personnages ont connu mieux, ou croient l'avoir connu. Guérin gagnerait à évoquer une époque où « c'était mieux tenu », sans qu'on sache jamais si c'est vrai.
+- **La contrainte administrative locale.** Pas un empire : une commune. Fresnes-les-Tourbes doit avoir des voisins, un litige de bornage, et une rivalité de clocher.
+- **Le groupe qui ne peut pas se séparer.** Personne ne part, non par loyauté, mais parce que partir demanderait des démarches.
+
+### La veine que tu n'exploites pas encore : l'humour de table
+
+C'est la meilleure suggestion de ton message, et c'est celle qui a le plus de valeur ici — parce que l'humour rôliste porte **sur des règles et des probabilités**, c'est-à-dire exactement ce qu'un jeu tactique peut rendre mécanique.
+
+Les situations récurrentes des tables de jeu de rôle, qui sont des *situations* et non des textes, donc librement exploitables :
+
+| Situation de table | Transposition diégétique — sans jamais briser le quatrième mur |
+|---|---|
+| Le joueur qui conteste la malchance | Guérin traite la série de ratés comme un dysfonctionnement du service |
+| Le rules-lawyer | Beuzelin interrompt l'action pour un point de procédure |
+| Le pillage systématique des cadavres | L'inventaire du défunt, mené comme une formalité successorale |
+| Le plan de quarante minutes qui échoue en dix secondes | Une réplique d'ouverture de combat, toujours |
+| Celui qui n'écoutait pas | Odon demande qu'on répète, au pire moment |
+| La classe de soutien qu'on méprise | Florimond en a fait une identité, et s'en venge |
+| Les notes que personne ne relit | Beuzelin consigne tout. Personne ne consulte rien |
+
+**Règle absolue.** Ces mécanismes sont transposés **dans la fiction**, jamais en clin d'œil. Les personnages ne savent pas qu'ils sont dans un jeu, ne parlent jamais de dés, de statistiques de jeu ni de points de vie. Guérin ne dit pas « j'ai fait un 1 » : il dit que trois échecs de suite, à son avis, relèvent d'une enquête interne.
+
+### Les sources libres de droits, et pourquoi elles sont meilleures ici
+
+Une bibliothèque entière de comédie administrative française est dans le domaine public, donc exploitable sans limite — et elle correspond à ce jeu plus exactement que n'importe quelle série récente :
+
+- **Georges Courteline**, *Messieurs les ronds-de-cuir* et *Le Train de 8 h 47* : la satire du bureau, du chef médiocre et de la procédure pour la procédure. C'est littéralement le sujet du jeu, écrit en 1893.
+- **Alphonse Allais** : l'absurde froid, tenu avec le plus grand sérieux.
+- **Alfred Jarry**, *Ubu roi* : le pouvoir grotesque, la cupidité enfantine, la cruauté administrative.
+- **Eugène Labiche** et **Feydeau** : la mécanique de la scène qui déraille, le quiproquo qui s'entretient tout seul.
+
+Ce sont des modèles d'écriture, pas des banques de répliques : on y étudie le **rythme de la phrase** et la **construction de la scène**, et on écrit le reste.
+
+### La conséquence sur le recrutement
+
+Une conclusion désagréable mais nécessaire : ce ton ne s'obtient pas en briefant un auteur généraliste. Il faut **une plume qui a écrit du dialogue comique pour la scène ou la série**, et il faut la budgéter comme un poste, pas comme une prestation. C'est le seul poste du projet où l'économie se paie immédiatement en qualité perçue.
+
+---
+
 ## PIÈCE N°3 — BOUCLE DE JEU
 
 ### Vue d'ensemble (un run = 25 à 40 minutes)
