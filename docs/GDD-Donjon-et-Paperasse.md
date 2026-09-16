@@ -61,7 +61,7 @@ Un même déclencheur (« attaque ratée d'un allié ») produit quatre lignes t
 ### Vue d'ensemble (un run = 25 à 40 minutes)
 
 **0. L'ORDRE DE MISSION** *(~40 s)*
-Le seigneur Aymeric de Fresnes-les-Tourbes dicte l'objectif à un scribe qui n'écoute pas. Les motifs sont générés et systématiquement dérisoires : sa belle-mère arrive et le donjon « gâche la vue depuis la salle à manger » ; il y a un problème d'écoulement ; les gobelins font du bruit le dimanche ; il a promis à quelqu'un, il ne sait plus à qui. L'objectif réel (3 étages, 1 boss) est identique — seule la justification change, et elle conditionne le **modificateur de run**.
+Le seigneur Aymeric de Fresnes-les-Tourbes dicte l'objectif à un scribe qui n'écoute pas. Les motifs sont générés et systématiquement dérisoires : sa belle-mère arrive et le donjon « gâche la vue depuis la salle à manger » ; il y a un problème d'écoulement ; les gobelins font du bruit le dimanche ; il a promis à quelqu'un, il ne sait plus à qui. L'objectif réel — 3 étages, un boss par étage — est identique — seule la justification change, et elle conditionne le **modificateur de run**.
 
 **1. LA DESCENTE** *(12–18 min)*
 Carte à nœuds, 3 étages de 6 à 9 salles. Types de salles : Combat, Combat d'élite, Marchand à la sauvette, Piège (souvent hors service), Événement, Salle des archives (formulaires vierges), Repos. Le joueur voit deux nœuds à l'avance — assez pour planifier, pas assez pour optimiser.
@@ -483,6 +483,180 @@ Si Aubin survit au run : +50 % de Paperasse. S'il meurt : le groupe perd **la to
 
 ---
 
+## PIÈCE N°7-A — STRUCTURE DE RUN, BIOMES ET BOSS
+
+> **Correction de structure.** La version précédente de ce document annonçait « 3 étages, 1 boss » d'un côté et « 3 biomes, 6 boss » de l'autre. Avec un seul boss par run, cinq des six ne sont vus qu'au bout d'une dizaine de runs : c'est du contenu produit et jamais montré. Structure retenue : **un biome par étage, un boss à la fin de chaque étage, deux boss possibles par biome.** Soit huit formes de run distinctes, et un joueur qui a vu les six boss au bout de trois ou quatre parties.
+
+### La colonne vertébrale : chaque boss réfute un réflexe
+
+Un boss de roguelite qui se contente d'avoir beaucoup de points de vie enseigne au joueur ce qu'il sait déjà. Les six boss du jeu sont construits comme des **contre-exemples** : chacun casse un automatisme que le joueur vient d'acquérir.
+
+| Boss | Biome | Réflexe réfuté |
+|---|---|---|
+| Le Contremaître Grzznak | Les Communs | *Tuer* |
+| Dame Perrine | Les Communs | *Accumuler* |
+| Le Greffier sans tête | Les Archives | *Oublier* |
+| La Pile | Les Archives | *Frapper* |
+| Vermicule le Terrible | Le Chantier | *Résoudre* |
+| Le Seigneur Aymeric | Le Chantier | *Gagner* |
+
+---
+
+## PIÈCE N°7-B — BIOME 1 : LES COMMUNS
+
+**Étage 1 · 6 à 7 salles · le donjon vu depuis les cuisines**
+
+Ce ne sont pas les caves, ce sont les locaux de service : réserves, buanderie, couloirs du personnel, réfectoire. Le donjon fonctionne encore, à peu près, et il fonctionne à horaires fixes.
+
+**SYSTÈME PROPRIÉTAIRE — LES HORAIRES**
+Le biome tourne sur un planning affiché en haut de l'écran. Toutes les trois salles, **changement d'équipe** : les ennemis présents quittent le combat en cours et sont remplacés par une relève à pleine santé. Les pièges ne fonctionnent que pendant les heures ouvrables. Entre 12 h et 14 h, il n'y a strictement personne, les salles sont vides, et le butin aussi.
+
+Le joueur apprend en une run à lire une pendule avant d'ouvrir une porte.
+
+**Identité visuelle.** Vert d'eau, carrelage ébréché, affichage obligatoire punaisé partout, seaux, un torchon qui sèche. Lumière plate. **Audio :** un égouttement régulier, une cloche lointaine, et personne qui parle.
+
+**Ennemis.** Gobelins syndiqués, rats non déclarés, le Veilleur de nuit (qui dort), la Plonge (un tas de vaisselle animé et rancunier).
+
+---
+
+### BOSS 1-A · LE CONTREMAÎTRE GRZZNAK
+*Gobelin. Délégué du personnel. Ne se bat pas : transmet.*
+
+**MÉCANIQUE — LA NÉGOCIATION.** Les points de vie de Grzznak ne sont pas la condition de victoire. Une piste de **Négociation** affiche quatre revendications. Le joueur peut les satisfaire — céder de la Ferraille, passer un tour, laisser un gobelin frapper sans riposter — ou refuser et se battre. En cas de combat, **tous les gobelins tués dans le biome reviennent en renfort toutes les deux salves**, indéfiniment, jusqu'à ce que le joueur accepte de discuter.
+
+| Capacité | Effet |
+|---|---|
+| **Je ne fais que transmettre** | Grzznak ne subit aucun dégât ce tour. Un gobelin quelconque les prend à sa place. *« Ce n'est pas moi. C'est la base. »* |
+| **Motion de soutien** | Tous les gobelins présents : +30 % de dégâts. Grzznak ne peut pas être ciblé tant qu'il en reste trois. |
+| **Point d'ordre** | Interrompt l'action en cours du joueur. Une fois par combat. *« On ne peut pas décider ça sans avoir fait le tour de table. »* |
+
+**Contre.** Beuzelin peut ouvrir la négociation avec 2 revendications déjà satisfaites. Florimond peut faire dérailler la réunion. Frère Colas ne sert à rien ici, et Grzznak le lui fera remarquer.
+
+> *« Vous voulez vider le donjon. Très bien. Vous avez un calendrier ? »*
+
+---
+
+### BOSS 1-B · DAME PERRINE, INTENDANTE
+*Deux cents ans de service. Zéro tolérance pour un inventaire faux.*
+
+**MÉCANIQUE — LE RÉCOLEMENT.** Chaque tour, Perrine **confisque un consommable** du groupe et l'utilise contre lui le tour suivant. Chaque confiscation remplit sa jauge d'Inventaire ; à 100 %, elle annonce un **RÉCOLEMENT** et récupère la totalité de ses points de vie.
+
+Le joueur qui a thésaurisé ses potions pendant tout l'étage vient de constituer l'arsenal du boss. Celui qui a tout consommé avant d'entrer affronte une vieille dame avec un trousseau de clés.
+
+| Capacité | Effet |
+|---|---|
+| **Ça n'a pas été signé** | Confisque un consommable. +20 Rouspétance sur son propriétaire. *« Il y a un registre. À l'entrée. Depuis toujours. »* |
+| **Sur vos mains** | 6–10 dégâts sur le rang 1. Ignore les protections. Ne peut pas être esquivée. |
+| **Récolement** | Soins complets. Ne peut se déclencher qu'une fois — la seconde fois, elle renonce et s'assoit. |
+
+**Contre.** Vider ses poches avant le combat. *Contrôle inopiné* de Beuzelin récupère la moitié du stock confisqué. *Liquidation de succession* de Gisèle transforme les biens d'un allié tombé en dégâts avant que Perrine ne mette la main dessus.
+
+> *« Je ne vous en veux pas. Je note, simplement. »*
+
+---
+
+## PIÈCE N°7-C — BIOME 2 : LES ARCHIVES ENSEVELIES
+
+**Étage 2 · 7 à 9 salles · vingt centimètres d'eau et quatre siècles de dossiers**
+
+Sous les communs, la mémoire administrative du donjon. Des casiers jusqu'au plafond, une crue ancienne jamais résorbée, et un classement que plus personne ne comprend — sauf ceux qui y vivent encore.
+
+**SYSTÈME PROPRIÉTAIRE — LA COTE**
+Les salles ne sont pas placées, elles sont **classées**. Chaque nœud porte une cote (*4-B/17*) qui détermine réellement son contenu. Le joueur peut lire les cotes, et surtout **reclasser** : échanger les cotes de deux salles échange leur contenu. Deux reclassements par étage.
+
+En parallèle, la **Poussière** : chaque salle traversée ajoute +1 Poussière au groupe (−1 précision par point, cumul jusqu'à 8). On s'en débarrasse uniquement dans la salle de dépoussiérage, qui n'apparaît qu'une fois par étage. C'est un minuteur souple : il ne tue personne, il rend simplement tout le monde de plus en plus mauvais.
+
+**Identité visuelle.** Bleu-gris, papier gonflé d'humidité, reflets d'eau au plafond, étiquettes illisibles. **Audio :** clapotis, papier qui se déchire quelque part, aucune musique — seulement un bourdon.
+
+**Ennemis.** Greffiers noyés, Dossiers animés, Chariots de classement lancés à pleine vitesse, le Silence (un ennemi qui inflige des dégâts quand un personnage parle — donc en permanence).
+
+---
+
+### BOSS 2-A · LE GREFFIER SANS TÊTE
+*Il a perdu la tête. Surtout, il a perdu le dossier correspondant.*
+
+**MÉCANIQUE — LA QUESTION.** Le Greffier est insensible aux dégâts tant qu'il **cherche**. Chaque tour, il pose au joueur une question factuelle sur le run en cours : *« Dans quelle salle avez-vous trouvé la lanterne ? »*, *« Combien de coffres avez-vous ouverts à cet étage ? »* Le journal de run est masqué pendant le combat. Une bonne réponse lève son immunité pendant un tour.
+
+Les questions ne portent jamais sur plus de trois salles en arrière, et une mauvaise réponse ne coûte qu'un tour — jamais un personnage. On demande de l'attention, pas de la mémorisation.
+
+| Capacité | Effet |
+|---|---|
+| **Je cherche** | Immunité totale aux dégâts pendant un tour. *« Je l'avais il y a un instant. »* |
+| **Pièce manquante** | Retire au hasard un objet de l'inventaire du groupe et le classe. Récupérable en gagnant. |
+| **Vous êtes sûr ?** | Après une bonne réponse, il la remet en cause. Le joueur peut maintenir — l'immunité tombe — ou se corriger, et se tromper. |
+
+**Contre.** Josselin conserve un relevé de chaque salle et peut répondre à sa place, une fois par combat. Gisèle a tout consigné, évidemment.
+
+> *« Ce n'est pas un piège. Je voudrais juste savoir. »*
+
+---
+
+### BOSS 2-B · LA PILE
+*Ce n'est pas quelqu'un. C'est une pile.*
+
+**MÉCANIQUE — LA SCISSION.** Chaque fois que La Pile subit des dégâts, elle **se scinde en deux piles plus petites**, jusqu'à occuper les quatre rangs adverses avec huit unités. Frapper est strictement contre-productif : c'est le seul boss du jeu que l'on ne peut pas tuer.
+
+La condition de victoire est le **volume total**, réduit uniquement par le classement : piles de Procédure de Beuzelin, Relevés de Josselin, et le chariot de classement présent dans la salle, actionnable par n'importe quel personnage à la place de son action.
+
+Un groupe composé de quatre gros frappeurs peut littéralement perdre en jouant parfaitement. C'est délibéré, c'est annoncé par le nom de la salle — *Dépôt légal* — et c'est le seul contrôle de composition du jeu.
+
+| Capacité | Effet |
+|---|---|
+| **Éboulement** | 5–9 dégâts sur toute la formation. Se déclenche chaque fois que le nombre de piles augmente. |
+| **Classement vertical** | Une pile avale un consommable du groupe. Il n'est pas détruit : il est classé. |
+| **Appel d'air** | Les piles se réorganisent. Toutes les piles de Procédure en cours tombent. Une fois par combat. |
+
+**Le seul boss du jeu qui n'a aucune réplique.** Aucun dialogue, aucun bark, aucun cri de victoire. Uniquement un bruit de papier. Les personnages, eux, commentent — et c'est nettement plus inquiétant sans interlocuteur.
+
+---
+
+## PIÈCE N°7-D — BIOME 3 : LE CHANTIER
+
+**Étage 3 · 6 à 8 salles · mise aux normes en cours depuis 1214**
+
+Le haut du donjon est en travaux. Il l'est depuis trois cent onze ans. Des échafaudages, des bâches, des panneaux d'information périmés, et un seul ouvrier, quelque part, qui regarde.
+
+**SYSTÈME PROPRIÉTAIRE — LE DEVIS**
+Avant chaque salle, un panneau annonce le coût et le délai de la mise en sécurité. Le joueur choisit : **payer** en Ferraille pour entrer dans une salle sécurisée — pièges neutralisés, ennemis réduits, butin réduit d'autant — ou entrer **en l'état**, avec la salle telle qu'elle est.
+
+En parallèle, **les travaux avancent** : revenir dans une salle déjà visitée ne garantit rien. Un échafaudage s'est effondré, un passage est muré, une salle est devenue inaccessible. Le retour en arrière cesse d'être une option de repli.
+
+**Identité visuelle.** Ocre, poussière en suspension, bâches qui claquent, panneaux jaunes, une grue en bois arrêtée en plein mouvement. Première fois du jeu qu'on voit le ciel — par un trou dans le toit. **Audio :** vent, une bâche, un marteau très loin, qui ne se rapproche jamais.
+
+**Ennemis.** Ouvriers-squelettes en intérim, le Conducteur de travaux, les Gravats (dégâts de zone passifs), la Réunion de chantier (un combat d'élite dont personne ne sort avant huit tours).
+
+---
+
+### BOSS 3-A · VERMICULE LE TERRIBLE
+*Dragon allergique à l'or. Techniquement, un lézard.*
+
+Scène scriptée intégrale en **pièce n°8**, mécaniques de combat et issue administrative comprises. Il niche dans le chantier parce que « c'est plus aéré, et il y a moins d'or au mètre carré ».
+
+**Garantie de rencontre.** Vermicule est toujours le boss du premier étage 3 d'une partie : la scène est le cœur du ton du jeu, elle ne peut pas dépendre d'un tirage.
+
+---
+
+### BOSS 3-B · LE SEIGNEUR AYMERIC DE FRESNES-LES-TOURBES
+*Le commanditaire. Boss final de campagne, disponible dans la rotation après trois runs.*
+
+Le donjon est vide. Le rapport est prêt. Et Aymeric comprend, trop tard, que si le donjon est vidé, sa belle-mère viendra vraiment. Il arrive à cheval pour empêcher la livraison du travail qu'il a lui-même commandé.
+
+**MÉCANIQUE — L'ANNULATION.** Aymeric ne frappe pas. Chaque tour, il produit un **motif d'irrecevabilité** qui annule un acquis du run : un buff, un objet, le solde de La Caisse, une capacité apprise par Aubin. Les dégâts ne font que retarder l'inévitable.
+
+Le joueur doit **invalider les motifs** : Formulaires de Beuzelin, Relevés de Josselin, *Acte authentique* de Gisèle, insultes de Florimond, *Médiation* de Colas. Quatre motifs invalidés et Aymeric doit signer le **procès-verbal de réception**.
+
+| Capacité | Effet |
+|---|---|
+| **L'ordre n'était pas contresigné** | Annule un acquis du run, au choix d'Aymeric. Toujours le plus utile. |
+| **Ce n'est pas ce que j'avais demandé** | Réinitialise la Rouspétance de tout le groupe à 80. *« J'avais dit débroussailler. Pas vider. »* |
+| **Proposition d'embauche** | Offre un contrat permanent à un membre du groupe. Si le joueur accepte, ce personnage quitte définitivement l'effectif et le combat s'arrête là : c'est une fin, ce n'est pas la victoire. |
+
+**Dénouement.** Aymeric signe. Le donjon est déclaré *réceptionné avec réserves*. Les réserves sont quarante mille navets.
+
+> *« Je ne dis pas que c'est mal fait. Je dis que je n'aurais pas dû demander. »*
+
+---
+
 ## PIÈCE N°8 — SCÈNE DE BOSS : VERMICULE LE TERRIBLE
 
 > **Salle 12 — LE TRÉSOR** *(classé insalubre par arrêté seigneurial)*
@@ -627,7 +801,7 @@ Le joueur qui découvre cette issue a compris le jeu : le jeu récompense la pap
 | **Palette** | Papier administratif vert d'eau, encre de tampon violette, crayon rouge de correction |
 | **Audio** | Cuivres grinçants, cordes pincées, et un seul instrument par personnage. La musique s'arrête net pendant les engueulades |
 | **Équipe** | 5–7 personnes, 24–30 mois |
-| **Contenu** | 4 classes au lancement (+4 en déblocage méta), 3 biomes, 6 boss, ~2 800 lignes |
+| **Contenu** | 4 classes au lancement (+4 en déblocage méta), 3 biomes, 6 boss (2 par biome), ~2 800 lignes |
 | **Localisation** | FR et EN **co-écrits**, jamais traduits. Budget d'écriture dédié par langue, pas de ligne de traduction |
 
 ---
