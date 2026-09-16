@@ -1,575 +1,736 @@
 <title>Engueulade Générale</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Spectral:ital,wght@0,400;1,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:ital,wght@0,500;0,700;1,400&family=Spectral:ital,wght@0,400;0,500;1,400&family=Courier+Prime:wght@400;700&display=swap">
 <style>
 :root{
-  --bg:#E8E9E4; --surf:#F4F5F1; --surf2:#DFE1DA;
-  --ink:#1B1D18; --dim:#6E7367; --line:#C6CABB; --line2:#A5AB98;
-  --acc:#5C3D99; --acc-pale:#5C3D9914;
-  --hot:#B03A2B; --ok:#3F6B4A;
-  --mono:"Courier Prime","Courier New",monospace;
+  --pap:#E7EAE0; --feuille:#F4F5EF; --feuille2:#DDE1D4;
+  --ink:#202318; --dim:#6E7464; --line:#C4C9B8; --line2:#A5AC95;
+  --acc:#5C3D99; --acc-pale:#5C3D9916;
+  --hot:#B03A2B; --ok:#3F6B4A; --or:#A8823C;
+
+  /* la scène est un décor : même look dans les deux thèmes */
+  --scene:#1D2318; --scene2:#161B12; --sol:#2A3122; --scene-ink:#DDE3CF;
+  --papier-fig:#EDE6D2; --trait:#23261D;
+
+  --slab:"Zilla Slab",Rockwell,Georgia,serif;
   --serif:"Spectral",Georgia,serif;
+  --mono:"Courier Prime","Courier New",monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#131410; --surf:#1C1E18; --surf2:#26291F;
-  --ink:#E4E6DB; --dim:#909684; --line:#31352a; --line2:#474d3b;
+  --pap:#14170E; --feuille:#1C1F16; --feuille2:#252A1D;
+  --ink:#E4E7DA; --dim:#949A86; --line:#333828; --line2:#4A5138;
   --acc:#B79BF2; --acc-pale:#B79BF21F;
-  --hot:#E38874; --ok:#7FB08D;
+  --hot:#E38874; --ok:#7FB08D; --or:#C9A25A;
 }}
 :root[data-theme="dark"]{
-  --bg:#131410; --surf:#1C1E18; --surf2:#26291F;
-  --ink:#E4E6DB; --dim:#909684; --line:#31352a; --line2:#474d3b;
+  --pap:#14170E; --feuille:#1C1F16; --feuille2:#252A1D;
+  --ink:#E4E7DA; --dim:#949A86; --line:#333828; --line2:#4A5138;
   --acc:#B79BF2; --acc-pale:#B79BF21F;
-  --hot:#E38874; --ok:#7FB08D;
+  --hot:#E38874; --ok:#7FB08D; --or:#C9A25A;
 }
 *{box-sizing:border-box}
-html,body{height:100%}
 body{
-  background:var(--bg);color:var(--ink);margin:0;
-  font-family:var(--mono);font-size:14px;line-height:1.5;
-  padding-inline:14px;padding-block:0 28px;
+  background:var(--pap);color:var(--ink);margin:0;
+  font-family:var(--serif);font-size:16px;line-height:1.55;
+  padding-inline:14px;padding-block:0 26px;
   -webkit-font-smoothing:antialiased;
 }
-.rig{max-width:980px;margin:0 auto}
+.jeu{max-width:900px;margin:0 auto}
 
-.bandeau{
-  border-bottom:2px solid var(--line2);padding-block:18px 10px;
-  display:flex;flex-wrap:wrap;gap:6px 20px;align-items:baseline;justify-content:space-between;
+/* ---------- barre ---------- */
+.barre{
+  display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between;
+  padding-block:16px 12px;border-bottom:2px solid var(--line2);
 }
-.bandeau h1{font-size:15px;letter-spacing:.18em;text-transform:uppercase;margin:0;font-weight:700}
-.bandeau .cpt{font-size:11px;letter-spacing:.1em;color:var(--dim);display:flex;gap:16px;flex-wrap:wrap}
-.bandeau .cpt b{color:var(--acc);font-weight:700}
+.barre h1{font-family:var(--slab);font-size:17px;font-weight:700;margin:0;letter-spacing:-.01em}
+.barre h1 em{font-style:normal;color:var(--acc)}
+.cpts{display:flex;gap:14px;font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.06em}
+.cpts b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
+.vitesse{display:flex;gap:0;border:1px solid var(--line2)}
+.vitesse button{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+  background:transparent;border:0;border-left:1px solid var(--line2);
+  color:var(--dim);padding:5px 9px;cursor:pointer;
+}
+.vitesse button:first-child{border-left:0}
+.vitesse button[aria-pressed="true"]{background:var(--acc);color:var(--pap)}
 
-.avis{
-  border:1px dashed var(--line2);padding:10px 13px;margin:14px 0 18px;
-  font-size:12px;color:var(--dim);line-height:1.6;
+/* ---------- frise d'initiative ---------- */
+.frise{display:flex;gap:6px;align-items:center;margin:12px 0 8px;overflow-x:auto;padding-bottom:2px}
+.frise .et{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);white-space:nowrap;margin-right:4px}
+.jeton{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+  border:1px solid var(--line);background:var(--feuille);color:var(--dim);
+  padding:3px 8px;white-space:nowrap;
 }
-.avis b{color:var(--ink);font-weight:700}
+.jeton.moi{border-color:var(--acc);color:var(--acc);background:var(--acc-pale)}
+.jeton.now{background:var(--acc);color:var(--pap);border-color:var(--acc);font-weight:700}
+.jeton.ko{opacity:.32;text-decoration:line-through}
 
-h2.sec{
-  font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
-  margin:20px 0 8px;font-weight:400;
+/* ---------- scène ---------- */
+.scene{
+  position:relative;background:var(--scene);
+  background-image:radial-gradient(120% 90% at 50% 8%, #2A3122 0%, var(--scene) 55%, var(--scene2) 100%);
+  border:1px solid var(--trait);
+  display:flex;flex-direction:column;justify-content:flex-end;
+  min-height:360px;padding:52px 12px 0;
+}
+@media (max-width:560px){.scene{min-height:330px;padding-top:44px}}
+.scene::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:34px;
+  background:var(--sol);border-top:1px solid #3A422F;
+}
+.camp{position:relative;z-index:2;display:flex;justify-content:center;align-items:flex-end;gap:clamp(4px,3vw,26px)}
+.camp.adv{margin-bottom:20px}
+.camp.nous{margin-bottom:26px}
+
+.fig{
+  position:relative;background:none;border:0;padding:0;margin:0;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  cursor:default;width:clamp(52px,15vw,84px);transition:transform .14s ease;
+}
+.fig svg{display:block;width:100%;height:auto;overflow:visible}
+.fig .nomfig{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;color:var(--scene-ink);
+  opacity:.72;white-space:nowrap;
+}
+.fig .pvmini{width:100%;height:4px;background:#0000004d;border:1px solid #ffffff1f}
+.fig .pvmini i{display:block;height:100%;background:var(--papier-fig)}
+.fig.ko{opacity:.34}
+.fig.ko svg{transform:rotate(-82deg) translateY(12%)}
+.fig.actif{transform:translateY(-7px)}
+.fig.actif .nomfig{opacity:1;color:#fff}
+.fig.visable{cursor:pointer}
+.fig.visable svg{filter:drop-shadow(0 0 0 transparent)}
+.fig.visable::before{
+  content:"";position:absolute;inset:-6px -4px 14px;border:2px dashed var(--acc);
+  border-radius:3px;pointer-events:none;
+}
+.fig.visable:hover,.fig.visable:focus-visible{transform:translateY(-5px);outline:none}
+.fig.frappe{animation:secousse .3s ease}
+.fig.charge{animation:charge .34s ease}
+@keyframes secousse{0%,100%{transform:translateX(0)}22%{transform:translateX(-5px)}55%{transform:translateX(4px)}78%{transform:translateX(-2px)}}
+@keyframes charge{0%,100%{transform:translateY(0)}45%{transform:translateY(-12px) scale(1.04)}}
+
+/* chiffres flottants */
+.vol{
+  position:absolute;z-index:6;font-family:var(--slab);font-weight:700;font-size:22px;
+  color:var(--papier-fig);text-shadow:0 1px 0 #000;pointer-events:none;
+  animation:monte 1.05s ease-out forwards;
+}
+.vol.deg{color:#F0846E}
+.vol.crit{color:#FFB44A;font-size:29px}
+.vol.soin{color:#8FD6A2}
+.vol.rou{color:#E9A0F0;font-size:16px}
+.vol.rate{color:#C9CFBB;font-size:15px;font-family:var(--mono);letter-spacing:.06em}
+@keyframes monte{0%{opacity:0;transform:translateY(6px)}18%{opacity:1}100%{opacity:0;transform:translateY(-38px)}}
+
+/* bulle */
+.bulle{
+  position:absolute;z-index:8;left:50%;transform:translateX(-50%);
+  bottom:calc(100% + 12px);width:max-content;max-width:min(300px,78vw);
+  background:var(--papier-fig);color:var(--trait);border:2px solid var(--trait);
+  padding:9px 12px;font-family:var(--serif);font-size:15px;line-height:1.42;
+  box-shadow:3px 3px 0 #00000038;
+}
+.bulle b{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--acc);margin-bottom:3px;font-weight:700}
+.bulle::after{
+  content:"";position:absolute;top:100%;left:50%;margin-left:-8px;
+  border:8px solid transparent;border-top-color:var(--trait);
+}
+.bulle.gauche{left:0;transform:none}
+.bulle.droite{left:auto;right:0;transform:none}
+.bulle.droite::after{left:auto;right:18px;margin-left:0}
+.bulle.gauche::after{left:18px;margin-left:0}
+
+/* bandeau de phase */
+.phase{
+  position:absolute;top:0;left:0;right:0;z-index:5;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--scene-ink);opacity:.7;padding:9px 12px;
+  display:flex;justify-content:space-between;gap:12px;
+}
+.phase b{color:#fff;opacity:1;font-weight:700}
+
+/* couche d'avancement */
+.avance{position:fixed;inset:0;z-index:20;cursor:pointer;background:transparent}
+.hint{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:21;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  background:var(--acc);color:var(--pap);padding:7px 14px;pointer-events:none;
 }
 
-/* unités */
-.rangee{display:grid;gap:8px;margin:0}
-.rangee.ennemis{grid-template-columns:repeat(3,minmax(0,1fr))}
-.rangee.heros{grid-template-columns:repeat(4,minmax(0,1fr))}
-@media (max-width:620px){
-  .rangee.heros{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
-@media (max-width:380px){
-  .rangee.ennemis{grid-template-columns:1fr}
-}
-.unite{
-  background:var(--surf);border:1px solid var(--line);padding:9px 10px 10px;
-  display:flex;flex-direction:column;gap:6px;text-align:left;
-  font:inherit;color:inherit;width:100%;
-}
-.unite .nom{font-size:11.5px;font-weight:700;letter-spacing:.04em;display:flex;justify-content:space-between;gap:6px}
-.unite .nom span{color:var(--dim);font-weight:400;font-size:10px}
-.unite .jauge{height:7px;background:var(--surf2);border:1px solid var(--line);position:relative;overflow:hidden}
-.unite .jauge i{display:block;height:100%;background:var(--ink);transition:width .18s linear}
-.unite .jauge.rousp i{background:var(--hot)}
-.unite .chiffres{font-size:10.5px;color:var(--dim);display:flex;justify-content:space-between;gap:8px;font-variant-numeric:tabular-nums}
-.unite .chiffres b{color:var(--ink);font-weight:400}
-.unite .res{font-size:10px;letter-spacing:.06em;color:var(--acc);text-transform:uppercase;min-height:1.2em}
-.unite.actif{outline:2px solid var(--acc);outline-offset:-1px}
-.unite.mort{opacity:.38}
-.unite.mort .nom{text-decoration:line-through}
-.unite.visable{cursor:pointer;border-color:var(--acc);background:var(--acc-pale)}
-.unite.visable:hover,.unite.visable:focus-visible{outline:2px solid var(--acc);outline-offset:-1px}
-.etiq{font-size:9.5px;letter-spacing:.08em;color:var(--hot);text-transform:uppercase;min-height:1.1em}
+/* ---------- HUD ---------- */
+.equipe{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:8px}
+@media (max-width:620px){.equipe{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.carte{background:var(--feuille);border:1px solid var(--line);padding:8px 9px 9px}
+.carte.actif{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.carte.ko{opacity:.42}
+.carte .n{font-family:var(--slab);font-weight:700;font-size:14px;line-height:1.1;display:flex;justify-content:space-between;gap:6px;align-items:baseline}
+.carte .n i{font-family:var(--mono);font-style:normal;font-size:9.5px;color:var(--dim);letter-spacing:.06em}
+.carte .lab{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-top:6px;display:flex;justify-content:space-between}
+.carte .lab b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
+.bar{height:6px;background:var(--feuille2);border:1px solid var(--line);margin-top:2px}
+.bar i{display:block;height:100%;background:var(--ink);transition:width .25s ease}
+.bar.r i{background:var(--hot)}
+.bar.r.chaud{animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.45}}
+.carte .etat{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--acc);min-height:1.1em;margin-top:5px}
 
-/* actions */
-.actions{
-  border:1px solid var(--line2);background:var(--surf);
-  margin:14px 0 0;padding:11px 12px;
-}
-.actions .qui{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:9px}
-.actions .qui b{color:var(--acc)}
+/* ---------- actions ---------- */
+.actions{border:1px solid var(--line2);background:var(--feuille);padding:11px 12px;margin-top:9px;min-height:86px}
+.actions .titre{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:9px}
+.actions .titre b{color:var(--acc)}
 .btns{display:flex;flex-wrap:wrap;gap:7px}
-button{
-  font:inherit;font-size:12.5px;background:var(--surf2);color:var(--ink);
-  border:1px solid var(--line2);padding:8px 12px;cursor:pointer;text-align:left;
+button.act{
+  font-family:var(--slab);font-size:14.5px;font-weight:500;text-align:left;
+  background:var(--feuille2);color:var(--ink);border:1px solid var(--line2);
+  padding:8px 12px;cursor:pointer;flex:1 1 200px;
 }
-button:hover:not(:disabled){border-color:var(--acc);color:var(--acc)}
-button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
-button:disabled{opacity:.35;cursor:not-allowed}
-button .cout{font-size:10px;color:var(--dim);display:block}
-button.primaire{background:var(--acc);color:var(--bg);border-color:var(--acc);font-weight:700}
-button.primaire:hover{color:var(--bg);opacity:.88}
+button.act span{display:block;font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.02em;margin-top:2px}
+button.act:hover:not(:disabled){border-color:var(--acc);color:var(--acc)}
+button.act:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+button.act:disabled{opacity:.34;cursor:not-allowed}
+button.act.primaire{background:var(--acc);color:var(--pap);border-color:var(--acc)}
+button.act.primaire span{color:#ffffffc7}
+button.act.primaire:hover{color:var(--pap);opacity:.9}
 
-/* journal */
-.journal{
-  border:1px solid var(--line);background:var(--surf);
-  height:230px;overflow-y:auto;padding:10px 12px;margin-top:8px;
+/* ---------- journal ---------- */
+details.jr{margin-top:10px;border:1px solid var(--line);background:var(--feuille)}
+details.jr summary{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);padding:9px 12px;cursor:pointer;
 }
-.l{margin:0 0 7px;font-family:var(--serif);font-size:14.5px;line-height:1.5}
+details.jr[open] summary{border-bottom:1px solid var(--line)}
+.jrc{max-height:240px;overflow-y:auto;padding:10px 12px}
+.l{margin:0 0 7px;font-size:15px}
 .l:last-child{margin-bottom:0}
-.l .sp{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--acc);display:block}
-.l.sys{font-family:var(--mono);font-size:11.5px;color:var(--dim);font-style:normal}
+.l .sp{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--acc);display:block}
+.l.sys{font-family:var(--mono);font-size:11.5px;color:var(--dim)}
 .l.sys b{color:var(--ink);font-weight:400}
-.l.coup{font-family:var(--mono);font-size:11.5px;color:var(--dim)}
-.l.alerte{font-family:var(--mono);font-size:11.5px;color:var(--hot);letter-spacing:.04em}
-.l.bon{font-family:var(--mono);font-size:11.5px;color:var(--ok)}
+.l.hot{font-family:var(--mono);font-size:11.5px;color:var(--hot)}
+.l.ok{font-family:var(--mono);font-size:11.5px;color:var(--ok)}
 
-/* overlay */
-.voile{
-  position:fixed;inset:0;background:color-mix(in srgb,var(--bg) 88%,transparent);
-  display:flex;align-items:center;justify-content:center;padding:16px;z-index:10;
-}
-.boite{
-  background:var(--surf);border:2px solid var(--acc);max-width:560px;width:100%;
-  padding:18px 18px 20px;max-height:88vh;overflow-y:auto;
-}
-.boite h3{
-  font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--acc);
-  margin:0 0 14px;font-weight:700;
-}
-.boite .ech{margin:0 0 14px}
+/* ---------- modale ---------- */
+.voile{position:fixed;inset:0;z-index:30;background:#0d0f0ac9;display:flex;align-items:center;justify-content:center;padding:16px}
+.boite{background:var(--feuille);border:2px solid var(--acc);max-width:560px;width:100%;padding:18px;max-height:88vh;overflow-y:auto}
+.boite h3{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--acc);margin:0 0 14px;font-weight:700}
+.boite .ech{margin:0 0 15px}
 .boite .btns{flex-direction:column}
-.boite .btns button{width:100%}
-.fin dl{display:grid;grid-template-columns:auto 1fr;gap:3px 14px;font-size:12.5px;margin:0 0 16px}
+.boite .btns button{flex:1 1 auto;width:100%}
+.fin dl{display:grid;grid-template-columns:auto 1fr;gap:3px 14px;font-family:var(--mono);font-size:12.5px;margin:0 0 15px}
 .fin dt{color:var(--dim)}
 .fin dd{margin:0;font-variant-numeric:tabular-nums}
-.crit{border-top:1px solid var(--line);padding-top:12px;margin-top:4px;font-size:12px;color:var(--dim);line-height:1.6}
+.crit{border-top:1px solid var(--line);padding-top:12px;font-size:14.5px;color:var(--dim);line-height:1.55}
 .crit b{color:var(--ink)}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.avis{font-family:var(--mono);font-size:11.5px;color:var(--dim);line-height:1.7;border:1px dashed var(--line2);padding:10px 12px;margin:12px 0 0}
+.avis b{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
-<div class="rig">
-  <div class="bandeau">
-    <h1>Banc d'essai 01 · l'engueulade</h1>
-    <div class="cpt">
+<div class="jeu">
+  <div class="barre">
+    <h1>Banc d'essai <em>01</em> — l'Engueulade</h1>
+    <div class="cpts">
       <span>tour <b id="cTour">1</b></span>
       <span>engueulades <b id="cEng">0</b></span>
       <span>ratés <b id="cRate">0</b></span>
     </div>
+    <div class="vitesse" role="group" aria-label="Rythme">
+      <button id="vM" aria-pressed="false">Manuel</button>
+      <button id="vN" aria-pressed="true">Normal</button>
+      <button id="vR" aria-pressed="false">Rapide</button>
+    </div>
   </div>
 
-  <p class="avis">
-    <b>Prototype jetable.</b> Rectangles gris, chiffres visibles, aucun art. Il ne teste qu'une chose :
-    <b>est-ce que l'Engueulade est amusante ?</b> Jouez trois combats, puis demandez-vous si vous avez
-    relu le journal pour retrouver une réplique. Si non, la mécanique ne porte pas le jeu.
-  </p>
+  <div class="frise" id="frise"></div>
 
-  <h2 class="sec">Adversaires — gobelins syndiqués</h2>
-  <div class="rangee ennemis" id="ennemis"></div>
+  <div class="scene" id="scene">
+    <div class="phase"><span id="phG">—</span><span id="phD"></span></div>
+    <div class="camp adv" id="adv"></div>
+    <div class="camp nous" id="nous"></div>
+  </div>
 
-  <h2 class="sec">Formation — rangs 1 à 4</h2>
-  <div class="rangee heros" id="heros"></div>
+  <div class="equipe" id="equipe"></div>
 
   <div class="actions">
-    <div class="qui" id="qui">—</div>
+    <div class="titre" id="titre">—</div>
     <div class="btns" id="btns"></div>
   </div>
 
-  <h2 class="sec">Journal</h2>
-  <div class="journal" id="journal"></div>
+  <details class="jr">
+    <summary>Journal du combat — tout est consigné</summary>
+    <div class="jrc" id="journal"></div>
+  </details>
+
+  <p class="avis"><b>Prototype jetable.</b> Il ne teste qu'une chose : <b>l'Engueulade est-elle amusante ?</b>
+  Jouez trois combats, puis demandez-vous si vous avez rouvert le journal pour relire une réplique.</p>
 </div>
 
-<div id="overlay"></div>
+<div id="couche"></div>
+<div id="modale"></div>
 
 <script>
-const $=id=>document.getElementById(id);
+const $=i=>document.getElementById(i);
 const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 const pick=a=>a[Math.floor(Math.random()*a.length)];
+const RM=matchMedia('(prefers-reduced-motion:reduce)').matches;
 
-/* ---------- données ---------- */
+/* ================= figures ================= */
+const OUT='var(--trait)', PAP='var(--papier-fig)';
+function att(x,y){return `<circle cx="${x}" cy="${y}" r="2.1" fill="var(--or)" stroke="${OUT}" stroke-width="1"/>`}
+const FIG={
+ gue:`<svg viewBox="0 0 64 92" aria-hidden="true"><g stroke="${OUT}" stroke-width="2.2" stroke-linejoin="round">
+   <rect x="22" y="70" width="8" height="19" fill="#6B6B5E"/><rect x="35" y="70" width="8" height="19" fill="#6B6B5E"/>
+   <rect x="18" y="34" width="28" height="38" fill="#7A6A52"/>
+   <path d="M18 34 L32 28 L46 34 Z" fill="#8B7A5E"/>
+   <rect x="44" y="38" width="9" height="26" fill="#6B6B5E"/>
+   <rect x="11" y="32" width="9" height="26" fill="#6B6B5E"/>
+   <rect x="2" y="30" width="16" height="34" rx="2" fill="#5F6654"/>
+   <path d="M10 30 L10 64" stroke="${OUT}" stroke-width="1.6"/>
+   <circle cx="32" cy="18" r="12" fill="${PAP}"/>
+   <path d="M20 16 a12 12 0 0 1 24 0 z" fill="#6B6B5E"/>
+   <rect x="25" y="16" width="14" height="3.4" fill="${OUT}" stroke="none"/>
+   </g>${att(20,36)}${att(45,36)}${att(26,70)}${att(39,70)}</svg>`,
+ flo:`<svg viewBox="0 0 64 92" aria-hidden="true"><g stroke="${OUT}" stroke-width="2.2" stroke-linejoin="round">
+   <rect x="24" y="70" width="7" height="19" fill="#4B4A55"/><rect x="34" y="70" width="7" height="19" fill="#4B4A55"/>
+   <path d="M21 36 L44 36 L47 72 L18 72 Z" fill="#7D4A63"/>
+   <rect x="13" y="40" width="8" height="24" fill="#8C5A72"/><rect x="44" y="40" width="8" height="24" fill="#8C5A72"/>
+   <ellipse cx="17" cy="62" rx="10" ry="12" fill="#B08A4E"/><rect x="19" y="36" width="5" height="22" fill="#8A6A3C"/>
+   <circle cx="17" cy="62" r="3" fill="${OUT}" stroke="none"/>
+   <circle cx="32" cy="22" r="11" fill="${PAP}"/>
+   <path d="M20 20 L44 20 L32 6 Z" fill="#6D3F56"/>
+   <path d="M43 19 q10 -8 13 -16" fill="none" stroke="${OUT}" stroke-width="2"/>
+   <circle cx="28" cy="22" r="1.7" fill="${OUT}" stroke="none"/><circle cx="36" cy="22" r="1.7" fill="${OUT}" stroke="none"/>
+   <path d="M27 28 q5 -3 10 0" fill="none" stroke="${OUT}" stroke-width="1.8"/>
+   </g>${att(22,38)}${att(43,38)}${att(27,70)}${att(38,70)}</svg>`,
+ beu:`<svg viewBox="0 0 64 92" aria-hidden="true"><g stroke="${OUT}" stroke-width="2.2" stroke-linejoin="round">
+   <rect x="24" y="70" width="7" height="19" fill="#3E4A55"/><rect x="34" y="70" width="7" height="19" fill="#3E4A55"/>
+   <path d="M19 36 L45 36 L48 72 L16 72 Z" fill="#4A5A68"/>
+   <rect x="12" y="40" width="8" height="24" fill="#57687A"/><rect x="45" y="40" width="8" height="24" fill="#57687A"/>
+   <rect x="42" y="56" width="18" height="13" fill="${PAP}" transform="rotate(-8 51 62)"/>
+   <rect x="6" y="50" width="16" height="14" rx="1.5" fill="#6B5A44"/>
+   <circle cx="32" cy="22" r="11" fill="${PAP}"/>
+   <path d="M21 15 q11 -7 22 0 l0 -3 q-11 -6 -22 0 z" fill="#4A4438"/>
+   <circle cx="27.5" cy="22" r="3.4" fill="none" stroke="${OUT}" stroke-width="1.7"/>
+   <circle cx="36.5" cy="22" r="3.4" fill="none" stroke="${OUT}" stroke-width="1.7"/>
+   <path d="M31 22 h2" stroke="${OUT}" stroke-width="1.5"/>
+   <path d="M28 29 h8" stroke="${OUT}" stroke-width="1.8"/>
+   </g>${att(21,38)}${att(44,38)}${att(27,70)}${att(38,70)}</svg>`,
+ odo:`<svg viewBox="0 0 64 92" aria-hidden="true"><g stroke="${OUT}" stroke-width="2.2" stroke-linejoin="round">
+   <rect x="25" y="72" width="7" height="17" fill="#4A4436"/><rect x="34" y="72" width="7" height="17" fill="#4A4436"/>
+   <path d="M18 38 L46 38 L50 74 L14 74 Z" fill="#3F5560"/>
+   <path d="M18 40 L8 66 L20 68 Z" fill="#4C6572"/><path d="M46 40 L56 66 L44 68 Z" fill="#4C6572"/>
+   <circle cx="32" cy="24" r="11" fill="${PAP}"/>
+   <path d="M19 22 L45 22 Q40 -2 26 4 Z" fill="#3A4E59"/>
+   <path d="M19 22 L45 22 L45 26 L19 26 Z" fill="#4C6572"/>
+   <circle cx="28" cy="25" r="1.8" fill="${OUT}" stroke="none"/><circle cx="36" cy="25" r="1.8" fill="${OUT}" stroke="none"/>
+   <path d="M28 31 q4 4 8 0" fill="none" stroke="${OUT}" stroke-width="1.8"/>
+   </g>${att(21,40)}${att(44,40)}${att(28,72)}${att(38,72)}</svg>`,
+ gob:`<svg viewBox="0 0 64 92" aria-hidden="true"><g stroke="${OUT}" stroke-width="2.2" stroke-linejoin="round">
+   <rect x="24" y="74" width="7" height="15" fill="#4A4A3C"/><rect x="34" y="74" width="7" height="15" fill="#4A4A3C"/>
+   <rect x="20" y="46" width="25" height="30" fill="#6E8A4A"/>
+   <path d="M20 48 L45 48 L45 74 L20 74 Z" fill="#C9B33E"/>
+   <path d="M22 50 L34 74 M32 50 L44 74" stroke="${PAP}" stroke-width="3"/>
+   <rect x="13" y="50" width="8" height="21" fill="#6E8A4A"/><rect x="44" y="50" width="8" height="21" fill="#6E8A4A"/>
+   <rect x="45" y="60" width="15" height="12" fill="${PAP}"/>
+   <path d="M47 63 h11 M47 66 h11 M47 69 h7" stroke="${OUT}" stroke-width="1.2"/>
+   <circle cx="32" cy="34" r="11" fill="#7D9A55"/>
+   <path d="M21 34 L8 26 L20 42 Z" fill="#7D9A55"/><path d="M43 34 L56 26 L44 42 Z" fill="#7D9A55"/>
+   <path d="M20 29 a12 12 0 0 1 24 0 z" fill="#E0A32E"/>
+   <path d="M17 29 h30" stroke="${OUT}" stroke-width="2.4"/>
+   <circle cx="28" cy="34" r="1.9" fill="${OUT}" stroke="none"/><circle cx="36" cy="34" r="1.9" fill="${OUT}" stroke="none"/>
+   <path d="M27 41 q5 3 10 0" fill="none" stroke="${OUT}" stroke-width="1.8"/>
+   </g>${att(22,48)}${att(43,48)}${att(27,74)}${att(38,74)}</svg>`,
+};
+
+/* ================= données ================= */
 const HEROS=[
  {id:'gue',nom:'Guérin',cls:'Chevalier blasé',rang:1,pvm:62,res:'Rancune',resv:0,resmax:10},
  {id:'flo',nom:'Florimond',cls:'Barde critique',rang:2,pvm:40,res:'Matière',resv:2,resmax:8},
  {id:'beu',nom:'Beuzelin',cls:'Roublard admin.',rang:3,pvm:42,res:'Formulaires',resv:2,resmax:5},
  {id:'odo',nom:'Odon',cls:'Mage du dimanche',rang:4,pvm:34,res:'Confiance',resv:0,resmax:5},
 ];
-
 const CAPA={
- gue:[
-  {n:'Coup de bouclier',d:'5–8 dég. · 25 % étourdit',cible:'ennemi',cout:0},
-  {n:'Par pur dépit',d:'3 + 4 × Rancune · consomme tout',cible:'ennemi',cout:0,besoin:h=>h.resv>0}],
- flo:[
-  {n:'Remarque appuyée',d:'allié +35 % dég. 2 t. · +15 rousp.',cible:'allie',cout:1},
-  {n:'Envenimer',d:'2 alliés +25 rousp. · oriente l\'engueulade',cible:'auto',cout:3}],
- beu:[
-  {n:'Signification',d:'3–6 dég. · +1 Procédure',cible:'ennemi',cout:0},
-  {n:'Mise en demeure',d:'+2 Procédure · 0 dégât',cible:'ennemi',cout:1}],
- odo:[
-  {n:'Boule de feu (probablement)',d:'instable · 8–14 dég. ou retour de flamme',cible:'ennemi',cout:0},
-  {n:'Petit sort de rien du tout',d:'2–4 dég. garantis · +1 Confiance',cible:'ennemi',cout:0}],
+ gue:[{n:'Coup de bouclier',d:'5–8 dégâts · 25 % étourdit',c:'ennemi',k:0},
+      {n:'Par pur dépit',d:'3 + 4 × Rancune · consomme tout',c:'ennemi',k:0,si:h=>h.resv>0}],
+ flo:[{n:'Remarque appuyée',d:'un allié : +35 % dégâts 2 tours, +15 rouspétance',c:'allie',k:1},
+      {n:'Envenimer',d:'les 2 plus remontés : +25 rouspétance · oriente l’engueulade',c:'auto',k:3}],
+ beu:[{n:'Signification',d:'3–6 dégâts · +1 Procédure',c:'ennemi',k:0},
+      {n:'Mise en demeure',d:'+2 Procédure · aucun dégât',c:'ennemi',k:1}],
+ odo:[{n:'Boule de feu (probablement)',d:'instable · 8–14 dégâts, ou retour de flamme',c:'ennemi',k:0},
+      {n:'Petit sort de rien du tout',d:'2–4 dégâts garantis · +1 Confiance',c:'ennemi',k:0}],
 };
-
 const BARKS={
- rate:{
-  gue:["Voilà.","C'est exactement ce que je pensais.","Bon.","Je note que j'ai essayé."],
-  flo:["Ce n'est pas passé loin. Si.","J'ai visé la silhouette. C'était l'ombre.","Personne n'a vu ça.","On efface."],
+ rate:{gue:["Voilà.","C'est exactement ce que je pensais.","Bon.","Je note que j'ai essayé."],
+  flo:["Ce n'est pas passé loin. Si.","J'ai visé la silhouette. C'était l'ombre.","Personne n'a vu ça. Personne.","On efface."],
   beu:["Le document est parti de travers. Ça arrive.","Il y a un aléa de service.","Je le consigne comme incident.","Ce n'est pas un échec, c'est un report."],
-  odo:["C'est le vent.","Il y a un courant d'air terrible ici.","Ça n'a rien à voir avec moi.","Le sort est parti. Ailleurs, mais il est parti."]},
- crit:{
-  gue:["Ça, c'était pour hier.","Je ne suis pas de bonne humeur.","Voilà. Content ?","Ça fait du bien. Ça ne change rien, mais ça fait du bien."],
+  odo:["C'est le vent.","Il y a un courant d'air terrible, ici.","Ça n'a rien à voir avec moi.","Le sort est parti. Ailleurs, mais il est parti."]},
+ crit:{gue:["Ça, c'était pour hier.","Je ne suis pas de bonne humeur.","Voilà. Content ?","Ça fait du bien. Ça ne change rien, mais ça fait du bien."],
   flo:["Je m'étonne moi-même. Pas tant que ça.","Prenez-en de la graine. Ou pas.","Je précise que c'était volontaire.","Notez l'heure."],
   beu:["Recevable.","Signifié en bonne et due forme.","Le dossier avance.","C'est le service qui gagne, pas moi."],
-  odo:["ÇA A MARCHÉ.","Vous avez vu ? Vous avez vu ?","J'ai rien changé pourtant.","Refaites-moi confiance. Une fois."]},
- tue:{
-  gue:["Suivant.","Il en reste.","On avance.","Bien."],
+  odo:["ÇA A MARCHÉ.","Vous avez vu ? Vous avez vu ?","J'ai rien changé, pourtant.","Refaites-moi confiance. Une fois."]},
+ tue:{gue:["Suivant.","Il en reste.","On avance.","Bien."],
   flo:["Un de moins à supporter.","Il n'aurait pas dû se mettre là.","Voilà pour la strophe trois.","Je lui avais dit."],
   beu:["Dossier clos.","Classé sans suite.","Je mets à jour l'effectif adverse.","Il n'était pas à jour de ses cotisations."],
   odo:["Je crois que c'est moi qui ai fait ça.","Est-ce que quelqu'un a vu ?","Enfin.","Bon. Une fois sur deux, hein."]},
- retour:{
-  odo:["Pardon. Pardon. PARDON.","Ce n'était pas la bonne page.","Il manque les pages 40 à 60, je rappelle.","Techniquement, le sort a fonctionné."]},
- bas:{
-  gue:["Je tiens. Ça ne veut pas dire que je vais bien.","Quelqu'un pourrait m'aider. Quelqu'un.","J'ai connu pire. Pas beaucoup."],
+ retour:{odo:["Pardon. Pardon. PARDON.","Ce n'était pas la bonne page.","Il manque les pages 40 à 60, je rappelle.","Techniquement, le sort a fonctionné."]},
+ bas:{gue:["Je tiens. Ça ne veut pas dire que je vais bien.","Quelqu'un pourrait m'aider. Quelqu'un.","J'ai connu pire. Pas beaucoup."],
   flo:["Je saigne, et personne ne relève.","C'est fascinant, ce désintérêt général.","Je vais m'asseoir deux minutes."],
   beu:["Je vais devoir déclarer un accident du travail.","La procédure prévoit un arrêt. La procédure.","Ceci sera imputé à quelqu'un."],
   odo:["J'AVAIS DIT QUE J'ÉTAIS FROMAGER.","Je ne suis pas censé être au contact !","Pourquoi c'est toujours moi ?"]},
- mort:{
-  gue:"Bon. Au moins, je ne participe plus.",
-  flo:"Voilà. Maintenant, plus personne ne vous dira la vérité.",
-  beu:"Le dossier est dans la sacoche. La sacoche est sur moi. Bon courage.",
-  odo:"J'AVAIS DIT QUE J'ÉTAIS FROMAGER !"},
+ mort:{gue:"Bon. Au moins, je ne participe plus.",flo:"Voilà. Maintenant, plus personne ne vous dira la vérité.",
+  beu:"Le dossier est dans la sacoche. La sacoche est sur moi. Bon courage.",odo:"J'AVAIS DIT QUE J'ÉTAIS FROMAGER !"},
+ gob:["On avait dit pas avant 14 h.","Je suis pas payé pour ça.","Vous avez un rendez-vous ?","C'est noté au registre, ça ?"],
 };
-
-/* ouvertures et répliques d'engueulade, par personnage */
-const ENG_OUVRE={
- gue:["%s, ça fait trois tours que je prends tout. Trois.","Je ne dis rien depuis le début. Là je dis quelque chose, %s.","%s, tu étais où, exactement, pendant que je servais de porte ?","Je vais être très clair, %s : je n'ai pas signé pour ça."],
+const ENG_A={
+ gue:["%s, ça fait trois tours que je prends tout. Trois.","Je ne dis rien depuis le début. Là, je dis quelque chose, %s.","%s, tu étais où, exactement, pendant que je servais de porte ?","Je vais être clair, %s : je n'ai pas signé pour ça."],
  flo:["%s, je vais être honnête, et ça va faire mal.","On peut parler de ce que %s vient de faire ? On peut ?","%s, sur une échelle de un à dix, c'était en dessous.","Je documente, %s. Je documente tout, pour plus tard."],
- beu:["%s, il va falloir justifier ça par écrit.","Je signale que %s n'a suivi aucune des étapes prévues.","%s, votre méthode n'est pas conforme. Elle n'est même pas une méthode.","Il y a un protocole, %s. Il tient sur une page."],
+ beu:["%s, il va falloir justifier ça par écrit.","Je signale que %s n'a suivi aucune des étapes prévues.","%s, votre méthode n'est pas conforme. Ce n'est même pas une méthode.","Il y a un protocole, %s. Il tient sur une page."],
  odo:["%s, tout le monde me regarde comme si c'était ma faute.","Je fais ce que je peux, %s ! Avec ce que j'ai !","%s, personne ici n'a lu mon grimoire. Personne.","C'est toujours moi, %s. C'est toujours moi."]};
-const ENG_REPOND={
+const ENG_B={
  gue:["Tu as fini ?","Je ne me justifierai pas devant toi.","Continue. Ça m'occupe.","C'est ça. Note-le quelque part."],
- flo:["Je note que tu montes le ton. Ça te va bien.","Ah, on est passés aux reproches. Enfin du contenu.","Dis-le encore, j'écris une chanson.","Tu as raison. Ça ne change rien, mais tu as raison."],
+ flo:["Je note que tu montes le ton. Ça te va bien.","Ah, on est passés aux reproches. Enfin du contenu.","Dis-le encore, j'en fais une chanson.","Tu as raison. Ça ne change rien, mais tu as raison."],
  beu:["Je prends acte.","Ce n'est pas le lieu. Ni le moment. Ni la procédure.","Vous pourrez le déposer par écrit, en bas, au guichet.","J'enregistre votre réclamation. Elle sera traitée."],
  odo:["Vous êtes injustes. Tous.","Je vais m'en aller, moi, un jour.","C'était UNE FOIS.","Bon. Bon bon bon."]};
-
 const D8=[
- {n:'On se calme',t:'Toute la Rouspétance du groupe −40. Rien d\'autre. Personne n\'ose parler.',f:S=>{S.heros.forEach(h=>h.rousp=Math.max(0,h.rousp-40))}},
- {n:'Ça fait du bien de le dire',t:'Groupe : +30 % dégâts, −25 % précision, 2 tours.',f:S=>{S.buffGroupe={dmg:1.3,prec:-.25,t:2}}},
- {n:'Bouderie',t:'Le vexé saute son prochain tour, puis revient avec un critique garanti.',f:(S,a,b)=>{b.saute=1;b.critGaranti=1}},
- {n:'Coalition',t:'Les deux se liguent : +50 % de dégâts pour eux, −1 initiative pour les autres.',f:(S,a,b)=>{a.coal=3;b.coal=3}},
- {n:'Le silence gênant',t:'Personne ne parle. +2 esquive pour tous, Moral en berne.',f:S=>{S.esquive=3}},
- {n:'Escalade',t:'Un troisième s\'en mêle. Tout le monde +25 Rouspétance, mais une action en plus ce tour.',f:S=>{S.heros.forEach(h=>h.rousp=Math.min(100,h.rousp+25));S.bonusAction=1}},
- {n:'Démission',t:'Le personnage quitte la formation 2 tours. Il reviendra à pleine santé, avec une note de frais.',f:(S,a,b)=>{b.parti=2}},
- {n:'Réconciliation suspecte',t:'Les deux se soignent de 20 % et deviennent Complices jusqu\'à la fin du combat.',f:(S,a,b)=>{[a,b].forEach(h=>h.pv=Math.min(h.pvm,h.pv+Math.round(h.pvm*.2)));a.complice=b.id;b.complice=a.id}},
+ {n:'On se calme',t:"Toute la Rouspétance du groupe tombe de 40. Rien d'autre. Personne n'ose parler.",f:S=>S.heros.forEach(h=>h.rousp=Math.max(0,h.rousp-40))},
+ {n:'Ça fait du bien de le dire',t:'Le groupe : +30 % de dégâts et −25 % de précision pendant 2 tours.',f:S=>S.buffG={dmg:1.3,prec:-.25,t:2}},
+ {n:'Bouderie',t:'Le vexé saute son prochain tour, puis revient avec un critique garanti.',f:(S,a,b)=>{b.saute=1;b.critG=1}},
+ {n:'Coalition',t:'Les deux se liguent : +50 % de dégâts pour eux pendant 3 tours.',f:(S,a,b)=>{a.coal=3;b.coal=3}},
+ {n:'Le silence gênant',t:'Plus personne ne parle. +2 esquive pour tout le monde, moral au plus bas.',f:S=>S.esq=3},
+ {n:'Escalade',t:"Un troisième s'en mêle. Tout le monde +25 Rouspétance.",f:S=>S.heros.forEach(h=>h.rousp=Math.min(100,h.rousp+25))},
+ {n:'Démission',t:'Le personnage quitte la formation 2 tours. Il reviendra à pleine santé, avec une note de frais.',f:(S,a,b)=>b.parti=2},
+ {n:'Réconciliation suspecte',t:'Les deux se soignent de 20 % et deviennent Complices : les dégâts reçus sont partagés.',f:(S,a,b)=>{[a,b].forEach(h=>h.pv=Math.min(h.pvm,h.pv+Math.round(h.pvm*.2)));a.comp=b.id;b.comp=a.id}},
 ];
 
-/* ---------- état ---------- */
-let S,dernierBark='';
-function init(){
-  S={
-    heros:HEROS.map(h=>({...h,pv:h.pvm,rousp:0,mort:false,buff:0,saute:0,critGaranti:0,coal:0,parti:0,complice:null,proc:0})),
-    ennemis:[0,1,2].map(i=>({id:'gob'+i,nom:'Gobelin '+(i+1),pv:26,pvm:26,mort:false,proc:0,etourdi:0,convoque:0})),
-    tour:1,file:[],idx:0,phase:'',capa:null,
-    nbEng:0,nbRate:0,choix:[],buffGroupe:null,esquive:0,bonusAction:0,oriente:false,fini:false
-  };
-  $('journal').innerHTML='';
-  log('sys','<b>Combat 1.</b> Quatre incapables, trois gobelins syndiqués. Objectif : vider la salle. Motif : la belle-mère du seigneur arrive dans trois semaines.');
-  nouveauTour();
-}
-
-function log(cls,html){
-  const p=document.createElement('p');p.className='l '+cls;p.innerHTML=html;
-  $('journal').appendChild(p);$('journal').scrollTop=$('journal').scrollHeight;
-}
-function dit(h,txt){
-  if(txt===dernierBark)return;dernierBark=txt;
-  log('',`<span class="sp">${h.nom}</span>${txt}`);
-}
-function bark(ev,h){const p=BARKS[ev]&&BARKS[ev][h.id];if(p)dit(h,pick(p));}
-
-/* ---------- rouspétance ---------- */
-function rousp(h,n,cause){
-  if(h.mort)return;
-  h.rousp=Math.max(0,Math.min(100,h.rousp+n));
-  if(n>0)h.grief=cause||h.grief;
-}
-function echecGroupe(){
-  S.nbRate++;
-  const f=S.heros.find(h=>h.id==='flo');
-  if(f&&!f.mort)f.resv=Math.min(f.resmax,f.resv+1);
-}
-
-/* ---------- tour ---------- */
-function nouveauTour(){
-  S.heros.forEach(h=>{
-    if(h.parti>0){h.parti--;if(h.parti===0&&!h.mort){h.pv=h.pvm;log('sys',`<b>${h.nom}</b> revient. Il a une note de frais.`);}}
-    if(h.coal>0)h.coal--;
+/* ================= rythme ================= */
+let mode='normal',resoudre=null,minuteur=null;
+function duree(txt){const b=1500+(txt?txt.length*40:0);return mode==='rapide'?b*.55:b}
+function attendre(ms){
+  return new Promise(res=>{
+    resoudre=res;
+    $('couche').innerHTML='<div class="avance" id="avc"></div><div class="hint">clic pour avancer</div>';
+    $('avc').onclick=avancer;
+    if(mode!=='manuel')minuteur=setTimeout(avancer,Math.min(ms,6000));
   });
-  if(S.buffGroupe){S.buffGroupe.t--;if(S.buffGroupe.t<=0)S.buffGroupe=null;}
-  if(S.esquive>0)S.esquive--;
-  const vivants=[...S.heros.filter(h=>!h.mort&&h.parti===0),...S.ennemis.filter(e=>!e.mort)];
-  S.file=vivants.map(u=>({u,ini:rnd(1,10)+(u.rang?6-u.rang:3)})).sort((a,b)=>b.ini-a.ini).map(x=>x.u);
-  S.idx=0;
-  $('cTour').textContent=S.tour;
-  suivant();
 }
-function suivant(){
-  if(S.fini)return;
-  if(S.ennemis.every(e=>e.mort))return finir(true);
-  if(S.heros.every(h=>h.mort))return finir(false);
-  const decl=S.heros.find(h=>!h.mort&&h.rousp>=100&&h.parti===0);
-  if(decl)return engueulade(decl);
-  if(S.idx>=S.file.length){S.tour++;return nouveauTour();}
-  const u=S.file[S.idx++];
-  if(u.mort||u.parti>0)return suivant();
-  if(u.saute>0){u.saute--;log('sys',`<b>${u.nom}</b> boude. Il passe son tour.`);return suivant();}
-  if(u.etourdi>0){u.etourdi--;log('sys',`<b>${u.nom}</b> est étourdi.`);return suivant();}
-  if(u.convoque>0){u.convoque--;log('sys',`<b>${u.nom}</b> est convoqué. Il est ailleurs.`);return suivant();}
-  S.actif=u;
-  if(u.rang){S.phase='select';rendre();}
-  else{S.phase='ennemi';rendre();setTimeout(()=>jouerEnnemi(u),520);}
+function avancer(){
+  if(!resoudre)return;
+  clearTimeout(minuteur);$('couche').innerHTML='';
+  const r=resoudre;resoudre=null;r();
 }
+addEventListener('keydown',e=>{if((e.key===' '||e.key==='Enter')&&resoudre){e.preventDefault();avancer();}});
+function setMode(m){
+  mode=m;
+  [['vM','manuel'],['vN','normal'],['vR','rapide']].forEach(([id,v])=>$(id).setAttribute('aria-pressed',String(v===m)));
+}
+$('vM').onclick=()=>setMode('manuel');$('vN').onclick=()=>setMode('normal');$('vR').onclick=()=>setMode('rapide');
 
-/* ---------- combat ---------- */
-function touche(h){
-  let p=.78+(S.buffGroupe?S.buffGroupe.prec:0);
-  return Math.random()<p;
+/* ================= état ================= */
+let S;
+function init(){
+  S={heros:HEROS.map(h=>({...h,pv:h.pvm,rousp:0,mort:false,buff:0,saute:0,critG:0,coal:0,parti:0,comp:null})),
+     ennemis:[0,1,2].map(i=>({id:'g'+i,nom:'Gobelin '+(i+1),fig:'gob',pv:26,pvm:26,mort:false,proc:0,etourdi:0,convoque:0})),
+     tour:1,file:[],actif:null,nbEng:0,nbRate:0,choix:[],buffG:null,esq:0,oriente:false,fini:false};
+  $('journal').innerHTML='';$('modale').innerHTML='';$('couche').innerHTML='';
+  log('sys',"<b>Combat.</b> Quatre incapables, trois gobelins syndiqués. Objectif : vider la salle. Motif : la belle-mère du seigneur arrive dans trois semaines.");
+  rendre();boucle();
 }
-function degats(h,n){
-  let m=1;
-  if(S.buffGroupe)m*=S.buffGroupe.dmg;
-  if(h.buff>0)m*=1.35;
-  if(h.coal>0)m*=1.5;
-  return Math.max(1,Math.round(n*m));
+function log(c,h){const p=document.createElement('p');p.className='l '+c;p.innerHTML=h;
+  $('journal').appendChild(p);$('journal').scrollTop=$('journal').scrollHeight;}
+
+/* ================= affichage ================= */
+function el(u){return document.querySelector(`[data-u="${u.id}"]`)}
+function flotte(u,txt,cls){
+  const f=el(u);if(!f)return;
+  const d=document.createElement('div');d.className='vol '+cls;d.textContent=txt;
+  d.style.left='50%';d.style.top='6px';d.style.transform='translateX(-50%)';
+  f.appendChild(d);setTimeout(()=>d.remove(),1100);
 }
-function frapper(h,e,n,{critable=true}={}){
-  const crit=critable&&(h.critGaranti||Math.random()<.12);
-  if(h.critGaranti)h.critGaranti=0;
+function anim(u,cls){const f=el(u);if(!f||RM)return;f.classList.add(cls);setTimeout(()=>f.classList.remove(cls),360);}
+function bulleVide(){document.querySelectorAll('.bulle').forEach(b=>b.remove())}
+async function dit(u,txt){
+  bulleVide();
+  const f=el(u);
+  if(f){
+    const b=document.createElement('div');b.className='bulle';
+    const i=[...f.parentNode.children].indexOf(f),n=f.parentNode.children.length;
+    if(n>2&&i===0)b.classList.add('gauche');if(n>2&&i===n-1)b.classList.add('droite');
+    b.innerHTML=`<b>${u.nom}</b>${txt}`;f.appendChild(b);
+  }
+  log('',`<span class="sp">${u.nom}</span>${txt}`);
+  await attendre(duree(txt));
+  bulleVide();
+}
+function bark(ev,u){const p=BARKS[ev]&&BARKS[ev][u.id];return p?dit(u,pick(p)):Promise.resolve()}
+
+function figure(u,visable,onclick){
+  const b=document.createElement(visable?'button':'div');
+  b.className='fig'+(u.mort?' ko':'')+(S.actif===u?' actif':'')+(visable?' visable':'');
+  b.dataset.u=u.id;
+  b.innerHTML=FIG[u.fig||u.id]+
+    `<div class="pvmini"><i style="width:${Math.max(0,u.pv/u.pvm*100)}%"></i></div>
+     <div class="nomfig">${u.nom}${u.proc?' · P'+u.proc:''}${u.etourdi?' · étourdi':''}${u.convoque?' · convoqué':''}</div>`;
+  if(visable)b.onclick=onclick;
+  return b;
+}
+function rendre(visables,cb){
+  $('adv').innerHTML='';S.ennemis.forEach(e=>$('adv').appendChild(figure(e,visables==='ennemi'&&!e.mort,()=>cb(e))));
+  $('nous').innerHTML='';S.heros.forEach(h=>$('nous').appendChild(figure(h,visables==='allie'&&!h.mort&&h!==S.actif,()=>cb(h))));
+  $('equipe').innerHTML='';
+  S.heros.forEach(h=>{
+    const d=document.createElement('div');
+    d.className='carte'+(h.mort?' ko':'')+(S.actif===h?' actif':'');
+    d.innerHTML=`<div class="n">${h.nom}<i>rang ${h.rang}</i></div>
+      <div class="lab"><span>PV</span><b>${h.pv}/${h.pvm}</b></div><div class="bar"><i style="width:${Math.max(0,h.pv/h.pvm*100)}%"></i></div>
+      <div class="lab"><span>Rouspétance</span><b>${h.rousp}</b></div><div class="bar r${h.rousp>=75?' chaud':''}"><i style="width:${h.rousp}%"></i></div>
+      <div class="lab"><span>${h.res}</span><b>${h.resv}</b></div>
+      <div class="etat">${h.parti?'démissionnaire':h.buff?'remonté':h.comp?'complice':h.coal?'coalisé':h.mort?'à terre':''}</div>`;
+    $('equipe').appendChild(d);
+  });
+  $('cTour').textContent=S.tour;$('cEng').textContent=S.nbEng;$('cRate').textContent=S.nbRate;
+  const fr=$('frise');fr.innerHTML='<span class="et">Ordre</span>';
+  S.file.forEach((u,i)=>{
+    const j=document.createElement('span');
+    j.className='jeton'+(u.rang?' moi':'')+(u===S.actif?' now':'')+(u.mort?' ko':'');
+    j.textContent=u.nom;fr.appendChild(j);
+  });
+}
+function phase(g,d){$('phG').innerHTML=g;$('phD').innerHTML=d||''}
+
+/* ================= règles ================= */
+function rousp(h,n){if(h.mort)return;const av=h.rousp;h.rousp=Math.max(0,Math.min(100,h.rousp+n));
+  if(n>0&&h.rousp!==av)flotte(h,'+'+n+' rousp.','rou');}
+function echec(){S.nbRate++;const f=S.heros.find(h=>h.id==='flo');if(f&&!f.mort)f.resv=Math.min(f.resmax,f.resv+1);}
+function degats(h,n){let m=1;if(S.buffG)m*=S.buffG.dmg;if(h.buff>0)m*=1.35;if(h.coal>0)m*=1.5;return Math.max(1,Math.round(n*m))}
+
+async function frapper(h,e,n,critable=true){
+  anim(h,'charge');await attendre(RM?120:240);
+  const crit=critable&&(h.critG||Math.random()<.12);if(h.critG)h.critG=0;
   let d=degats(h,n);if(crit)d=Math.round(d*1.8);
-  e.pv-=d;
-  log('coup',`${h.nom} → ${e.nom} : <b>${d}</b>${crit?' (CRITIQUE)':''}`);
-  if(crit){rousp(h,-15);bark('crit',h);}
-  if(e.pv<=0){e.pv=0;e.mort=true;rousp(h,-10);log('bon',`${e.nom} est hors de combat.`);bark('tue',h);}
+  e.pv=Math.max(0,e.pv-d);
+  anim(e,'frappe');flotte(e,'−'+d,crit?'crit':'deg');
+  log('sys',`${h.nom} → ${e.nom} : <b>${d}</b>${crit?' (critique)':''}`);
+  rendre();await attendre(700);
+  if(crit){rousp(h,-15);await bark('crit',h);}
+  if(e.pv<=0&&!e.mort){e.mort=true;rousp(h,-10);log('ok',`${e.nom} est hors de combat.`);rendre();await bark('tue',h);}
 }
-function rater(h,e){
-  log('alerte',`${h.nom} rate ${e?e.nom:'sa cible'}.`);
-  rousp(h,12,'a raté');echecGroupe();bark('rate',h);
-  S.heros.forEach(a=>{if(a!==h&&!a.mort)rousp(a,4);});
-  $('cRate').textContent=S.nbRate;
+async function rater(h,e){
+  anim(h,'charge');flotte(e||h,'RATÉ','rate');
+  log('hot',`${h.nom} rate ${e?e.nom:'sa cible'}.`);
+  rousp(h,12);echec();S.heros.forEach(a=>{if(a!==h&&!a.mort)rousp(a,4)});
+  rendre();await attendre(560);await bark('rate',h);
+}
+async function chute(u){
+  if(u.pv>0||u.mort)return;
+  u.mort=true;log('hot',`<b>${u.nom}</b> est à terre.`);rendre();
+  if(BARKS.mort[u.id])await dit(u,BARKS.mort[u.id]);
+  S.heros.forEach(a=>{if(!a.mort)rousp(a,20)});echec();rendre();
 }
 
-function agir(capa,cible){
-  const h=S.actif;
-  h.resv=Math.max(0,h.resv-(capa.cout||0));
+/* ================= tour du joueur ================= */
+function choisir(h){
+  return new Promise(res=>{
+    $('titre').innerHTML=`Au tour de <b>${h.nom}</b> — ${h.cls} · ${h.res} ${h.resv}`;
+    const z=$('btns');z.innerHTML='';
+    CAPA[h.id].forEach(c=>{
+      const ok=(c.k||0)<=h.resv&&(!c.si||c.si(h));
+      const b=document.createElement('button');b.className='act';
+      b.innerHTML=`${c.n}<span>${c.d}${c.k?' · coût '+c.k:''}</span>`;b.disabled=!ok;
+      b.onclick=()=>{
+        if(c.c==='auto')return res({c,cible:null});
+        $('titre').innerHTML=`<b>${c.n}</b> — choisissez une cible sur la scène`;
+        z.innerHTML='';
+        const an=document.createElement('button');an.className='act';an.textContent='Annuler';
+        an.onclick=()=>{rendre();res(choisir(h))};z.appendChild(an);
+        rendre(c.c,cible=>{rendre();res({c,cible})});
+      };
+      z.appendChild(b);
+    });
+  });
+}
+async function executer(h,c,cible){
+  h.resv=Math.max(0,h.resv-(c.k||0));
   if(h.id==='gue'){
-    if(capa.n==='Coup de bouclier'){
-      if(touche(h)){frapper(h,cible,rnd(5,8));if(Math.random()<.25&&!cible.mort){cible.etourdi=1;log('bon',`${cible.nom} est étourdi.`);}}
-      else rater(h,cible);
+    if(c.n==='Coup de bouclier'){
+      if(Math.random()<.78+(S.buffG?S.buffG.prec:0)){
+        await frapper(h,cible,rnd(5,8));
+        if(Math.random()<.25&&!cible.mort){cible.etourdi=1;log('ok',`${cible.nom} est étourdi.`);rendre();}
+      }else await rater(h,cible);
     }else{
-      const r=h.resv;h.resv=0;
-      if(touche(h))frapper(h,cible,3+4*r);else rater(h,cible);
-      log('sys',`Rancune dépensée : <b>${r}</b>.`);
+      const r=h.resv;h.resv=0;log('sys',`Rancune dépensée : <b>${r}</b>.`);
+      if(Math.random()<.78)await frapper(h,cible,3+4*r);else await rater(h,cible);
     }
-  }
-  else if(h.id==='beu'){
-    if(capa.n==='Signification'){
-      if(touche(h)){frapper(h,cible,rnd(3,6));if(!cible.mort)procedure(cible,1);}else rater(h,cible);
-    }else{procedure(cible,2);log('sys',`Mise en demeure signifiée à <b>${cible.nom}</b>.`);}
-  }
-  else if(h.id==='odo'){
-    if(capa.n==='Petit sort de rien du tout'){
-      frapper(h,cible,rnd(2,4),{critable:false});
-      h.resv=Math.min(h.resmax,h.resv+1);
+  }else if(h.id==='beu'){
+    if(c.n==='Signification'){
+      if(Math.random()<.78){await frapper(h,cible,rnd(3,6));if(!cible.mort)await proc(cible,1);}
+      else await rater(h,cible);
+    }else{await proc(cible,2);}
+  }else if(h.id==='odo'){
+    if(c.n==='Petit sort de rien du tout'){
+      await frapper(h,cible,rnd(2,4),false);h.resv=Math.min(h.resmax,h.resv+1);
     }else{
-      const p=.5+.05*h.resv;
-      if(Math.random()<p){frapper(h,cible,rnd(8,14));h.resv=Math.min(h.resmax,h.resv+1);}
+      if(Math.random()<.5+.05*h.resv){await frapper(h,cible,rnd(8,14));h.resv=Math.min(h.resmax,h.resv+1);}
       else{
-        h.resv=0;
-        const v=pick(S.heros.filter(a=>!a.mort&&a!==h))||h;
-        v.pv-=6;log('alerte',`Retour de flamme : <b>${v.nom}</b> prend 6.`);
-        rousp(v,25,'a pris le sort d\'Odon');rousp(h,12,'a fait rater son sort');echecGroupe();
-        bark('retour',h);verifMort(v);
-        $('cRate').textContent=S.nbRate;
+        h.resv=0;const v=pick(S.heros.filter(a=>!a.mort&&a!==h))||h;
+        anim(h,'charge');await attendre(240);
+        v.pv=Math.max(0,v.pv-6);anim(v,'frappe');flotte(v,'−6','deg');
+        log('hot',`Retour de flamme : <b>${v.nom}</b> prend 6.`);
+        rousp(v,25);rousp(h,12);echec();rendre();await attendre(700);
+        await bark('retour',h);await chute(v);
       }
     }
-  }
-  else if(h.id==='flo'){
-    if(capa.n==='Remarque appuyée'){
-      cible.buff=2;rousp(cible,15,'s\'est fait humilier par Florimond');
-      log('sys',`<b>${cible.nom}</b> : +35 % de dégâts pendant 2 tours.`);
-      dit(h,pick(["Vas-y, montre-nous. Pour une fois.","Ce n'est pas un compliment. Mais fais-en quelque chose.","Je ne te crois pas capable. Prouve-moi le contraire."]));
+  }else{
+    if(c.n==='Remarque appuyée'){
+      cible.buff=2;rousp(cible,15);
+      log('sys',`<b>${cible.nom}</b> : +35 % de dégâts pendant 2 tours.`);rendre();
+      await dit(h,pick(["Vas-y, montre-nous. Pour une fois.","Ce n'est pas un compliment. Mais fais-en quelque chose.","Je ne te crois pas capable. Prouve-moi le contraire."]));
     }else{
-      const c=S.heros.filter(a=>!a.mort&&a!==h).sort((a,b)=>b.rousp-a.rousp).slice(0,2);
-      c.forEach(a=>rousp(a,25,'a été monté contre les autres'));
-      S.oriente=true;
-      log('sys',`Engueulade orientée : <b>${c.map(x=>x.nom).join('</b> et <b>')}</b>.`);
-      dit(h,"Je ne déclenche rien. Je mets juste les gens en présence.");
+      const t=S.heros.filter(a=>!a.mort&&a!==h).sort((a,b)=>b.rousp-a.rousp).slice(0,2);
+      t.forEach(a=>rousp(a,25));S.oriente=true;rendre();
+      log('sys',`Engueulade orientée vers <b>${t.map(x=>x.nom).join('</b> et <b>')}</b>.`);
+      await dit(h,"Je ne déclenche rien. Je mets juste les gens en présence.");
     }
   }
-  finTour();
 }
-function procedure(e,n){
-  e.proc+=n;log('sys',`${e.nom} : Procédure <b>${e.proc}/3</b>.`);
-  if(e.proc>=3){e.proc=0;e.convoque=1;log('bon',`${e.nom} est convoqué. Il perd son tour.`);}
-}
-function verifMort(u){
-  if(u.pv<=0&&!u.mort){
-    u.pv=0;u.mort=true;
-    log('alerte',`<b>${u.nom}</b> est à terre.`);
-    if(BARKS.mort[u.id])dit(u,BARKS.mort[u.id]);
-    S.heros.forEach(a=>{if(!a.mort)rousp(a,20,'a vu tomber '+u.nom);});
-    echecGroupe();
-  }
-}
-function jouerEnnemi(e){
-  const vis=S.heros.filter(h=>!h.mort&&h.parti===0);
-  if(!vis.length)return finir(false);
-  const poids=vis.flatMap(h=>Array(Math.max(1,5-h.rang)).fill(h));
-  const c=pick(poids);
-  if(Math.random()<.74-(S.esquive?.15:0)){
-    const crit=Math.random()<.12;let d=rnd(5,9);if(crit)d=Math.round(d*1.8);
-    c.pv-=d;
-    log('coup',`${e.nom} → ${c.nom} : <b>${d}</b>${crit?' (CRITIQUE)':''}`);
-    if(crit)rousp(c,15,'a pris un critique');
-    if(c.id==='gue')c.resv=Math.min(c.resmax,c.resv+1);
-    if(c.complice){const o=S.heros.find(h=>h.id===c.complice);if(o&&!o.mort){o.pv-=Math.round(d/2);c.pv+=Math.round(d/2);log('sys',`Complices : les dégâts sont partagés.`);verifMort(o);}}
-    verifMort(c);
-    if(!c.mort&&c.pv<c.pvm*.3&&Math.random()<.5)bark('bas',c);
-  }else{
-    log('sys',`${e.nom} rate ${c.nom}.`);
-  }
-  finTour();
-}
-function finTour(){
-  S.heros.forEach(h=>{if(h.buff>0&&h!==S.actif)h.buff--;});
-  rendre();
-  if(S.bonusAction>0){S.bonusAction--;log('sys','Action supplémentaire pour le groupe.');}
-  setTimeout(suivant,S.phase==='ennemi'?360:240);
+async function proc(e,n){
+  e.proc+=n;log('sys',`${e.nom} : Procédure <b>${e.proc}/3</b>.`);flotte(e,'+'+n+' proc.','rou');rendre();
+  if(e.proc>=3){e.proc=0;e.convoque=1;log('ok',`${e.nom} est convoqué : il perd son tour.`);rendre();}
+  await attendre(520);
 }
 
-/* ---------- engueulade ---------- */
-function engueulade(a){
-  S.phase='eng';S.nbEng++;$('cEng').textContent=S.nbEng;
+/* ================= tour adverse ================= */
+async function jouerGobelin(e){
+  const vis=S.heros.filter(h=>!h.mort&&h.parti===0);if(!vis.length)return;
+  if(Math.random()<.3)await dit(e,pick(BARKS.gob));
+  const c=pick(vis.flatMap(h=>Array(Math.max(1,5-h.rang)).fill(h)));
+  anim(e,'charge');await attendre(RM?120:260);
+  if(Math.random()<.74-(S.esq?.15:0)){
+    const crit=Math.random()<.12;let d=rnd(5,9);if(crit)d=Math.round(d*1.8);
+    c.pv=Math.max(0,c.pv-d);anim(c,'frappe');flotte(c,'−'+d,crit?'crit':'deg');
+    log('sys',`${e.nom} → ${c.nom} : <b>${d}</b>${crit?' (critique)':''}`);
+    if(crit)rousp(c,15);
+    if(c.id==='gue')c.resv=Math.min(c.resmax,c.resv+1);
+    if(c.comp){const o=S.heros.find(h=>h.id===c.comp);
+      if(o&&!o.mort){const p=Math.round(d/2);o.pv=Math.max(0,o.pv-p);c.pv=Math.min(c.pvm,c.pv+p);
+      log('sys','Complices : les dégâts sont partagés.');flotte(o,'−'+p,'deg');}}
+    rendre();await attendre(700);
+    await chute(c);
+    if(!c.mort&&c.pv<c.pvm*.3&&Math.random()<.45)await bark('bas',c);
+  }else{
+    flotte(c,'ESQUIVE','rate');log('sys',`${e.nom} rate ${c.nom}.`);rendre();await attendre(560);
+  }
+}
+
+/* ================= engueulade ================= */
+function modale(html,cb){
+  $('modale').innerHTML=`<div class="voile"><div class="boite">${html}</div></div>`;
+  $('modale').querySelectorAll('button').forEach(b=>b.onclick=()=>cb(b));
+  const f=$('modale').querySelector('button');if(f)f.focus();
+}
+function choixModale(html){return new Promise(res=>modale(html,b=>res(b.dataset.c)))}
+async function engueulade(a){
   const autres=S.heros.filter(h=>!h.mort&&h!==a&&h.parti===0).sort((x,y)=>y.rousp-x.rousp);
-  if(!autres.length){a.rousp=40;return suivant();}
-  const b=autres[0];
-  const l1=pick(ENG_OUVRE[a.id]).replace('%s',b.nom);
-  const l2=pick(ENG_REPOND[b.id]);
-  log('alerte','— ENGUEULADE GÉNÉRALE —');
-  dit(a,l1);dit(b,l2);
-  ouvrir(`
+  if(!autres.length){a.rousp=40;return}
+  const b=autres[0];S.nbEng++;
+  phase('<b>Engueulade générale</b>','tout s’arrête');
+  log('hot','— ENGUEULADE GÉNÉRALE —');rendre();
+  const l1=pick(ENG_A[a.id]).replace('%s',b.nom),l2=pick(ENG_B[b.id]);
+  await dit(a,l1);await dit(b,l2);
+  const c=await choixModale(`
     <h3>Engueulade générale</h3>
     <div class="ech">
       <p class="l"><span class="sp">${a.nom}</span>${l1}</p>
       <p class="l"><span class="sp">${b.nom}</span>${l2}</p>
     </div>
     <div class="btns">
-      <button data-c="a">Prendre parti pour ${a.nom}<span class="cout">${a.nom} : rouspétance à 0, +25 % dégâts 2 tours. ${b.nom} reste à 60.</span></button>
-      <button data-c="b">Prendre parti pour ${b.nom}<span class="cout">${b.nom} : rouspétance à 0, +25 % dégâts 2 tours. ${a.nom} reste à 60.</span></button>
-      <button data-c="x" class="primaire">« Vos gueules »<span class="cout">Les deux retombent à 40. On tire sur la table d8.${S.oriente?' Engueulade orientée : un relancer disponible.':''}</span></button>
-    </div>`,btn=>{
-      const c=btn.dataset.c;S.choix.push(c);
-      if(c==='a'||c==='b'){
-        const g=c==='a'?a:b,p=c==='a'?b:a;
-        g.rousp=0;g.buff=2;p.rousp=60;
-        log('sys',`Le joueur prend parti pour <b>${g.nom}</b>. ${p.nom} reste à 60.`);
-        dit(p,pick(ENG_REPOND[p.id]));
-        fermer();suivant();
-      }else{
-        a.rousp=40;b.rousp=40;tirer(a,b,S.oriente);
-      }
-    });
+      <button class="act" data-c="a">Prendre parti pour ${a.nom}<span>${a.nom} : rouspétance à 0, +25 % de dégâts 2 tours. ${b.nom} reste à 60.</span></button>
+      <button class="act" data-c="b">Prendre parti pour ${b.nom}<span>${b.nom} : rouspétance à 0, +25 % de dégâts 2 tours. ${a.nom} reste à 60.</span></button>
+      <button class="act primaire" data-c="x">« Vos gueules »<span>Les deux retombent à 40, et on tire sur la table d8.${S.oriente?' Engueulade orientée : une relance disponible.':''}</span></button>
+    </div>`);
+  S.choix.push(c);$('modale').innerHTML='';
+  if(c!=='x'){
+    const g=c==='a'?a:b,p=c==='a'?b:a;
+    g.rousp=0;g.buff=2;p.rousp=60;rendre();
+    log('sys',`Le joueur prend parti pour <b>${g.nom}</b>.`);
+    await dit(p,pick(ENG_B[p.id]));
+  }else{
+    a.rousp=40;b.rousp=40;await tirer(a,b,S.oriente);
+  }
 }
-function tirer(a,b,relance){
+async function tirer(a,b,relance){
   const i=rnd(0,7),r=D8[i];
-  const corps=`
+  const c=await choixModale(`
     <h3>Résultat — d8 : ${i+1}</h3>
     <div class="ech">
-      <p class="l" style="font-family:var(--mono);font-size:13px;letter-spacing:.06em"><b>${r.n.toUpperCase()}</b></p>
+      <p class="l" style="font-family:var(--slab);font-size:20px;font-weight:700">${r.n}</p>
       <p class="l">${r.t}</p>
     </div>
     <div class="btns">
-      ${relance?'<button data-c="r">Relancer (engueulade orientée)<span class="cout">Florimond avait préparé le terrain. Une seule fois.</span></button>':''}
-      <button data-c="ok" class="primaire">Accepter</button>
-    </div>`;
-  ouvrir(corps,btn=>{
-    if(btn.dataset.c==='r'){S.oriente=false;return tirer(a,b,false);}
-    r.f(S,a,b);
-    log('alerte',`d8 → <b>${r.n}</b>. ${r.t}`);
-    fermer();suivant();
-  });
+      ${relance?'<button class="act" data-c="r">Relancer<span>Florimond avait préparé le terrain. Une seule fois.</span></button>':''}
+      <button class="act primaire" data-c="ok">Accepter</button>
+    </div>`);
+  $('modale').innerHTML='';
+  if(c==='r'){S.oriente=false;return tirer(a,b,false)}
+  r.f(S,a,b);log('hot',`d8 → <b>${r.n}</b>. ${r.t}`);rendre();
 }
 
-/* ---------- interface ---------- */
-function ouvrir(html,cb){
-  $('overlay').innerHTML=`<div class="voile"><div class="boite">${html}</div></div>`;
-  $('overlay').querySelectorAll('button').forEach(b=>b.onclick=()=>cb(b));
-  const f=$('overlay').querySelector('button');if(f)f.focus();
-}
-function fermer(){$('overlay').innerHTML='';}
-
-function boite(u,extra){
-  const est=u.rang?'':'';
-  return `<div class="nom">${u.nom}<span>${u.rang?'rang '+u.rang:''}</span></div>
-    <div class="jauge"><i style="width:${Math.max(0,u.pv/u.pvm*100)}%"></i></div>
-    <div class="chiffres"><span>PV <b>${u.pv}</b>/${u.pvm}</span>${extra||''}</div>`;
-}
-function rendre(){
-  $('ennemis').innerHTML='';
-  S.ennemis.forEach(e=>{
-    const el=document.createElement(S.phase==='cible'&&S.capa.cible==='ennemi'&&!e.mort?'button':'div');
-    el.className='unite'+(e.mort?' mort':'')+(S.actif===e?' actif':'')+(S.phase==='cible'&&S.capa.cible==='ennemi'&&!e.mort?' visable':'');
-    el.innerHTML=boite(e,`<span>Proc. <b>${e.proc}</b>/3</span>`)+
-      `<div class="etiq">${e.convoque?'convoqué':e.etourdi?'étourdi':''}</div>`;
-    if(el.tagName==='BUTTON')el.onclick=()=>{S.phase='';agir(S.capa,e);};
-    $('ennemis').appendChild(el);
-  });
-  $('heros').innerHTML='';
-  S.heros.forEach(h=>{
-    const visable=S.phase==='cible'&&S.capa.cible==='allie'&&!h.mort&&h!==S.actif;
-    const el=document.createElement(visable?'button':'div');
-    el.className='unite'+(h.mort?' mort':'')+(S.actif===h?' actif':'')+(visable?' visable':'');
-    el.innerHTML=boite(h,`<span>${h.res} <b>${h.resv}</b></span>`)+
-      `<div class="jauge rousp"><i style="width:${h.rousp}%"></i></div>
-       <div class="res">rouspétance ${h.rousp}</div>
-       <div class="etiq">${h.parti?'démissionnaire':h.buff?'remonté':h.complice?'complice':h.coal?'coalisé':''}</div>`;
-    if(visable)el.onclick=()=>{S.phase='';agir(S.capa,h);};
-    $('heros').appendChild(el);
-  });
-  const btns=$('btns');btns.innerHTML='';
-  if(S.phase==='select'){
-    const h=S.actif;
-    $('qui').innerHTML=`Au tour de <b>${h.nom}</b> — ${h.cls} · ${h.res} ${h.resv}`;
-    CAPA[h.id].forEach(c=>{
-      const ok=(c.cout||0)<=h.resv&&(!c.besoin||c.besoin(h));
-      const b=document.createElement('button');
-      b.innerHTML=`${c.n}<span class="cout">${c.d}${c.cout?' · coût '+c.cout:''}</span>`;
-      b.disabled=!ok;
-      b.onclick=()=>{
-        if(c.cible==='auto'){S.phase='';agir(c,null);}
-        else{S.capa=c;S.phase='cible';$('qui').innerHTML=`<b>${c.n}</b> — choisissez une cible`;rendre();}
-      };
-      btns.appendChild(b);
+/* ================= boucle ================= */
+async function boucle(){
+  while(!S.fini){
+    S.heros.forEach(h=>{
+      if(h.parti>0){h.parti--;if(!h.parti&&!h.mort){h.pv=h.pvm;log('sys',`<b>${h.nom}</b> revient. Il a une note de frais.`)}}
+      if(h.coal>0)h.coal--;if(h.buff>0)h.buff--;
     });
-  }else if(S.phase==='cible'){
-    const b=document.createElement('button');b.textContent='Annuler';
-    b.onclick=()=>{S.phase='select';rendre();};btns.appendChild(b);
-  }else{
-    $('qui').textContent=S.phase==='ennemi'?'Tour adverse…':'…';
+    if(S.buffG&&--S.buffG.t<=0)S.buffG=null;
+    if(S.esq>0)S.esq--;
+    const v=[...S.heros.filter(h=>!h.mort&&!h.parti),...S.ennemis.filter(e=>!e.mort)];
+    S.file=v.map(u=>({u,i:rnd(1,10)+(u.rang?6-u.rang:3)})).sort((x,y)=>y.i-x.i).map(x=>x.u);
+
+    for(const u of S.file){
+      if(S.fini)return;
+      if(S.ennemis.every(e=>e.mort))return fin(true);
+      if(S.heros.every(h=>h.mort))return fin(false);
+      const d=S.heros.find(h=>!h.mort&&h.rousp>=100&&!h.parti);
+      if(d)await engueulade(d);
+      if(u.mort||u.parti)continue;
+      S.actif=u;rendre();
+      if(u.saute){u.saute--;phase(`Tour ${S.tour}`,`${u.nom} boude`);log('sys',`<b>${u.nom}</b> boude et passe son tour.`);await attendre(900);continue}
+      if(u.etourdi){u.etourdi--;phase(`Tour ${S.tour}`,`${u.nom} est étourdi`);await attendre(900);continue}
+      if(u.convoque){u.convoque--;phase(`Tour ${S.tour}`,`${u.nom} est convoqué`);log('sys',`<b>${u.nom}</b> est ailleurs.`);await attendre(900);continue}
+      if(u.rang){
+        phase(`Tour ${S.tour}`,`au tour de <b>${u.nom}</b>`);
+        const {c,cible}=await choisir(u);
+        $('btns').innerHTML='';$('titre').textContent='…';
+        await executer(u,c,cible);
+      }else{
+        phase(`Tour ${S.tour}`,'tour adverse');$('titre').textContent='Tour adverse…';$('btns').innerHTML='';
+        await jouerGobelin(u);
+      }
+      S.actif=null;rendre();
+    }
+    S.tour++;
   }
 }
-
-function finir(gagne){
-  if(S.fini)return;S.fini=true;S.phase='fin';rendre();
-  log(gagne?'bon':'alerte',gagne?'Salle vidée. Il reste à rédiger le rapport.':'Le groupe se replie. Personne ne dit rien sur le chemin du retour.');
-  const parti=S.choix.filter(c=>c!=='x').length,vg=S.choix.filter(c=>c==='x').length;
-  ouvrir(`
-    <h3>${gagne?'Fin de mission':'Repli'}</h3>
-    <div class="fin">
-      <dl>
-        <dt>Tours joués</dt><dd>${S.tour}</dd>
-        <dt>Engueulades</dt><dd>${S.nbEng}</dd>
-        <dt>« Vos gueules »</dt><dd>${vg}</dd>
-        <dt>Partis pris</dt><dd>${parti}</dd>
-        <dt>Attaques ratées</dt><dd>${S.nbRate}</dd>
-        <dt>Survivants</dt><dd>${S.heros.filter(h=>!h.mort).length}/4</dd>
-      </dl>
-      <p class="crit"><b>Critère du banc d'essai.</b> Avez-vous remonté le journal pour relire une réplique ?
-      Si la réponse est non après trois combats, la mécanique ne porte pas le jeu : on ne l'ajuste pas, on la remplace.</p>
-    </div>
-    <div class="btns"><button class="primaire">Relancer un combat</button></div>`,
-    ()=>{fermer();init();});
+function fin(gagne){
+  if(S.fini)return;S.fini=true;S.actif=null;rendre();$('couche').innerHTML='';
+  phase(gagne?'<b>Salle vidée</b>':'<b>Repli</b>','');
+  log(gagne?'ok':'hot',gagne?'Salle vidée. Il reste à rédiger le rapport.':'Le groupe se replie. Personne ne dit rien sur le chemin du retour.');
+  const vg=S.choix.filter(c=>c==='x').length,pp=S.choix.length-vg;
+  modale(`<h3>${gagne?'Fin de mission':'Repli'}</h3><div class="fin"><dl>
+    <dt>Tours joués</dt><dd>${S.tour}</dd>
+    <dt>Engueulades</dt><dd>${S.nbEng}</dd>
+    <dt>« Vos gueules »</dt><dd>${vg}</dd>
+    <dt>Partis pris</dt><dd>${pp}</dd>
+    <dt>Attaques ratées</dt><dd>${S.nbRate}</dd>
+    <dt>Survivants</dt><dd>${S.heros.filter(h=>!h.mort).length}/4</dd></dl>
+    <p class="crit"><b>Critère du banc d'essai.</b> Avez-vous rouvert le journal pour relire une réplique ?
+    Si la réponse est non après trois combats, la mécanique ne porte pas le jeu : on ne l'ajuste pas, on la remplace.</p></div>
+    <div class="btns"><button class="act primaire" data-c="go">Relancer un combat</button></div>`,()=>{$('modale').innerHTML='';init()});
 }
-
 init();
 </script>
