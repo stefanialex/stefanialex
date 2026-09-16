@@ -657,6 +657,93 @@ Le joueur doit **invalider les motifs** : Formulaires de Beuzelin, Relevés de J
 
 ---
 
+## PIÈCE N°7-E — SALLES D'ÉVÉNEMENT
+
+> **Règle.** Une salle d'événement qui se contente de distribuer un bonus n'est pas un événement, c'est un coffre avec du texte. Chacune des dix salles ci-dessous impose **un choix dont les deux branches coûtent quelque chose**.
+
+**1 · LE MARCHAND À LA SAUVETTE**
+Le prix affiché change pendant qu'on lit la fiche. Marchander est possible une fois et augmente le prix une fois sur trois. Il propose un devis gratuit, facturé 20 Ferraille.
+> *« C'est le dernier. J'en ai trois comme ça. »*
+
+**2 · LE PUITS À VŒUX (HORS SERVICE)**
+Y jeter une pièce : 60 % rien, 30 % un objet au hasard, 10 % un gobelin en sort, contrarié. Josselin peut le remettre en service — il devient alors une installation permanente du camp.
+> *L'écriteau est là depuis plus longtemps que le puits.*
+
+**3 · LA RÉUNION D'INFORMATION**
+Obligatoire. Y assister coûte l'équivalent de deux salles de progression — les horaires avancent, la Poussière s'accumule — et rapporte un bonus de run permanent plus un Formulaire vierge. Partir coûte +15 Rouspétance à tout le groupe : quelqu'un le signalera.
+
+**4 · LE COLLÈGUE**
+Un aventurier d'un autre groupe, assis, ici depuis trois semaines, qui ne dira pas ce qui s'est passé. Le recruter : cinquième emplacement pour l'étage, très efficace, il repart avec 30 % du butin. L'interroger : révèle le boss de l'étage. Le laisser : il est toujours là au run suivant.
+
+**5 · LA FONTAINE D'EAU POTABLE (ANALYSE EN COURS)**
+Boire : −40 Rouspétance pour tout le monde, 25 % de chances d'un Dérangement durable. Les résultats d'analyse sont affichés à côté. Ils sont datés de 1198.
+
+**6 · LE FORMULAIRE MURAL**
+Un formulaire cloué au mur, partiellement lisible. Le remplir donne un Formulaire vierge et révèle les cotes de l'étage. Il demande le nom de jeune fille de la mère du déclarant, ce qui pose un problème à trois membres du groupe sur quatre.
+
+**7 · LE MONTE-CHARGE**
+Contrôle annuel effectué depuis jamais. L'emprunter saute deux salles — leur butin comme leur danger. 30 % de chances qu'il s'arrête entre deux étages : 15 % de PV pour tout le monde et un objet perdu. Josselin peut l'inspecter avant.
+
+**8 · LA BOÎTE À IDÉES**
+Scellée, pleine. Elle contient cinq suggestions, chacune étant une offre — un bonus, une malédiction, un échange. On peut en accepter exactement une, et il faut refuser les quatre autres à voix haute : +10 Rouspétance par refus.
+
+**9 · LE PRÉDÉCESSEUR**
+Le groupe précédent envoyé par Aymeric. Les dépouiller : bon équipement, +25 Rouspétance pour tout le monde. Les enterrer : rien, −30 Rouspétance, et Maître Gisèle gagne une Succession.
+> *Personne ne demande depuis combien de temps ils sont là.*
+
+**10 · LE CHAT DU DONJON**
+Il y a un chat. C'est la seule entité du jeu dont la situation est satisfaisante. Le caresser : +20 Moral, une fois par run. Il ne peut pas être attaqué ; tenter de le faire fixe le Moral du run à zéro, définitivement. Les joueurs essaieront, et c'est prévu.
+
+---
+
+## PIÈCE N°7-F — OBJETS
+
+> **Règle.** Un objet qui se contente d'un « +X % dégâts » n'est pas un objet, c'est un nombre avec une illustration. Plafond imposé : **40 % du pool peut être purement statistique**, le reste doit poser un dilemme ou dire quelque chose sur l'institution.
+
+### Équipement — passif, un par personnage
+
+| Objet | Effet |
+|---|---|
+| **Gantelet de service minimum** | −20 % dégâts subis, −10 % dégâts infligés. *« Il protège. Il ne s'investit pas. »* |
+| **Bottes de fonction** | +3 initiative. Le porteur ne peut plus quitter le rang 1. *« Fournies avec le poste. Non reprises. »* |
+| **Plastron réformé** | +25 PV maximum. Se brise définitivement au premier critique reçu. *« Il a été retiré du service pour une raison. »* |
+| **Lorgnon du commissaire-priseur** | Révèle la valeur réelle du butin avant estimation. *« On voit tout de suite qu'on se fait avoir. C'est déjà ça. »* |
+| **Écharpe de fonction** | +15 % dégâts. Le porteur parle deux fois plus : tous les autres, +3 Rouspétance par tour. |
+
+### Consommables
+
+| Objet | Effet |
+|---|---|
+| **Ration réglementaire** | Soigne 30 %. Goût : aucun. *« Conforme. »* |
+| **Petit vin de table** | −40 Rouspétance, −2 précision pendant 3 tours. |
+| **Sifflet de fin de journée** | Met fin au combat en cours. Aucun butin. Une fois par run. |
+| **Bandage approximatif** | Soigne 20 %. 20 % de chances d'infecter : −5 PV par tour pendant 3 tours. |
+| **Pot-de-vin** | Un ennemi quitte le combat. Il reviendra, plus cher. |
+| **Trombone** | Répare n'importe quoi, une fois. Littéralement n'importe quoi. *« Personne ne pose de questions sur le trombone. »* |
+
+### Documents — la catégorie signature
+
+| Objet | Effet |
+|---|---|
+| **Formulaire vierge** | Matière première : D-12, réclamations, mises en demeure. Trois exemplaires suppriment un boss. |
+| **Ordre de réquisition** | Prend un objet chez le marchand sans payer. Le marchand le note. |
+| **Attestation sur l'honneur** | Annule un effet négatif. N'est vérifiée par personne. *« Elle est vraie parce qu'elle est signée. »* |
+| **Copie conforme** | Duplique un autre document. Ne fonctionne pas sur elle-même, et tout le monde a essayé. |
+| **Note de service n°4417** | Illisible. Effet aléatoire tiré parmi douze à chaque combat. *« Personne ne l'a lue. Tout le monde l'applique. »* |
+| **Procuration** | Un personnage joue le tour d'un autre. Le mandant gagne +20 Rouspétance. |
+
+### Reliques de camp — permanentes, achetées en Paperasse
+
+| Objet | Effet |
+|---|---|
+| **La pendule du réfectoire** | Révèle les horaires du biome 1. *« Elle avance de onze minutes. Depuis toujours. »* |
+| **Le registre d'entrée** | Dame Perrine ne peut plus confisquer qu'un objet par combat. |
+| **Le chariot de classement personnel** | Réduit passivement le volume de La Pile de 10 % par tour. |
+| **La clé des communs** | Ouvre une salle supplémentaire par étage. |
+| **Le panneau « ne pas déranger »** | Annule la première Engueulade de chaque run. Beaucoup de joueurs le revendront. |
+
+---
+
 ## PIÈCE N°8 — SCÈNE DE BOSS : VERMICULE LE TERRIBLE
 
 > **Salle 12 — LE TRÉSOR** *(classé insalubre par arrêté seigneurial)*
@@ -818,5 +905,37 @@ Le joueur qui découvre cette issue a compris le jeu : le jeu récompense la pap
 | **Le joueur ne comprend pas que l'issue administrative existe** | Moyen | Beuzelin commente les formulaires ramassés. Trois fois. Il est insupportable à ce sujet. C'est le tutoriel |
 
 ---
+
+---
+
+## PIÈCE N°11 — CE QU'ON CODE, ET DANS QUEL ORDRE
+
+> **Constat.** Ce document fait maintenant une trentaine de pages et le jeu a été joué zéro minute. Sa thèse centrale — *une dispute entre alliés est plus intéressante qu'un combat* — n'est vérifiée par personne. Tant qu'elle ne l'est pas, les biomes, les boss, les objets et les huit classes sont du décor posé sur du vide.
+
+### Prototype 01 — « Le banc d'essai » *(1 à 2 semaines)*
+
+**Question unique à laquelle il doit répondre :** l'Engueulade est-elle amusante ?
+
+**Ce qu'il contient.** Un combat. Quatre personnages, trois gobelins, quatre rangs, deux capacités par personnage, la jauge de Rouspétance, l'Engueulade avec ses trois choix, la table d8, et une quarantaine de répliques contextuelles.
+
+**Ce qu'il ne contient pas, et c'est le plus important.** Pas de génération procédurale. Pas de carte. Pas de camp. Pas de méta-progression. Pas de biome. Pas de boss. Pas d'art. Des rectangles gris et des chiffres visibles.
+
+**Critère d'arrêt.** Cinq personnes y jouent trois combats chacune, sans explication préalable. Si moins de trois d'entre elles relisent spontanément le journal de combat pour retrouver une réplique, la mécanique ne porte pas le jeu. On ne l'ajuste pas : on la remplace, et ce document est à réécrire.
+
+### Ordre de bataille
+
+| Étape | Durée | Question posée | Abandonné si |
+|---|---|---|---|
+| **P01 — Banc d'essai** | 1–2 sem. | L'Engueulade est-elle amusante ? | Personne ne relit les répliques |
+| **P02 — Le run** | 3–4 sem. | Trente minutes tiennent-elles ? | L'ennui apparaît avant l'étage 3 |
+| **P03 — Le camp** | 2 sem. | Veut-on repartir ? | Le joueur s'arrête après une défaite |
+| **P04 — La verticale** | 6 sem. | Un étage complet, avec art et son | — |
+
+Rien ne commence tant que l'étape précédente n'a pas répondu. Un prototype qui échoue a fait son travail ; un prototype qu'on refuse d'abandonner a coûté un an.
+
+### Le choix technique, et pourquoi il n'est pas encore à faire
+
+Godot reste le moteur de production. Mais **le prototype 01 ne doit pas être fait dans le moteur de production** : on teste ici du rythme, du texte et une table de résultats, pas du rendu. Une page web se modifie en quinze secondes et se fait tester par un lien envoyé le soir même. Le moteur se choisit à l'étape P02, quand la question devient « est-ce que ça tient trente minutes ».
+
 
 *Document de travail. Ne constitue pas un engagement contractuel. Établi en trois exemplaires, dont deux ont été perdus.*
