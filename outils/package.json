@@ -1,0 +1,12 @@
+{
+  "name": "donjon-paperasse-outils",
+  "private": true,
+  "description": "Outillage de production : simulateur de parties et contrôles automatiques",
+  "scripts": {
+    "sim": "node simulateur.js 20",
+    "sim:rapide": "node simulateur.js 5"
+  },
+  "dependencies": {
+    "jsdom": "^24.0.0"
+  }
+}
