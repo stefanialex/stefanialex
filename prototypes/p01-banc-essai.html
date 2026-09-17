@@ -126,6 +126,9 @@ body{
   45%{transform:translateX(6px) rotate(2deg)}72%{transform:translateX(-3px)}100%{transform:translateX(0)}}
 .fig.flash svg.perso{filter:drop-shadow(0 3px 5px #00000066) brightness(3.4) saturate(0)}
 .scene.secousse{animation:sec .32s ease}
+.eclair{position:absolute;inset:0;z-index:13;pointer-events:none;background:#FFE9B0;
+  animation:eclair .17s ease-out forwards;mix-blend-mode:screen}
+@keyframes eclair{0%{opacity:.5}100%{opacity:0}}
 @keyframes sec{0%,100%{transform:translate(0,0)}20%{transform:translate(-5px,3px)}
   50%{transform:translate(4px,-3px)}75%{transform:translate(-2px,1px)}}
 
@@ -301,6 +304,7 @@ details.jr[open] summary{border-bottom:1px solid var(--line)}
       <button id="vM" aria-pressed="false">Manuel</button>
       <button id="vN" aria-pressed="true">Normal</button>
       <button id="vR" aria-pressed="false">Rapide</button>
+      <button id="vS" aria-pressed="true" title="Son">Son</button>
     </div>
   </div>
 
@@ -542,10 +546,10 @@ function poserDecor(){
 }
 /* ================= données ================= */
 const HEROS=[
- {id:'gue',nom:'Guérin',cls:'Chevalier blasé',rang:1,pvm:62,res:'Rancune',resv:0,resmax:10},
- {id:'flo',nom:'Florimond',cls:'Barde critique',rang:2,pvm:40,res:'Matière',resv:2,resmax:8},
- {id:'beu',nom:'Beuzelin',cls:'Roublard admin.',rang:3,pvm:42,res:'Formulaires',resv:2,resmax:5},
- {id:'odo',nom:'Odon',cls:'Mage du dimanche',rang:4,pvm:34,res:'Confiance',resv:0,resmax:5},
+ {id:'gue',nom:'Guérin',cls:'Chevalier blasé',rang:1,pvm:62,res:'Rancune',resv:0,resmax:10,rd:56},
+ {id:'flo',nom:'Florimond',cls:'Barde critique',rang:2,pvm:40,res:'Matière',resv:2,resmax:8,rd:44},
+ {id:'beu',nom:'Beuzelin',cls:'Roublard admin.',rang:3,pvm:42,res:'Formulaires',resv:2,resmax:5,rd:48},
+ {id:'odo',nom:'Odon',cls:'Mage du dimanche',rang:4,pvm:34,res:'Confiance',resv:0,resmax:5,rd:52},
 ];
 const CAPA={
  gue:[{n:'Coup de bouclier',d:'5–8 dégâts · 25 % étourdit',c:'ennemi',k:0},
@@ -559,18 +563,27 @@ const CAPA={
       {n:'Petit sort de rien du tout',d:'2–4 dégâts garantis · +1 Confiance',c:'ennemi',k:0}],
 };
 const BARKS={
- rate:{gue:["Voilà.","C'est exactement ce que je pensais.","Bon.","Je note que j'ai essayé."],
+ rate:{gue:["C'est exactement ce que je pensais.","Je note que j'ai essayé.",
+   "Ça fait vingt ans que je fais ça. Vingt ans.",
+   "Je n'ai pas raté. J'ai renoncé en cours de geste."],
   flo:["Ce n'est pas passé loin. Si.","J'ai visé la silhouette. C'était l'ombre.","Personne n'a vu ça. Personne.","On va dire que je cadrais."],
-  beu:["Le document est parti de travers. Ça arrive.","Il y a un aléa de service.","Je le consigne comme incident.","Ce n'est pas un échec, c'est un report."],
-  odo:["C'est le vent.","Il y a un courant d'air terrible, ici.","Ça n'a rien à voir avec moi.","Le sort est parti. Ailleurs, mais il est parti."]},
+  beu:["Le document est parti de travers. Ça arrive.","Il y a un aléa de service.",
+   "Je demande un délai supplémentaire.","Ce n'est pas un échec, c'est un report."],
+  odo:["C'est le vent.","Il y a un courant d'air terrible, ici.",
+   "Le sort est correct. C'est la réalité qui résiste.",
+   "Le sort est parti. Ailleurs, mais il est parti."]},
  crit:{gue:["Ça, c'était pour hier.","Je ne suis pas de bonne humeur.","Voilà. Content ?","Ça fait du bien. Ça ne change rien, mais ça fait du bien."],
   flo:["Je m'étonne moi-même. Pas tant que ça.","Prenez-en de la graine. Ou pas.","Je précise que c'était volontaire.","Notez l'heure."],
   beu:["Recevable.","Signifié en bonne et due forme.","Le dossier avance.","C'est le service qui gagne, pas moi."],
   odo:["ÇA A MARCHÉ.","Vous avez vu ? Vous avez vu ?","J'ai rien changé, pourtant.","Refaites-moi confiance. Une fois."]},
- tue:{gue:["Suivant.","Il en reste.","Voilà. Ça ne me fait pas plaisir. Ça ne me fait rien du tout.","Bien."],
+ tue:{gue:["Voilà. Ça ne me fait pas plaisir. Ça ne me fait rien du tout.",
+   "Il en reste deux. Je compte, moi, figurez-vous.",
+   "On en a tué un. On ne sera pas payés davantage.","Suivant."],
   flo:["Un de moins à supporter.","Il n'aurait pas dû se mettre là.","Voilà pour la strophe trois.","Je lui avais dit."],
   beu:["Dossier clos.","Classé sans suite.","Je mets à jour l'effectif adverse.","Il n'était pas à jour de ses cotisations."],
-  odo:["Je crois que c'est moi qui ai fait ça.","Est-ce que quelqu'un a vu ?","Je visais le deuxième. Mais bon.","Bon. Une fois sur deux, hein."]},
+  odo:["C'est moi. Enfin, je crois. On mettra que c'est moi.",
+   "Est-ce que quelqu'un a vu ?","Je visais le deuxième. Mais bon.",
+   "Bon. Une fois sur deux, hein."]},
  retour:{odo:["Pardon. Pardon. PARDON.","Ce n'était pas la bonne page.","Il manque les pages 40 à 60, je rappelle.","Techniquement, le sort a fonctionné."]},
  bas:{gue:["Je tiens. Ça ne veut pas dire que je vais bien.","Quelqu'un pourrait m'aider. Quelqu'un.","J'ai connu pire. Pas beaucoup."],
   flo:["Je saigne, et personne ne relève.","C'est fascinant, ce désintérêt général.","Je vais m'asseoir deux minutes."],
@@ -627,6 +640,20 @@ BARKS.fouille={
 
 /* ---- registre administratif : des mécaniques, jamais des noms réels.
    Aucune institution, aucun acronyme, aucune référence datable. ---- */
+BARKS.gronde={
+ gue:["Je préviens tout de suite : je ne suis plus disponible pour discuter.",
+  "Il y a un moment où je vais dire quelque chose. On n'en est pas loin.",
+  "Je respire. Vous voyez ? Je respire."],
+ flo:["Je note tout. Absolument tout. Pour après.",
+  "Je vais finir par être désagréable, et ce sera entièrement mérité.",
+  "Continuez comme ça. Vraiment. Continuez."],
+ beu:["Je signale que les conditions d'intervention ne sont plus réunies.",
+  "J'ai ouvert un second registre. Celui des griefs.",
+  "À ce stade, je ne garantis plus la bonne exécution du service."],
+ odo:["Personne ne m'adresse la parole depuis le début. Personne.",
+  "Je commence à trouver ça un peu injuste, moi.",
+  "Bon. BON."]};
+
 BARKS.attente={
  gue:["Voilà. On attend.","Je suis debout depuis ce matin. Debout.","On m'a dit de patienter. Je patiente."],
  flo:["On patiente. C'est ce qu'on fait le mieux.","Personne ne bouge. C'est presque reposant.","J'en profite pour ne rien faire, comme tout le monde."],
@@ -670,6 +697,60 @@ const D8=[
  {n:'Réconciliation suspecte',t:'Les deux se soignent de 20 % et deviennent Complices : les dégâts reçus sont partagés.',f:(S,a,b)=>{[a,b].forEach(h=>h.pv=Math.min(h.pvm,h.pv+Math.round(h.pvm*.2)));a.comp=b.id;b.comp=a.id}},
 ];
 
+
+/* ================= son =================
+   Entièrement synthétisé au Web Audio : aucun fichier, aucun téléchargement.
+   Un jeu sans audio ne sonne jamais comme un jeu — c'est la pièce qui
+   manquait le plus, et c'est la moins chère. */
+const SON={
+  ctx:null, on:true, maitre:null,
+  init(){
+    if(this.ctx)return;
+    try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
+      this.ctx=new C();this.maitre=this.ctx.createGain();
+      this.maitre.gain.value=.5;this.maitre.connect(this.ctx.destination);
+    }catch(e){this.ctx=null}
+  },
+  reveille(){if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume()},
+  env(d,g){const c=this.ctx,n=c.createGain();
+    n.gain.setValueAtTime(.0001,c.currentTime);
+    n.gain.exponentialRampToValueAtTime(g,c.currentTime+.006);
+    n.gain.exponentialRampToValueAtTime(.0001,c.currentTime+d);
+    n.connect(this.maitre);return n},
+  ton(f0,f1,d,g,type){const c=this.ctx,o=c.createOscillator();o.type=type||'sine';
+    o.frequency.setValueAtTime(f0,c.currentTime);
+    o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),c.currentTime+d);
+    o.connect(this.env(d,g));o.start();o.stop(c.currentTime+d+.02)},
+  bruit(d,g,f0,f1,type){const c=this.ctx,n=Math.floor(c.sampleRate*d),
+    b=c.createBuffer(1,n,c.sampleRate),a=b.getChannelData(0);
+    for(let i=0;i<n;i++)a[i]=(Math.random()*2-1)*(1-i/n);
+    const src=c.createBufferSource();src.buffer=b;
+    const f=c.createBiquadFilter();f.type=type||'lowpass';
+    f.frequency.setValueAtTime(f0,c.currentTime);
+    f.frequency.exponentialRampToValueAtTime(Math.max(60,f1),c.currentTime+d);
+    f.Q.value=1.1;src.connect(f);f.connect(this.env(d,g));src.start()},
+  j(n){
+    if(!this.on)return;this.init();if(!this.ctx)return;this.reveille();
+    try{
+      if(n==='coup'){this.bruit(.10,.30,1500,320);this.ton(150,62,.13,.34,'sine')}
+      else if(n==='crit'){this.bruit(.19,.40,2600,240);this.ton(230,52,.28,.42,'sawtooth');
+        setTimeout(()=>this.ton(520,180,.10,.16,'square'),55)}
+      else if(n==='rate'){this.bruit(.20,.13,2800,700,'highpass')}
+      else if(n==='mort'){this.ton(210,52,.55,.26,'triangle')}
+      else if(n==='tic'){this.ton(1750,1700,.010,.045,'square')}
+      else if(n==='bulle'){this.ton(500,760,.07,.10,'sine')}
+      else if(n==='eng'){this.ton(168,120,.55,.26,'sawtooth');this.ton(179,127,.55,.22,'sawtooth');
+        this.bruit(.30,.16,900,180)}
+      else if(n==='proc'){this.ton(880,1320,.09,.09,'square')}
+      else if(n==='clic'){this.ton(940,880,.022,.07,'square')}
+      else if(n==='vict'){[0,110,230].forEach((t,i)=>setTimeout(()=>this.ton([392,523,659][i],[392,523,659][i],.19,.15,'triangle'),t))}
+      else if(n==='def'){[0,150].forEach((t,i)=>setTimeout(()=>this.ton([294,196][i],[294,196][i],.36,.17,'triangle'),t))}
+    }catch(e){}
+  }
+};
+addEventListener('pointerdown',()=>{SON.init();SON.reveille()},{once:true});
+addEventListener('click',e=>{if(e.target.closest&&e.target.closest('button'))SON.j('clic')},true);
+
 /* ================= rythme ================= */
 let mode='normal',resoudre=null,minuteur=null,finTexte=null,journalOuvert=false;
 function duree(t){const b=900+(t?t.length*22:0);return mode==='rapide'?b*.55:b}
@@ -690,6 +771,7 @@ addEventListener('keydown',e=>{
 });
 function setMode(m){mode=m;[['vM','manuel'],['vN','normal'],['vR','rapide']]
   .forEach(([i,v])=>$(i).setAttribute('aria-pressed',String(v===m)));}
+$('vS').onclick=()=>{SON.on=!SON.on;$('vS').setAttribute('aria-pressed',String(SON.on));if(SON.on)SON.j('clic')};
 $('vM').onclick=()=>setMode('manuel');$('vN').onclick=()=>setMode('normal');$('vR').onclick=()=>setMode('rapide');
 
 function machine(bulle,txt){
@@ -701,14 +783,14 @@ function machine(bulle,txt){
     const fin=saute=>{clearInterval(t);finTexte=null;n.textContent=txt;bulle.classList.add('fini');
       if(saute&&S)S.sautees++;$('couche').innerHTML='';res()};
     finTexte=()=>fin(true);$('avc').onclick=()=>fin(true);
-    const t=setInterval(()=>{n.textContent=txt.slice(0,++i);if(i>=txt.length)fin(false)},v);
+    const t=setInterval(()=>{n.textContent=txt.slice(0,++i);if(i%2===0)SON.j('tic');if(i>=txt.length)fin(false)},v);
   });
 }
 
 /* ================= état ================= */
 let S;
 async function init(){
-  S={heros:HEROS.map(h=>({...h,pv:h.pvm,rousp:0,mort:false,buff:0,saute:0,critG:0,coal:0,parti:0,comp:null})),
+  S={heros:HEROS.map(h=>({...h,pv:h.pvm,rousp:Math.min(92,h.rd+rnd(-9,9)),mort:false,buff:0,saute:0,critG:0,coal:0,parti:0,comp:null})),
      ennemis:[0,1,2].map(i=>({id:'g'+i,nom:'Gobelin '+(i+1),fig:'gob',pv:26,pvm:26,mort:false,proc:0,etourdi:0,convoque:0})),
      tour:1,file:[],actif:null,nbEng:0,nbRate:0,serie:0,choix:[],buffG:null,esq:0,oriente:false,fini:false,
      lignes:0,sautees:0,debut:Date.now()};
@@ -747,7 +829,9 @@ function impact(u,crit){
     e.innerHTML=`<svg viewBox="0 0 100 100"><g fill="${crit?'#FFC24A':'#FFE9B0'}" stroke="#1B1E15" stroke-width="2.5" stroke-linejoin="round">
       <path d="M50 2 L60 36 L94 30 L66 52 L88 80 L54 68 L46 98 L38 66 L8 78 L30 50 L4 26 L40 34 Z"/></g></svg>`;
     f.appendChild(e);setTimeout(()=>e.remove(),450);
-    if(crit){$('scene').classList.add('secousse');setTimeout(()=>$('scene').classList.remove('secousse'),340)}
+    if(crit){$('scene').classList.add('secousse');setTimeout(()=>$('scene').classList.remove('secousse'),340);
+      const fl=document.createElement('div');fl.className='eclair';$('scene').appendChild(fl);
+      setTimeout(()=>fl.remove(),180)}
   }
 }
 function annonce(txt){
@@ -764,7 +848,7 @@ async function dit(u,txt){
     const i=[...f.parentNode.children].indexOf(f),n=f.parentNode.children.length;
     if(n>2&&i===0)b.classList.add('gauche');if(n>2&&i===n-1)b.classList.add('droite');
     b.innerHTML=`<div class="qui">${FIG[u.fig||u.id]}${u.nom}</div><span class="txt"></span>`;
-    f.appendChild(b);
+    f.appendChild(b);SON.j('bulle');
   }
   log('',`<span class="sp">${u.nom}</span>${txt}`);S.lignes++;
   if(b)await machine(b,txt);
@@ -813,7 +897,11 @@ function phase(g,d){$('phG').innerHTML=g;$('phD').innerHTML=d||''}
 
 /* ================= règles ================= */
 function rousp(h,n){if(h.mort)return;const a=h.rousp;h.rousp=Math.max(0,Math.min(100,h.rousp+n));
-  if(n>0&&h.rousp!==a)flotte(h,'+'+n+' rousp.','rou')}
+  if(n>0&&h.rousp!==a)flotte(h,'+'+n+' rousp.','rou');
+  if(a<70&&h.rousp>=70&&!h.gronde){h.gronde=1;S.gronder=h}}
+/* Un palier franchi doit s'entendre, pas seulement se voir : c'est ce qui
+   annonce l'Engueulade au lieu de la faire tomber sans prévenir. */
+async function gronder(){const h=S.gronder;S.gronder=null;if(h&&!h.mort)await bark('gronde',h)}
 function echec(){S.nbRate++;S.serie=(S.serie||0)+1;
   const f=S.heros.find(h=>h.id==='flo');if(f&&!f.mort)f.resv=Math.min(f.resmax,f.resv+1)}
 function degats(h,n){let m=1;if(S.buffG)m*=S.buffG.dmg;if(h.buff>0)m*=1.35;if(h.coal>0)m*=1.5;
@@ -824,7 +912,7 @@ async function frapper(h,e,n,critable=true){
   const crit=critable&&(h.critG||Math.random()<.12);if(h.critG)h.critG=0;
   let d=degats(h,n);if(crit)d=Math.round(d*1.8);
   S.serie=0;e.pv=Math.max(0,e.pv-d);
-  impact(e,crit);flotte(e,'−'+d,crit?'crit':'deg');
+  SON.j(crit?'crit':'coup');impact(e,crit);flotte(e,'−'+d,crit?'crit':'deg');
   log('sys',`${h.nom} → ${e.nom} : <b>${d}</b>${crit?' (critique)':''}`);
   await dodo(crit?120:60);rendre();await dodo(560);
   if(crit){rousp(h,-15);await bark('crit',h)}
@@ -834,19 +922,19 @@ async function frapper(h,e,n,critable=true){
 }
 async function rater(h,e){
   lance(h,e);await dodo(RM?80:190);
-  flotte(e||h,'RATÉ','rate');log('hot',`${h.nom} rate ${e?e.nom:'sa cible'}.`);
-  rousp(h,12);echec();S.heros.forEach(a=>{if(a!==h&&!a.mort)rousp(a,4)});
+  SON.j('rate');flotte(e||h,'RATÉ','rate');log('hot',`${h.nom} rate ${e?e.nom:'sa cible'}.`);
+  rousp(h,16);echec();S.heros.forEach(a=>{if(a!==h&&!a.mort)rousp(a,7)});
   rendre();await dodo(520);await bark('rate',h);
   if(S.serie>=3){S.serie=0;const o=pick(S.heros.filter(a=>!a.mort&&a!==h));if(o)await bark('poisse',o)}
 }
 async function chute(u){
   if(u.pv>0||u.mort)return;
-  u.mort=true;log('hot',`<b>${u.nom}</b> est à terre.`);rendre();await dodo(400);
+  u.mort=true;SON.j('mort');log('hot',`<b>${u.nom}</b> est à terre.`);rendre();await dodo(400);
   if(BARKS.mort[u.id])await dit(u,BARKS.mort[u.id]);
   S.heros.forEach(a=>{if(!a.mort)rousp(a,20)});echec();rendre();
 }
 async function proc(e,n){
-  e.proc=Math.min(3,e.proc+n);log('sys',`${e.nom} : Procédure <b>${e.proc}/3</b>.`);flotte(e,'+'+n+' proc.','rou');rendre();
+  e.proc=Math.min(3,e.proc+n);SON.j('proc');log('sys',`${e.nom} : Procédure <b>${e.proc}/3</b>.`);flotte(e,'+'+n+' proc.','rou');rendre();
   if(e.proc>=3){e.proc=0;e.convoque=1;log('ok',`${e.nom} est convoqué : il perd son tour.`);rendre();
     await dodo(400);const o=pick(S.heros.filter(a=>!a.mort));if(o)await bark('convoque',o);return}
   await dodo(480);
@@ -939,9 +1027,9 @@ async function jouerGobelin(e){
   lance(e,c);await dodo(RM?80:210);
   if(Math.random()<.74-(S.esq?.15:0)){
     const crit=Math.random()<.12;let d=rnd(5,9);if(crit)d=Math.round(d*1.8);
-    c.pv=Math.max(0,c.pv-d);impact(c,crit);flotte(c,'−'+d,crit?'crit':'deg');
+    c.pv=Math.max(0,c.pv-d);SON.j(crit?'crit':'coup');impact(c,crit);flotte(c,'−'+d,crit?'crit':'deg');
     log('sys',`${e.nom} → ${c.nom} : <b>${d}</b>${crit?' (critique)':''}`);
-    if(crit)rousp(c,15);
+    rousp(c,crit?20:6);
     if(c.id==='gue')c.resv=Math.min(c.resmax,c.resv+1);
     let comp=null;
     if(c.comp){const o=S.heros.find(h=>h.id===c.comp);
@@ -964,7 +1052,7 @@ async function engueulade(a){
   if(!au.length){a.rousp=40;return}
   const b=au[0];S.nbEng++;
   phase('<b>Engueulade générale</b>','tout s’arrête');rendre();
-  await annonce('ENGUEULADE GÉNÉRALE');
+  SON.j('eng');await annonce('ENGUEULADE GÉNÉRALE');
   log('hot','— ENGUEULADE GÉNÉRALE —');
   const l1=pick(ENG_A[a.id]).replace('%s',b.nom),l2=pick(ENG_B[b.id]);
   await dit(a,l1);await dit(b,l2);
@@ -1101,6 +1189,13 @@ async function boucle(){
       if(S.fini)return;
       if(S.ennemis.every(e=>e.mort))return fin(true);
       if(S.heros.every(h=>h.mort))return fin(false);
+      /* Le banc d'essai existe pour montrer l'Engueulade. Si elle n'est pas
+         venue d'elle-même au tour 4, on la provoque : un instrument qui ne
+         déclenche pas le phénomène qu'il mesure ne mesure rien. */
+      if(S.tour>=4&&S.nbEng===0){
+        const c=S.heros.filter(h=>!h.mort&&!h.parti).sort((a,b)=>b.rousp-a.rousp)[0];
+        if(c)c.rousp=100;
+      }
       const d=S.heros.find(h=>!h.mort&&h.rousp>=100&&!h.parti);
       if(d)await engueulade(d);
       if(u.mort||u.parti)continue;
@@ -1119,13 +1214,14 @@ async function boucle(){
         await jouerGobelin(u);
       }
       S.actif=null;rendre();
+      if(S.gronder)await gronder();
     }
     S.tour++;
   }
 }
 async function fin(gagne){
   if(S.fini)return;S.fini=true;S.actif=null;rendre();$('couche').innerHTML='';bulleVide();
-  phase(gagne?'<b>Salle vidée</b>':'<b>Repli</b>','');
+  SON.j(gagne?'vict':'def');phase(gagne?'<b>Salle vidée</b>':'<b>Repli</b>','');
   log(gagne?'ok':'hot',gagne?'Salle vidée. Il reste à rédiger le rapport.':'Le groupe se replie. Personne ne dit rien sur le chemin du retour.');
   if(gagne){const h=pick(S.heros.filter(x=>!x.mort));if(h)await bark('victoire',h)}
   else{const e=S.ennemis.find(x=>!x.mort);if(e)await dit(e,pick(BARKS.defaite))}

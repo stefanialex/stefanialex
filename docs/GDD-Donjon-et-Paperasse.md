@@ -215,6 +215,13 @@ Fresnes-les-Tourbes, campement mal tenu. On y investit trois monnaies dans des b
 
 Chaque personnage porte une jauge 0–100 qui monte quand la journée se passe mal.
 
+> **Enseignement du premier test extérieur.** Le testeur a terminé un combat sans qu'une seule Engueulade se déclenche : un raté sur six tours, aucun mort, les jauges n'ont pas bougé. Il a donc joué un tactique banal sans jamais voir le sujet du jeu, et n'a retenu aucune réplique.
+>
+> Deux corrections en découlent, et elles valent pour le jeu final :
+>
+> 1. **Les personnages n'arrivent pas neufs.** Chacun démarre un combat avec une Rouspétance de départ propre à sa classe — Guérin 56, Odon 52, Beuzelin 48, Florimond 44, à neuf points près. Ils ont déjà eu une journée. C'est juste sur le plan de la fiction, et ça met la jauge à portée dès le premier combat au lieu d'en faire un événement de fin de run.
+> 2. **Un palier s'entend avant de se voir.** Au franchissement de 70, le personnage le dit à voix haute. L'Engueulade cesse de tomber sans prévenir : elle est annoncée, donc attendue, donc jouable.
+
 ### Gains
 
 | Déclencheur | Rouspétance |
