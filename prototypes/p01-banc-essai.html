@@ -165,6 +165,12 @@ body{
 @keyframes curseur{50%{opacity:0}}
 .bulle::after{content:"";position:absolute;top:100%;left:50%;margin-left:-9px;
   border:9px solid transparent;border-top-color:#23261D}
+.bulle.eclairb{box-shadow:3px 4px 0 #00000047}
+.bulle.eclairb .txt::after{content:""}
+.bulle.part{animation:sortie .32s ease-in forwards}
+@keyframes sortie{to{opacity:0;transform:translateX(-50%) translateY(-7px)}}
+.bulle.gauche.part,.bulle.droite.part{animation:sortie2 .32s ease-in forwards}
+@keyframes sortie2{to{opacity:0;transform:translateY(-7px)}}
 .bulle.gauche{left:-6px;transform:none;animation:none}
 .bulle.droite{left:auto;right:-6px;transform:none;animation:none}
 .bulle.gauche::after{left:24px;margin-left:0}
@@ -293,7 +299,7 @@ details.jr[open] summary{border-bottom:1px solid var(--line)}
   <div class="barre">
     <div class="ident">
       <h1>Donjon <em>&amp;</em> Paperasse</h1>
-      <span class="etape">banc d'essai 01 · l'engueulade</span>
+      <span class="etape">banc d'essai 01 · build 12</span>
     </div>
     <div class="cpts">
       <span>tour <b id="cTour">1</b></span>
@@ -302,8 +308,8 @@ details.jr[open] summary{border-bottom:1px solid var(--line)}
     </div>
     <div class="vitesse" role="group" aria-label="Rythme">
       <button id="vM" aria-pressed="false">Manuel</button>
-      <button id="vN" aria-pressed="true">Normal</button>
-      <button id="vR" aria-pressed="false">Rapide</button>
+      <button id="vN" aria-pressed="false">Normal</button>
+      <button id="vR" aria-pressed="true">Rapide</button>
       <button id="vS" aria-pressed="true" title="Son">Son</button>
     </div>
   </div>
@@ -752,8 +758,8 @@ addEventListener('pointerdown',()=>{SON.init();SON.reveille()},{once:true});
 addEventListener('click',e=>{if(e.target.closest&&e.target.closest('button'))SON.j('clic')},true);
 
 /* ================= rythme ================= */
-let mode='normal',resoudre=null,minuteur=null,finTexte=null,journalOuvert=false;
-function duree(t){const b=900+(t?t.length*22:0);return mode==='rapide'?b*.55:b}
+let mode='rapide',resoudre=null,minuteur=null,finTexte=null,journalOuvert=false;
+function duree(t){const b=700+(t?t.length*17:0);return mode==='rapide'?b*.5:b}
 function attendre(ms){
   return new Promise(res=>{
     resoudre=res;
@@ -778,7 +784,7 @@ function machine(bulle,txt){
   const n=bulle.querySelector('.txt');
   return new Promise(res=>{
     if(RM){n.textContent=txt;bulle.classList.add('fini');return res()}
-    let i=0;const v=mode==='rapide'?9:21;
+    let i=0;const v=mode==='rapide'?7:15;
     $('couche').innerHTML='<div class="avance" id="avc"></div>';
     const fin=saute=>{clearInterval(t);finTexte=null;n.textContent=txt;bulle.classList.add('fini');
       if(saute&&S)S.sautees++;$('couche').innerHTML='';res()};
@@ -855,7 +861,31 @@ async function dit(u,txt){
   await attendre(duree(txt));
   bulleVide();
 }
-function bark(ev,u){const p=BARKS[ev]&&BARKS[ev][u.id];return p?dit(u,pick(p)):Promise.resolve()}
+/* Deux régimes, et c'est toute la question du rythme :
+   — ÉCLAIR : les réactions courtes s'affichent et s'effacent seules, le jeu
+     continue. Elles ne valent pas qu'on s'arrête.
+   — BLOQUANT : engueulade, mort, palier, ouverture, fin. Là on s'arrête,
+     parce que c'est ce qu'on est venu lire. */
+const ECLAIR=new Set(['rate','crit','tue','fouille','bas','gob','attente','convoque','retour']);
+function bark(ev,u){
+  const src=BARKS[ev];if(!src)return Promise.resolve();
+  const p=Array.isArray(src)?src:src[u.id];if(!p)return Promise.resolve();
+  if(ECLAIR.has(ev)){bulleEclair(u,pick(p));return dodo(200)}
+  return dit(u,pick(p));
+}
+function bulleEclair(u,txt){
+  document.querySelectorAll('.bulle.eclairb').forEach(b=>b.remove());
+  const f=el(u);log('',`<span class="sp">${u.nom}</span>${txt}`);if(!f)return;
+  if(S)S.lignes++;
+  const b=document.createElement('div');b.className='bulle eclairb fini';
+  const i=[...f.parentNode.children].indexOf(f),n=f.parentNode.children.length;
+  if(n>2&&i===0)b.classList.add('gauche');if(n>2&&i===n-1)b.classList.add('droite');
+  b.innerHTML=`<div class="qui">${FIG[u.fig||u.id]}${u.nom}</div><span class="txt">${txt}</span>`;
+  f.appendChild(b);SON.j('bulle');
+  const d=1250+txt.length*20;
+  setTimeout(()=>b.classList.add('part'),d-320);
+  setTimeout(()=>b.remove(),d);
+}
 
 /* ================= rendu ================= */
 function figure(u,visable,cb,idx){
@@ -914,30 +944,30 @@ async function frapper(h,e,n,critable=true){
   S.serie=0;e.pv=Math.max(0,e.pv-d);
   SON.j(crit?'crit':'coup');impact(e,crit);flotte(e,'−'+d,crit?'crit':'deg');
   log('sys',`${h.nom} → ${e.nom} : <b>${d}</b>${crit?' (critique)':''}`);
-  await dodo(crit?120:60);rendre();await dodo(560);
+  await dodo(crit?110:50);rendre();await dodo(330);
   if(crit){rousp(h,-15);await bark('crit',h)}
   if(e.pv<=0&&!e.mort){e.mort=true;rousp(h,-10);log('ok',`${e.nom} est hors de combat.`);
-    rendre();await dodo(360);await bark('tue',h);
+    rendre();await dodo(260);if(Math.random()<.72)await bark('tue',h);
     if(Math.random()<.45){const o=pick(S.heros.filter(a=>!a.mort&&a!==h));if(o)await bark('fouille',o)}}
 }
 async function rater(h,e){
   lance(h,e);await dodo(RM?80:190);
   SON.j('rate');flotte(e||h,'RATÉ','rate');log('hot',`${h.nom} rate ${e?e.nom:'sa cible'}.`);
   rousp(h,16);echec();S.heros.forEach(a=>{if(a!==h&&!a.mort)rousp(a,7)});
-  rendre();await dodo(520);await bark('rate',h);
+  rendre();await dodo(300);if(Math.random()<.62)await bark('rate',h);
   if(S.serie>=3){S.serie=0;const o=pick(S.heros.filter(a=>!a.mort&&a!==h));if(o)await bark('poisse',o)}
 }
 async function chute(u){
   if(u.pv>0||u.mort)return;
-  u.mort=true;SON.j('mort');log('hot',`<b>${u.nom}</b> est à terre.`);rendre();await dodo(400);
+  u.mort=true;SON.j('mort');log('hot',`<b>${u.nom}</b> est à terre.`);rendre();await dodo(300);
   if(BARKS.mort[u.id])await dit(u,BARKS.mort[u.id]);
   S.heros.forEach(a=>{if(!a.mort)rousp(a,20)});echec();rendre();
 }
 async function proc(e,n){
   e.proc=Math.min(3,e.proc+n);SON.j('proc');log('sys',`${e.nom} : Procédure <b>${e.proc}/3</b>.`);flotte(e,'+'+n+' proc.','rou');rendre();
   if(e.proc>=3){e.proc=0;e.convoque=1;log('ok',`${e.nom} est convoqué : il perd son tour.`);rendre();
-    await dodo(400);const o=pick(S.heros.filter(a=>!a.mort));if(o)await bark('convoque',o);return}
-  await dodo(480);
+    await dodo(260);const o=pick(S.heros.filter(a=>!a.mort));if(o)await bark('convoque',o);return}
+  await dodo(300);
 }
 
 /* ================= tour du joueur ================= */
@@ -997,7 +1027,7 @@ async function executer(h,c,cible){
         lance(h,v);await dodo(200);
         v.pv=Math.max(0,v.pv-6);impact(v,false);flotte(v,'−6','deg');
         log('hot',`Retour de flamme : <b>${v.nom}</b> prend 6.`);
-        rousp(v,25);rousp(h,12);echec();rendre();await dodo(620);
+        rousp(v,25);rousp(h,12);echec();rendre();await dodo(400);
         await bark('retour',h);await chute(v);
       }
     }
@@ -1022,7 +1052,7 @@ async function executer(h,c,cible){
 /* ================= tour adverse ================= */
 async function jouerGobelin(e){
   const vis=S.heros.filter(h=>!h.mort&&h.parti===0);if(!vis.length)return;
-  if(Math.random()<.3)await dit(e,pick(BARKS.gob));
+  if(Math.random()<.28)await bark('gob',e);
   const c=pick(vis.flatMap(h=>Array(Math.max(1,5-h.rang)).fill(h)));
   lance(e,c);await dodo(RM?80:210);
   if(Math.random()<.74-(S.esq?.15:0)){
@@ -1035,9 +1065,9 @@ async function jouerGobelin(e){
     if(c.comp){const o=S.heros.find(h=>h.id===c.comp);
       if(o&&!o.mort){const p=Math.round(d/2);o.pv=Math.max(0,o.pv-p);c.pv=Math.min(c.pvm,c.pv+p);
         log('sys','Complices : les dégâts sont partagés.');flotte(o,'−'+p,'deg');comp=o}}
-    rendre();await dodo(620);await chute(c);if(comp)await chute(comp);
+    rendre();await dodo(400);await chute(c);if(comp)await chute(comp);
     if(!c.mort&&c.pv<c.pvm*.3&&Math.random()<.45)await bark('bas',c);
-  }else{flotte(c,'ESQUIVE','rate');log('sys',`${e.nom} rate ${c.nom}.`);rendre();await dodo(520)}
+  }else{flotte(c,'ESQUIVE','rate');log('sys',`${e.nom} rate ${c.nom}.`);rendre();await dodo(330)}
 }
 
 /* ================= engueulade ================= */
@@ -1089,7 +1119,7 @@ async function tirer(a,b,relance){
     </div>`);
   $('modale').innerHTML='';
   if(c==='r'){S.oriente=false;return tirer(a,b,false)}
-  r.f(S,a,b);log('hot',`d8 → <b>${r.n}</b>. ${r.t}`);rendre();await dodo(400);
+  r.f(S,a,b);log('hot',`d8 → <b>${r.n}</b>. ${r.t}`);rendre();await dodo(300);
 }
 
 
@@ -1202,8 +1232,8 @@ async function boucle(){
       S.actif=u;rendre();
       if(u.saute){u.saute--;phase(`Tour ${S.tour}`,`${u.nom} boude`);log('sys',`<b>${u.nom}</b> boude et passe son tour.`);await dodo(700);
         if(Math.random()<.5){const o=pick(S.heros.filter(a=>!a.mort&&a!==u));if(o)await bark('attente',o)}continue}
-      if(u.etourdi){u.etourdi--;phase(`Tour ${S.tour}`,`${u.nom} est étourdi`);await dodo(850);continue}
-      if(u.convoque){u.convoque--;phase(`Tour ${S.tour}`,`${u.nom} est convoqué`);log('sys',`<b>${u.nom}</b> est ailleurs.`);await dodo(850);continue}
+      if(u.etourdi){u.etourdi--;phase(`Tour ${S.tour}`,`${u.nom} est étourdi`);await dodo(620);continue}
+      if(u.convoque){u.convoque--;phase(`Tour ${S.tour}`,`${u.nom} est convoqué`);log('sys',`<b>${u.nom}</b> est ailleurs.`);await dodo(620);continue}
       if(u.rang){
         phase(`Tour ${S.tour}`,`au tour de <b>${u.nom}</b>`);
         const {c,cible}=await choisir(u);
