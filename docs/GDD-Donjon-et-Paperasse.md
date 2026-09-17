@@ -357,6 +357,12 @@ Réussite : 25–40 dégâts sur tous les ennemis. Échec : Odon tombe à 1 PV, 
 Chaque échec du groupe — attaque ratée, critique reçu, coffre vide, piège déclenché — donne +1 Matière (max 8). La Matière se conserve entre les combats d'un même run et se vide au camp.
 > *Il ne prend pas de notes. Il n'en a pas besoin.*
 
+> **Correction issue du prototype.** Dans la première version, les deux capacités de Florimond avaient un coût. Résultat : à Matière zéro, il n'avait **aucune action possible** — le jeu attendait indéfiniment une entrée qui ne pouvait pas exister, et se bloquait. Le défaut n'était pas seulement technique : sa ressource ne se remplissait que des échecs du groupe, donc une équipe qui jouait bien le rendait inutile *et* muet. Il dispose désormais d'une attaque gratuite qui alimente elle-même sa Matière, et chaque classe du jeu doit avoir au moins une action sans coût.
+
+**REMARQUE DE FOND DE SALLE** — Rangs 2–3 → cibles 1–3 · Sans coût
+2–5 dégâts. +1 Matière.
+> *Il ne vise pas. Il commente, et ça porte.*
+
 **REMARQUE APPUYÉE** — Rangs 2–3 → un allié · Coût : 1 Matière
 +35 % de dégâts pendant 2 tours sur l'allié ciblé. +15 Rouspétance sur ce même allié.
 > *Il ne dit jamais que c'était nul. Il dit que c'était courageux d'essayer.*

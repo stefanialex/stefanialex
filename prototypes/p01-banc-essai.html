@@ -542,7 +542,8 @@ const HEROS=[
 const CAPA={
  gue:[{n:'Coup de bouclier',d:'5–8 dégâts · 25 % étourdit',c:'ennemi',k:0},
       {n:'Par pur dépit',d:'3 + 4 × Rancune · consomme tout',c:'ennemi',k:0,si:h=>h.resv>0}],
- flo:[{n:'Remarque appuyée',d:'un allié : +35 % dégâts 2 tours, +15 rouspétance',c:'allie',k:1},
+ flo:[{n:'Remarque de fond de salle',d:'2–5 dégâts · +1 Matière',c:'ennemi',k:0},
+      {n:'Remarque appuyée',d:'un allié : +35 % dégâts 2 tours, +15 rouspétance',c:'allie',k:1},
       {n:'Envenimer',d:'les 2 plus remontés : +25 rouspétance · oriente l’engueulade',c:'auto',k:3}],
  beu:[{n:'Signification',d:'3–6 dégâts · +1 Procédure',c:'ennemi',k:0},
       {n:'Mise en demeure',d:'+2 Procédure · aucun dégât',c:'ennemi',k:1}],
@@ -551,17 +552,17 @@ const CAPA={
 };
 const BARKS={
  rate:{gue:["Voilà.","C'est exactement ce que je pensais.","Bon.","Je note que j'ai essayé."],
-  flo:["Ce n'est pas passé loin. Si.","J'ai visé la silhouette. C'était l'ombre.","Personne n'a vu ça. Personne.","On efface."],
+  flo:["Ce n'est pas passé loin. Si.","J'ai visé la silhouette. C'était l'ombre.","Personne n'a vu ça. Personne.","On va dire que je cadrais."],
   beu:["Le document est parti de travers. Ça arrive.","Il y a un aléa de service.","Je le consigne comme incident.","Ce n'est pas un échec, c'est un report."],
   odo:["C'est le vent.","Il y a un courant d'air terrible, ici.","Ça n'a rien à voir avec moi.","Le sort est parti. Ailleurs, mais il est parti."]},
  crit:{gue:["Ça, c'était pour hier.","Je ne suis pas de bonne humeur.","Voilà. Content ?","Ça fait du bien. Ça ne change rien, mais ça fait du bien."],
   flo:["Je m'étonne moi-même. Pas tant que ça.","Prenez-en de la graine. Ou pas.","Je précise que c'était volontaire.","Notez l'heure."],
   beu:["Recevable.","Signifié en bonne et due forme.","Le dossier avance.","C'est le service qui gagne, pas moi."],
   odo:["ÇA A MARCHÉ.","Vous avez vu ? Vous avez vu ?","J'ai rien changé, pourtant.","Refaites-moi confiance. Une fois."]},
- tue:{gue:["Suivant.","Il en reste.","On avance.","Bien."],
+ tue:{gue:["Suivant.","Il en reste.","Voilà. Ça ne me fait pas plaisir. Ça ne me fait rien du tout.","Bien."],
   flo:["Un de moins à supporter.","Il n'aurait pas dû se mettre là.","Voilà pour la strophe trois.","Je lui avais dit."],
   beu:["Dossier clos.","Classé sans suite.","Je mets à jour l'effectif adverse.","Il n'était pas à jour de ses cotisations."],
-  odo:["Je crois que c'est moi qui ai fait ça.","Est-ce que quelqu'un a vu ?","Enfin.","Bon. Une fois sur deux, hein."]},
+  odo:["Je crois que c'est moi qui ai fait ça.","Est-ce que quelqu'un a vu ?","Je visais le deuxième. Mais bon.","Bon. Une fois sur deux, hein."]},
  retour:{odo:["Pardon. Pardon. PARDON.","Ce n'était pas la bonne page.","Il manque les pages 40 à 60, je rappelle.","Techniquement, le sort a fonctionné."]},
  bas:{gue:["Je tiens. Ça ne veut pas dire que je vais bien.","Quelqu'un pourrait m'aider. Quelqu'un.","J'ai connu pire. Pas beaucoup."],
   flo:["Je saigne, et personne ne relève.","C'est fascinant, ce désintérêt général.","Je vais m'asseoir deux minutes."],
@@ -610,10 +611,10 @@ BARKS.poisse={
  odo:["Vous croyez que c'est le lieu ? Moi je crois que c'est le lieu.","Bon. Au moins, ce n'est pas que moi.","Voilà. VOILÀ."]};
 
 BARKS.fouille={
- gue:["Prends tout. Il ne réclamera pas.","Fouille. On ne va pas laisser ça là.","Vite. Avant que l'autre revienne."],
- flo:["Il avait des bottes. Il n'en a plus.","Regardez-moi cette qualité de gilet. Non. Ne regardez pas."],
+ gue:["Prends tout. Il ne réclamera pas.","Ramasse. On nous reprochera de l'avoir laissé.","Vite. Avant que celui d'à côté se réveille."],
+ flo:["Il a mal choisi son camp, son placement, et ses bottes.","Son gilet était réglementaire. C'est bien la seule chose.","Fouillez-le. Il n'a rien sur lui, je le sens."],
  beu:["Je procède à l'inventaire du défunt.","Deux pièces, un sifflet, une carte de membre. Je consigne.","Ceci relève de la succession. Techniquement."],
- odo:["On a le droit de faire ça ?","Je préfère ne pas regarder.","Il y a quelque chose dans sa poche. C'est mouillé."]};
+ odo:["On a le droit de faire ça ?","Je tiens la lanterne. C'est déjà une contribution.","Il y a quelque chose dans sa poche. C'est mouillé."]};
 
 
 /* ---- registre administratif : des mécaniques, jamais des noms réels.
@@ -837,7 +838,7 @@ async function chute(u){
   S.heros.forEach(a=>{if(!a.mort)rousp(a,20)});echec();rendre();
 }
 async function proc(e,n){
-  e.proc+=n;log('sys',`${e.nom} : Procédure <b>${e.proc}/3</b>.`);flotte(e,'+'+n+' proc.','rou');rendre();
+  e.proc=Math.min(3,e.proc+n);log('sys',`${e.nom} : Procédure <b>${e.proc}/3</b>.`);flotte(e,'+'+n+' proc.','rou');rendre();
   if(e.proc>=3){e.proc=0;e.convoque=1;log('ok',`${e.nom} est convoqué : il perd son tour.`);rendre();
     await dodo(400);const o=pick(S.heros.filter(a=>!a.mort));if(o)await bark('convoque',o);return}
   await dodo(480);
@@ -862,9 +863,18 @@ function choisir(h){
       };
       z.appendChild(b);
     });
+    /* Filet de sécurité : sans lui, un personnage sans ressource ni capacité
+       gratuite bloque la partie en attendant une action impossible. */
+    if(!CAPA[h.id].some(c=>(c.k||0)<=h.resv&&(!c.si||c.si(h)))){
+      const b=document.createElement('button');b.className='act';
+      b.innerHTML=`Passer le tour<span>Aucune option disponible.</span>`;
+      b.onclick=()=>res({c:{n:'__passe',c:'auto',k:0},cible:null});
+      z.appendChild(b);
+    }
   });
 }
 async function executer(h,c,cible){
+  if(c.n==='__passe'){log('sys',`<b>${h.nom}</b> ne fait rien. Il assume.`);await dodo(700);return}
   h.resv=Math.max(0,h.resv-(c.k||0));
   if(h.id==='gue'){
     if(c.n==='Coup de bouclier'){
@@ -896,7 +906,11 @@ async function executer(h,c,cible){
       }
     }
   }else{
-    if(c.n==='Remarque appuyée'){
+    if(c.n==='Remarque de fond de salle'){
+      if(Math.random()<.78+(S.buffG?S.buffG.prec:0)){
+        await frapper(h,cible,rnd(2,5));h.resv=Math.min(h.resmax,h.resv+1);
+      }else await rater(h,cible);
+    }else if(c.n==='Remarque appuyée'){
       cible.buff=2;rousp(cible,15);
       log('sys',`<b>${cible.nom}</b> : +35 % de dégâts pendant 2 tours.`);rendre();
       await dit(h,pick(["Vas-y, montre-nous. Pour une fois.","Ce n'est pas un compliment. Mais fais-en quelque chose.","Je ne te crois pas capable. Prouve-moi le contraire."]));
@@ -921,10 +935,11 @@ async function jouerGobelin(e){
     log('sys',`${e.nom} → ${c.nom} : <b>${d}</b>${crit?' (critique)':''}`);
     if(crit)rousp(c,15);
     if(c.id==='gue')c.resv=Math.min(c.resmax,c.resv+1);
+    let comp=null;
     if(c.comp){const o=S.heros.find(h=>h.id===c.comp);
       if(o&&!o.mort){const p=Math.round(d/2);o.pv=Math.max(0,o.pv-p);c.pv=Math.min(c.pvm,c.pv+p);
-        log('sys','Complices : les dégâts sont partagés.');flotte(o,'−'+p,'deg')}}
-    rendre();await dodo(620);await chute(c);
+        log('sys','Complices : les dégâts sont partagés.');flotte(o,'−'+p,'deg');comp=o}}
+    rendre();await dodo(620);await chute(c);if(comp)await chute(comp);
     if(!c.mort&&c.pv<c.pvm*.3&&Math.random()<.45)await bark('bas',c);
   }else{flotte(c,'ESQUIVE','rate');log('sys',`${e.nom} rate ${c.nom}.`);rendre();await dodo(520)}
 }
