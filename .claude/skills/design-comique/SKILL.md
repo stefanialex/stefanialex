@@ -108,7 +108,54 @@ fiction, et chaque décalage entre deux niveaux est comique.
   propre monde comme des règles de jeu — ils contestent un arbitrage, invoquent
   une jurisprudence, discutent d'un cas non prévu au règlement.
 
-## 10. Droit d'auteur
+## 10. Écrire quatre voix qui ne se confondent pas
+
+Enseignements de la première passe d'atelier (4 auteurs, 4 script-doctors, 1 chef
+de studio, 174 répliques retenues sur ~350 écrites).
+
+**Donner à chaque personnage un LEXIQUE réservé, pas une humeur.** Un ton se copie
+d'un personnage à l'autre ; un vocabulaire exclusif ne se copie pas. Le seul
+personnage livrable en l'état était celui dont le comique est *lexical* — il
+requalifie l'événement dans un autre vocabulaire. Les trois autres n'avaient
+qu'une humeur, et ils ont convergé.
+
+- **Guérin** parle MILITAIRE : rang, ancienneté, matériel, tenue, campagne.
+- **Beuzelin** est le SEUL à parler GUICHET : dossier, délai, réserve, abstention,
+  frais, rubrique, convocation. Toute ligne de Guérin contenant un mot de guichet
+  est fausse, quelle que soit sa qualité comique.
+- **Florimond** n'existe que dans la phrase construite qui bascule sur le dernier
+  mot. Tout ce qui est court chez lui est interchangeable avec les autres.
+- **Odon** est domestique et réactif : il répond à des questions qu'on ne lui a
+  pas posées.
+
+**Répartir les tics au lieu de les partager.** Exemple vécu : les quatre
+personnages annonçaient qu'ils prenaient des notes, donc plus personne n'était
+signé. Répartition imposée — Beuzelin *consigne* (registre opposable), Florimond
+*note* (carnet, pour s'en servir plus tard), Odon *exige qu'on note* mais n'écrit
+jamais, Guérin ne mentionne son carnet **qu'une seule fois dans tout le jeu**.
+C'est cette rareté qui fait exister le moment.
+
+**Les répliques adressées à un allié nommé sont les meilleures, sans exception.**
+Huit sur cent soixante-quatorze en contenaient : ce sont les huit meilleures. Le
+seul déclencheur sorti indemne est aussi le seul où les personnages se parlent
+entre eux. **Minimum deux répliques adressées par personnage.**
+
+**Les déclencheurs où rien ne se passe à l'écran sont les plus dangereux.** Sur
+« attente » et « gronde », les quatre auteurs ont écrit la même chose : l'annonce
+d'une réaction future. Règle : dans ces cas, la réplique **décrit une action
+présente et visible** — s'asseoir, s'écarter, relire, rester en tenue. Elle ne
+promet rien.
+
+**Patrons à plafonner**, sinon les voix convergent vers la même machine :
+- « ce n'est pas X, c'est Y » — une occurrence par personnage maximum ;
+- le décompte qui tient lieu de vanne (« trois de suite… ») — deux occurrences
+  dans tout le jeu. Répéter au joueur ce qu'il vient de voir ne retourne rien.
+
+**Le mot « tour » est banni du vocabulaire d'écriture.** Il paraît innocent parce
+qu'il existe dans leur monde, et il ramène le décompte de jeu par la porte de
+derrière. Sans exception, y compris quand il sauve une bonne ligne.
+
+## 11. Droit d'auteur
 
 **Aucune réplique d'œuvre protégée**, ni citée, ni adaptée, ni déguisée. Le droit
 français n'a pas d'équivalent au *fair use* et l'exception de courte citation ne
@@ -118,7 +165,7 @@ Les **mécanismes** s'empruntent librement. Le domaine public — Courteline,
 Allais, Jarry, Labiche, Feydeau — s'étudie sans limite, comme modèle de rythme
 de phrase et de construction de scène.
 
-## 11. Avant de livrer une modification de gameplay
+## 12. Avant de livrer une modification de gameplay
 
 - Faire tourner le pilote automatique headless (`/tmp/harn/run.js` ou équivalent
   jsdom) : aucune partie ne doit se bloquer, et la mécanique testée doit se

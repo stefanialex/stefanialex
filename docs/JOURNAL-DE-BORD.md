@@ -75,6 +75,27 @@ fondés et ont été corrigés.
 | D09 | Méta autorisé **à l'intérieur de la fiction** seulement | L'humour rôliste est méta par nature ; l'interdire tuait le moteur |
 | D10 | Les personnages **démarrent avec de la Rouspétance** | Met la jauge à portée, et c'est juste : ils ont déjà eu une journée |
 
+| D11 | **Un lexique réservé par personnage**, pas une humeur | Un ton se copie, un vocabulaire exclusif ne se copie pas |
+| D12 | **Minimum deux répliques adressées à un allié nommé** par personnage | Les 8 répliques adressées du corpus étaient les 8 meilleures |
+| D13 | Le mot **« tour »** est banni de l'écriture | Il ramène le décompte de jeu par la porte de derrière |
+| D14 | **Refus au-dessus de 85** : le personnage refuse une cible, un soin, sa capacité coûteuse | La jauge doit retourner le personnage contre le joueur |
+
+---
+
+## 4 bis. Relevés du simulateur
+
+| Build | Blocages | Engueulades/partie | Victoire | Tours | Répliques/partie |
+|---|---|---|---|---|---|
+| 12 | 0/8 | 1,75 | **100 %** ✗ | 6,1 | 68 |
+| 13 | 0/12 | 1,8 | **56 %** ✓ | 5 à 9 | 53 à 109 |
+
+**Build 13** — corpus de l'atelier intégré (174 répliques), mécanique de Refus,
+issue Sursaut à 25 %, équilibrage revu : points de vie des héros réduits d'environ
+25 %, dégâts des gobelins relevés, précision des héros ramenée de 78 à 72 %.
+
+Reste au-dessus de la cible : **la durée du combat**, 5 à 9 tours contre 3 à 5
+visés. À surveiller au prochain passage.
+
 ---
 
 ## 5. Le fait le plus important du projet

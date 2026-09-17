@@ -299,7 +299,7 @@ details.jr[open] summary{border-bottom:1px solid var(--line)}
   <div class="barre">
     <div class="ident">
       <h1>Donjon <em>&amp;</em> Paperasse</h1>
-      <span class="etape">banc d'essai 01 · build 12</span>
+      <span class="etape">banc d'essai 01 · build 13</span>
     </div>
     <div class="cpts">
       <span>tour <b id="cTour">1</b></span>
@@ -552,10 +552,10 @@ function poserDecor(){
 }
 /* ================= données ================= */
 const HEROS=[
- {id:'gue',nom:'Guérin',cls:'Chevalier blasé',rang:1,pvm:62,res:'Rancune',resv:0,resmax:10,rd:56},
- {id:'flo',nom:'Florimond',cls:'Barde critique',rang:2,pvm:40,res:'Matière',resv:2,resmax:8,rd:44},
- {id:'beu',nom:'Beuzelin',cls:'Roublard admin.',rang:3,pvm:42,res:'Formulaires',resv:2,resmax:5,rd:48},
- {id:'odo',nom:'Odon',cls:'Mage du dimanche',rang:4,pvm:34,res:'Confiance',resv:0,resmax:5,rd:52},
+ {id:'gue',nom:'Guérin',cls:'Chevalier blasé',rang:1,pvm:48,res:'Rancune',resv:0,resmax:10,rd:56},
+ {id:'flo',nom:'Florimond',cls:'Barde critique',rang:2,pvm:32,res:'Matière',resv:2,resmax:8,rd:44},
+ {id:'beu',nom:'Beuzelin',cls:'Roublard admin.',rang:3,pvm:34,res:'Formulaires',resv:2,resmax:5,rd:48},
+ {id:'odo',nom:'Odon',cls:'Mage du dimanche',rang:4,pvm:26,res:'Confiance',resv:0,resmax:5,rd:52},
 ];
 const CAPA={
  gue:[{n:'Coup de bouclier',d:'5–8 dégâts · 25 % étourdit',c:'ennemi',k:0},
@@ -682,6 +682,253 @@ BARKS.defaite=["Votre dossier est classé sans suite.","Repassez avec les pièce
  "Vous n'étiez pas sur la liste.","Une notification vous sera adressée. Sous six semaines.",
  "Le recours est possible. Il n'aboutira pas."];
 
+
+/* ---- Corpus issu de l'atelier d'écriture : 4 auteurs, 4 script-doctors,
+   1 chef de studio. 174 répliques retenues sur ~350 écrites. ---- */
+const CORPUS={
+ ouverture:{
+  gue:[
+    "Je prends le premier rang. C'est pas du courage, c'est de l'ancienneté.",
+    "Trois minutes de plan. Ça tiendra deux.",
+    "Avant, on faisait le point avant. Maintenant on le fait après.",
+    "Je connais ce couloir. Je l'ai connu plus large."],
+  flo:[
+    "On improvise ? Parfait. J'ai horreur de connaître la fin à l'avance.",
+    "Guérin passe devant. Il appelle ça mener. J'appelle ça être le plus près.",
+    "Odon a dit qu'il maîtrisait. J'ai noté le mot, pour quand il faudra le citer.",
+    "On entre en terrain hostile et mal éclairé. J'ai pris mes meilleures phrases."],
+  beu:[
+    "Le plan a été transmis. Pas à vous, à l'archive.",
+    "Je note l'heure d'entrée. Pour celle de sortie, rien ne presse.",
+    "L'opération est validée sous réserve. La réserve, c'est vous.",
+    "On m'a dit d'improviser. J'ai demandé la procédure d'improvisation."],
+  odo:[
+    "Moi j'ai un plan. Enfin, j'ai un avis. C'est déjà plus que la dernière fois.",
+    "Quelqu'un a relu le plan ? Parce que moi, je l'ai relu. Jusqu'à la page 39.",
+    "Je commence ou j'attends ? Je vais attendre. On me dira que j'ai commencé.",
+    "J'ai apporté du fromage. Pour après. S'il y a un après."]
+ },
+ rate:{
+  gue:[
+    "Ça arrive. Ça arrive surtout à moi, mais ça arrive.",
+    "L'arme est réglementaire. Le résultat, non.",
+    "J'ai touché quelque chose. Pas lui.",
+    "J'ai arrêté le geste trop tôt. À la fin, on économise."],
+  flo:[
+    "Je visais l'estime de soi. J'ai touché l'épaule. Erreur de registre.",
+    "La formule était juste. Le public n'était pas prêt.",
+    "J'ai manqué. Volontairement non, mais élégamment oui.",
+    "J'ai atteint le mur derrière lui. Le mur, lui, avait la politesse de rester."],
+  beu:[
+    "Le document a touché le sol. Il reste opposable.",
+    "Envoi retourné. Destinataire mobile.",
+    "Rejeté pour vice de forme. La forme, c'était mon bras.",
+    "Je conteste. Le recours n'est pas suspensif : il continue d'avancer."],
+  odo:[
+    "Le sort est parti. C'est déjà beaucoup.",
+    "Vous avez vu ? Non. Personne ne voit jamais quand c'est presque.",
+    "D'accord. Mais il a bougé. Un ennemi qui bouge, ce n'est plus la même demande.",
+    "C'était un essai. On a droit à un essai. Enfin je crois."]
+ },
+ crit:{
+  gue:[
+    "Il a fallu tout ce temps, mais voilà.",
+    "J'avais ça en réserve depuis le printemps.",
+    "On appelle ça du zèle. Je ne recommencerai pas.",
+    "L'arme a tenu. C'est elle qu'il faut féliciter."],
+  flo:[
+    "Quand je fais ça, plus personne ne demande à quoi je sers.",
+    "Touché au bon endroit. Le bon endroit étant celui où ça s'entend.",
+    "Pour la postérité : j'ai visé. C'est plus rare que la réussite.",
+    "Il aurait fallu quelqu'un d'important dans la pièce. Il n'y a que vous."],
+  beu:[
+    "Notification remise en main propre.",
+    "Signifié, daté, contresigné. Il n'a pas eu le temps de lire.",
+    "Instruction accélérée, sur sa demande implicite.",
+    "Recours épuisé."],
+  odo:[
+    "Ça, c'est de la page 38.",
+    "Alors quand ça rate, on commente. Et là, silence de mort.",
+    "N'applaudissez pas. Applaudissez un peu.",
+    "Ce n'est pas celui-là que je visais. On mettra ça sur le compte du talent."]
+ },
+ tue:{
+  gue:[
+    "Voilà. Je devrais ressentir quelque chose. Je verrai ce soir.",
+    "Celui-là était nouveau. On ne les forme plus.",
+    "Je ne tiens plus le compte. C'était un poste à part entière.",
+    "Je l'ai laissé finir sa phrase. Je ne suis pas une brute."],
+  flo:[
+    "Il est parti sans répondre. J'appelle ça un aveu.",
+    "Je ne tue pas, je conclus. La différence est de mise en scène.",
+    "Un de moins. L'ambiance remonte, ce qui me prive de matière.",
+    "Il voulait la gloire. Il aura une ligne, et encore, tout en bas de page."],
+  beu:[
+    "Il contestait la compétence du guichet. La question est tranchée.",
+    "Son délai de recours expirait. Il expire avec.",
+    "Le cas n'était pas prévu. J'ai créé la rubrique.",
+    "Décès constaté par un agent assermenté. Moi."],
+  odo:[
+    "Il est tombé tout seul. Enfin, avec mon aide.",
+    "Je ne voulais pas aller jusque-là. Il a insisté.",
+    "Ce n'est pas une vocation. C'est une reconversion.",
+    "Il m'avait manqué de respect. Je ne dis pas que c'est lié. Je le dis."]
+ },
+ fouille:{
+  gue:[
+    "Faites l'inventaire. Je contresigne, je ne fouille pas.",
+    "Une ceinture et de la monnaie. On a connu des successions plus riches.",
+    "Commencez par les bottes. C'est ce qui garde le mieux sa valeur.",
+    "Ses gants valent les miens. J'échange, et ça ne regarde personne."],
+  flo:[
+    "Beuzelin fouille déjà. Le mort tombe encore, lui a déjà fini de compter.",
+    "Une bourse, deux lacets. Il est mort pour ça, et c'est nous qui avons honte.",
+    "On le retourne comme un tiroir. Il rend moins qu'un tiroir.",
+    "Je regarde ailleurs pendant le partage. C'est plus digne, et j'ai déjà pris."],
+  beu:[
+    "Deux pièces, un lacet, un contrat non signé. Je retiens le contrat.",
+    "Rien n'était déclaré. Donc il n'y a rien à déclarer.",
+    "Je prélève les frais d'inventaire avant l'inventaire. C'est l'usage.",
+    "Ses effets personnels deviennent des effets de service."],
+  odo:[
+    "Gardez le fromage de côté. Je l'expertise.",
+    "Moi, à ma mort, je veux qu'on note ce qu'on prend.",
+    "Ah, un livre. Complet, lui.",
+    "Vous partagez déjà ? Je n'ai pas fini d'avoir peur, moi."]
+ },
+ bas:{
+  gue:[
+    "Je tiens. C'est pas la même chose qu'aller bien.",
+    "J'ai connu pire. J'ai connu pire au même endroit.",
+    "Quand je tomberai, ramassez le bouclier d'abord. Il n'est pas à moi.",
+    "J'ai déjà été porté une fois. Je m'en souviens mieux qu'eux."],
+  flo:[
+    "Je perds du sang, je continue, je commenterai après. Prévoyez quelqu'un pour noter.",
+    "Si je tombe, que personne ne raconte la scène. Je m'en chargeais très bien.",
+    "Je reste debout par principe. Le principe faiblit.",
+    "Un soin serait envisageable. Je ne demande rien, je constate à voix haute."],
+  beu:[
+    "Je signale une dégradation des conditions d'exercice.",
+    "Mon état relève de la médecine du travail. Elle passe le jeudi.",
+    "Je demande un aménagement de poste. Deux rangs en retrait.",
+    "Je rappelle que j'avais signalé le risque par note interne."],
+  odo:[
+    "Je saigne. Je le signale calmement. Très calmement. CALMEMENT.",
+    "J'ai mal. Pas beaucoup. Assez pour en parler.",
+    "Quelqu'un s'occupe de moi ou c'est un principe ?",
+    "Chez moi, à cette heure-là, je serais en train de retourner des meules."]
+ },
+ poisse:{
+  gue:[
+    "Je propose qu'on reprenne demain. C'est non, je sais.",
+    "Pas un mot dans le groupe. Moi non plus, mais moi je me retiens.",
+    "Je vais m'asseoir. Debout, ça donne l'impression qu'on continue.",
+    "Rien ne marche depuis ce matin. Moi non plus, ceci dit."],
+  flo:[
+    "Pour la postérité, j'ai relevé les noms dans l'ordre d'apparition.",
+    "Personne ne touche rien. Il faudrait peut-être s'excuser auprès de l'ennemi.",
+    "Nous avons maintenant une réputation. Elle circule plus vite que nous.",
+    "Je voudrais être ailleurs. Je le dis poliment, et je ne le dirai pas toujours."],
+  beu:[
+    "Trois échecs consécutifs. Cela ouvre droit à une enquête interne.",
+    "Je consigne. On relira ça au bilan annuel, si quelqu'un relit.",
+    "Je demande un audit. Je serai l'auditeur.",
+    "Personne n'a donné d'ordre, personne n'en a reçu. Tout est régulier."],
+  odo:[
+    "Quand c'est tout le monde, ce n'est plus une faute. C'est un climat.",
+    "On devrait rentrer. On dira qu'il y avait personne.",
+    "Est-ce qu'on peut réclamer ? À qui ? Je demande, je ne réclame pas.",
+    "Ça a commencé quand Florimond a parlé. Je ne dis que ce que j'ai vu."]
+ },
+ attente:{
+  gue:[
+    "J'attends. J'ai été formé pour ça.",
+    "Je réfléchis. Ça ne se voit pas, mais ça coûte.",
+    "Je laisse la place aux jeunes. Il n'y en a pas. Je la laisse quand même.",
+    "Debout, immobile, en tenue. C'est la moitié du métier."],
+  flo:[
+    "Je m'écarte. Qu'on voie bien ce que ça donne sans moi.",
+    "Je ne lèverai pas le petit doigt, et je le ferai avec une certaine tenue.",
+    "Je me réserve. Ce que je vaux ne se distribue pas à n'importe quelle heure.",
+    "On me demandera mon avis plus tard. J'aurai eu le temps de le rendre définitif."],
+  beu:[
+    "Le guichet est fermé entre midi et le moment où j'aurai fini.",
+    "Je suis en réunion.",
+    "Mon passage est reporté à une date ultérieure. Par moi.",
+    "Je m'abstiens. L'abstention est une position, elle se consigne.",
+    "J'attends un arbitrage. Je me l'étais demandé hier."],
+  odo:[
+    "Non. J'attends. On m'a dit d'attendre, j'attends.",
+    "Je relis. La page qu'il faut n'y est pas, mais je relis.",
+    "Je boude. C'est mon droit. Je peux même bouder assis.",
+    "J'ai mal au poignet. C'est pour ça. Enfin, c'est une des raisons."]
+ },
+ gronde:{
+  gue:[
+    "Je commence à avoir une opinion. Ça ne m'arrive jamais.",
+    "Il y a une liste. Vous êtes tous dessus. Par ordre d'arrivée.",
+    "Je n'ai jamais élevé la voix ici. Ça se saurait. Ça va se savoir.",
+    "Le prochain qui m'explique mon métier finira par l'apprendre."],
+  flo:[
+    "Je vais dire une chose. Pas maintenant. Mais je vais la dire, et ce sera long.",
+    "Je garde mon calme. Je le garde de plus en plus fort.",
+    "Je note tout depuis le début. Le carnet est plein. Il va falloir le lire.",
+    "Odon, éloigne-toi. Ce que je vais dire ne te concerne qu'à moitié."],
+  beu:[
+    "Prenez note que je prends note.",
+    "Mon obligation de réserve arrive à échéance.",
+    "Je vous préviens par la voie hiérarchique. Il n'y en a pas, donc directement.",
+    "Le préavis court. Sa durée ne vous a pas été communiquée."],
+  odo:[
+    "Je compte jusqu'à dix. J'en suis à neuf depuis un moment.",
+    "Ça monte. Je vous préviens parce qu'après, on dira que j'ai rien dit.",
+    "Quelqu'un ici va entendre parler de moi. Il se reconnaîtra.",
+    "J'ai le droit d'être fâché. J'ai vérifié. Enfin, j'ai demandé, et on a ri."]
+ },
+ refus:{
+  gue:[
+    "Gardez vos bandages. Je ne suis pas prioritaire, il paraît.",
+    "Pas cette cible. J'ai un différend avec l'autre.",
+    "Ça ne se dépense qu'une fois, et sûrement pas pour vous.",
+    "Non. Et je fais remarquer que personne n'a insisté."],
+  flo:[
+    "Je ne viserai pas celui-là. Il ne mérite pas ma meilleure formule.",
+    "On me redemandera, je le sens. Ce sera non, mais avec des arguments.",
+    "Je garde ma matière. On ne gâche pas un chef-d'œuvre pour cette soirée.",
+    "Soignez Odon d'abord. Il en a plus besoin, et il le saura toute sa vie."],
+  beu:[
+    "Son dossier n'est pas de mon ressort. Je ne peux rien pour lui.",
+    "Je ne peux pas vous soigner sans justificatif de domicile.",
+    "Vous demandez au guichet 4 ce qui relève du guichet 2. Il est fermé.",
+    "Votre requête est enregistrée sous réserve de rejet. Elle est rejetée.",
+    "Rien ne m'y oblige. J'ai vérifié ce matin, précisément pour ce cas."],
+  odo:[
+    "Je ne me soigne pas. Qu'on voie bien l'état dans lequel on me met.",
+    "Celui de gauche, plus jamais. J'ai mes raisons, elles sont excellentes.",
+    "J'économise. Pour le retour. Et pour la discussion du retour.",
+    "Le grand sort ? Pas aujourd'hui. Aujourd'hui, je fais le minimum."]
+ },
+ sursaut:{
+  gue:[
+    "Je n'aime pas ce métier. Je n'aime pas ce donjon. Vous, ça va.",
+    "Vingt ans que je note tout. Je n'ai jamais rien écrit contre vous.",
+    "Je ne vais pas vous encourager. Levez-vous quand même."],
+  flo:[
+    "Je n'ai rien noté depuis un moment. C'est la première fois. Continuez.",
+    "Guérin. Regarde-moi. Tu tiens depuis le début, moi je n'ai fait que parler.",
+    "J'ai besoin que vous échouiez. Pas là. Là, j'ai besoin que vous gagniez."],
+  beu:[
+    "Je retire mes réserves. On les reprendra quand tout le monde sera debout.",
+    "J'ai relu mes notes. Aucune ne dit de vous laisser là. On y va.",
+    "Ce n'est pas dans mes attributions. Je le fais quand même. Une fois."],
+  odo:[
+    "Moi je me plains, vous vous frappez. Chacun sa spécialité. On avance.",
+    "Guérin, devant. Florimond, tais-toi une fois. Une seule. Merci.",
+    "J'ai eu tort ce matin. On en reparlera dehors. Là, on finit."]
+ }
+};
+Object.entries(CORPUS).forEach(([k,o])=>{BARKS[k]=o});
+
 const ENG_A={
  gue:["%s, ça fait trois tours que je prends tout. Trois.","Je ne dis rien depuis le début. Là, je dis quelque chose, %s.","%s, tu étais où, exactement, pendant que je servais de porte ?","Je vais être clair, %s : je n'ai pas signé pour ça."],
  flo:["%s, je vais être honnête, et ça va faire mal.","On peut parler de ce que %s vient de faire ? On peut ?","%s, sur une échelle de un à dix, c'était en dessous.","Je documente, %s. Je documente tout, pour plus tard."],
@@ -797,7 +1044,7 @@ function machine(bulle,txt){
 let S;
 async function init(){
   S={heros:HEROS.map(h=>({...h,pv:h.pvm,rousp:Math.min(92,h.rd+rnd(-9,9)),mort:false,buff:0,saute:0,critG:0,coal:0,parti:0,comp:null})),
-     ennemis:[0,1,2].map(i=>({id:'g'+i,nom:'Gobelin '+(i+1),fig:'gob',pv:26,pvm:26,mort:false,proc:0,etourdi:0,convoque:0})),
+     ennemis:[0,1,2].map(i=>({id:'g'+i,nom:'Gobelin '+(i+1),fig:'gob',pv:30,pvm:30,mort:false,proc:0,etourdi:0,convoque:0})),
      tour:1,file:[],actif:null,nbEng:0,nbRate:0,serie:0,choix:[],buffG:null,esq:0,oriente:false,fini:false,
      lignes:0,sautees:0,debut:Date.now()};
   journalOuvert=false;
@@ -980,6 +1227,13 @@ function choisir(h){
       const b=document.createElement('button');b.className='act';
       b.innerHTML=`${c.n}<span>${c.d}${c.k?' · coût '+c.k:''}</span>`;b.disabled=!ok;
       b.onclick=()=>{
+        /* Au-dessus de 85, le personnage peut refuser. La blague est jouée,
+           pas écrite — et le joueur garde la main : il choisit autre chose. */
+        if(h.rousp>=85&&!S.refusFait&&Math.random()<.45){
+          S.refusFait=true;b.disabled=true;
+          bark('refus',h).then(()=>{$('titre').innerHTML=`<b>${h.nom}</b> refuse. Choisissez autre chose.`});
+          return;
+        }
         if(c.c==='auto')return res({c,cible:null});
         $('titre').innerHTML=`<b>${c.n}</b> — choisissez une cible sur la scène`;
         z.innerHTML='';
@@ -1004,17 +1258,17 @@ async function executer(h,c,cible){
   h.resv=Math.max(0,h.resv-(c.k||0));
   if(h.id==='gue'){
     if(c.n==='Coup de bouclier'){
-      if(Math.random()<.78+(S.buffG?S.buffG.prec:0)){
+      if(Math.random()<.72+(S.buffG?S.buffG.prec:0)){
         await frapper(h,cible,rnd(5,8));
         if(Math.random()<.25&&!cible.mort){cible.etourdi=1;log('ok',`${cible.nom} est étourdi.`);rendre()}
       }else await rater(h,cible);
     }else{
       const r=h.resv;h.resv=0;log('sys',`Rancune dépensée : <b>${r}</b>.`);
-      if(Math.random()<.78)await frapper(h,cible,3+4*r);else await rater(h,cible);
+      if(Math.random()<.72)await frapper(h,cible,3+4*r);else await rater(h,cible);
     }
   }else if(h.id==='beu'){
     if(c.n==='Signification'){
-      if(Math.random()<.78){await frapper(h,cible,rnd(3,6));if(!cible.mort)await proc(cible,1)}
+      if(Math.random()<.72){await frapper(h,cible,rnd(3,6));if(!cible.mort)await proc(cible,1)}
       else await rater(h,cible);
     }else await proc(cible,2);
   }else if(h.id==='odo'){
@@ -1033,7 +1287,7 @@ async function executer(h,c,cible){
     }
   }else{
     if(c.n==='Remarque de fond de salle'){
-      if(Math.random()<.78+(S.buffG?S.buffG.prec:0)){
+      if(Math.random()<.72+(S.buffG?S.buffG.prec:0)){
         await frapper(h,cible,rnd(2,5));h.resv=Math.min(h.resmax,h.resv+1);
       }else await rater(h,cible);
     }else if(c.n==='Remarque appuyée'){
@@ -1055,8 +1309,8 @@ async function jouerGobelin(e){
   if(Math.random()<.28)await bark('gob',e);
   const c=pick(vis.flatMap(h=>Array(Math.max(1,5-h.rang)).fill(h)));
   lance(e,c);await dodo(RM?80:210);
-  if(Math.random()<.74-(S.esq?.15:0)){
-    const crit=Math.random()<.12;let d=rnd(5,9);if(crit)d=Math.round(d*1.8);
+  if(Math.random()<.79-(S.esq?.15:0)){
+    const crit=Math.random()<.12;let d=rnd(8,13);if(crit)d=Math.round(d*1.8);
     c.pv=Math.max(0,c.pv-d);SON.j(crit?'crit':'coup');impact(c,crit);flotte(c,'−'+d,crit?'crit':'deg');
     log('sys',`${e.nom} → ${c.nom} : <b>${d}</b>${crit?' (critique)':''}`);
     rousp(c,crit?20:6);
@@ -1106,6 +1360,18 @@ async function engueulade(a){
   }else{a.rousp=40;b.rousp=40;await tirer(a,b,S.oriente)}
 }
 async function tirer(a,b,relance){
+  /* 75 % Dispute, 25 % Sursaut. Sans issue heureuse, une jauge qui craque
+     n'est qu'une punition : le joueur apprend à l'éviter au lieu de la chercher. */
+  if(Math.random()<.25){
+    SON.j('vict');await annonce('SURSAUT');
+    log('ok','— SURSAUT — contre toute attente, quelqu\'un dit la chose juste.');
+    await dit(a,pick(BARKS.sursaut[a.id]));
+    await dit(b,pick(BARKS.sursaut[b.id]));
+    S.heros.forEach(h=>{if(!h.mort)h.rousp=Math.min(h.rousp,30)});
+    S.buffG={dmg:1.25,prec:0,t:3};
+    log('ok','Tout le monde retombe à 30. +25 % de dégâts pendant 3 tours.');
+    rendre();await dodo(300);return;
+  }
   const i=rnd(0,7),r=D8[i];
   const c=await choixModale(`
     <h3>Résultat — d8 : ${i+1}</h3>
@@ -1235,6 +1501,7 @@ async function boucle(){
       if(u.etourdi){u.etourdi--;phase(`Tour ${S.tour}`,`${u.nom} est étourdi`);await dodo(620);continue}
       if(u.convoque){u.convoque--;phase(`Tour ${S.tour}`,`${u.nom} est convoqué`);log('sys',`<b>${u.nom}</b> est ailleurs.`);await dodo(620);continue}
       if(u.rang){
+        S.refusFait=false;
         phase(`Tour ${S.tour}`,`au tour de <b>${u.nom}</b>`);
         const {c,cible}=await choisir(u);
         $('btns').innerHTML='';$('titre').textContent='…';
