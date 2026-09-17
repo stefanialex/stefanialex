@@ -20,6 +20,74 @@ Quatre incapables notoires sont envoyés vider un donjon en ruine parce que le s
 
 ---
 
+## PIÈCE N°1-B — ANALYSE CONCURRENTIELLE
+
+> **Réserve méthodologique.** Le proxy réseau de la session a bloqué l'accès direct aux pages (Metacritic, Steam, Wikipédia, interviews). Les chiffres ci-dessous proviennent de synthèses de résultats de recherche et **n'ont pas été vérifiés sur la source**. À traiter comme des ordres de grandeur, à reconfirmer avant toute décision d'investissement.
+
+### Le concurrent existe, il est français, et il est sorti en 2020
+
+**« Le Donjon de Naheulbeuk : L'Amulette du Désordre »** — Artefacts Studio, éditeur Dear Villagers, 2020. **RPG tactique au tour par tour**, grille carrée, système de couverture, comparé à XCOM et Divinity. Sept personnages jouables, environ trente heures de campagne, développement démarré en 2017. Trois extensions, une suite en gestion de donjon en 2023.
+
+C'est, à peu de choses près, le jeu que ce document décrit : humour rôliste français, groupe d'incompétents, tactique au tour par tour.
+
+| Indicateur | Valeur relevée |
+|---|---|
+| Metacritic | ~72 (18 critiques) |
+| OpenCritic | ~68 (30 critiques) |
+| Steam | ~94 % d'avis positifs, entre 2 800 et 6 100 évaluations selon les pages |
+| Suite (2023) | ~73 % sur ~1 300 avis — nettement en dessous |
+| Ventes | **aucun chiffre trouvé** |
+
+### Ce qu'on lui reproche, et pourquoi ça nous concerne directement
+
+Les deux critiques dominantes sont, mot pour mot, les deux retours de nos propres testeurs en quarante-huit heures :
+
+1. **L'humour s'use.** Critique numéro un côté anglophone : humour jugé inégal, qui agace avec le temps, personnages unidimensionnels sans arc ni objectif, histoire qui ne tient pas au-delà des premières heures.
+2. **Le combat est lent et répétitif.** Difficulté obtenue par le volume d'ennemis plutôt que par la finesse, engagements trop longs, joueur passif pendant les tours adverses.
+
+Et surtout, la formulation qui vaut tout le reste du document :
+
+> **« Dissonance de rythme : un combat lent et sérieux qui contredit le ton comique. »**
+>
+> Mise en scène des dialogues jugée plate — pas de caméra dynamique, répliques qui s'enchaînent sans se chevaucher.
+
+**C'est le piège structurel du genre, et il est désormais documenté sur un jeu financé, doublé par des voix connues, et professionnellement produit.** Nos testeurs n'ont pas trouvé un défaut d'amateur : ils ont retrouvé le défaut central de la catégorie. Personne ne l'a résolu.
+
+### La conséquence de design, et elle est douloureuse
+
+**Si le combat est long et sérieux, la comédie meurt.** Le rythme tactique et le rythme comique sont antagonistes : l'un demande de la délibération, l'autre de l'enchaînement.
+
+Cela met directement en cause l'ambition « un truc à la Darkest Dungeon » :
+
+- Darkest Dungeon tient sur la **tension** — la peur de perdre un personnage, la lenteur qui pèse. C'est un jeu d'angoisse, et la lenteur y est un outil.
+- Une comédie tient sur le **tempo** — l'enchaînement, la surprise, la chute qui tombe juste.
+
+On ne peut pas emprunter les deux rythmes. Le document doit trancher : **des combats courts, trois à cinq tours, nerveux**, où la tension vient du groupe et non de la durée. Un combat de douze tours tuera chaque blague qu'on y mettra, quelle que soit la qualité de l'écriture.
+
+### Ce que le concurrent a bien fait, et qu'il faut reprendre
+
+- **L'humour systémique plutôt que cinématique.** Leur mécanisme central : des commentaires contextuels déclenchés par l'action du joueur — et notamment par ce qu'il **ne fait pas**. C'est exactement l'approche de ce document ; elle est validée par un jeu qui a expédié.
+- **Le doublage.** Voix invitées, dialogues intégralement doublés. C'est un poste de coût majeur et c'est systématiquement cité en positif.
+
+### Les trois écarts à creuser
+
+1. **Nous n'avons pas de licence, et c'est un avantage.** Le studio rapporte une **réception anglophone meilleure que la française** — les joueurs anglophones découvraient le jeu sans le passif de la licence. Sans licence, on peut co-écrire les deux langues dès le départ, sans dette envers des fans historiques.
+2. **La dispute comme système, pas comme décor.** Aucun concurrent identifié ne fait du conflit interne au groupe une mécanique chiffrée. C'est le seul axe où ce projet n'est pas un suiveur.
+3. **Le format court.** Trente heures de campagne contre des runs de trente minutes. Le roguelite permet une densité comique qu'une campagne longue ne permet pas — le joueur revient volontairement, au lieu de subir.
+
+### Les autres repères du marché
+
+- **Reflets d'Acide** (JBX, 2004), l'autre grande saga rôliste francophone : adaptée en BD et en jeu de plateau, **jamais en jeu vidéo**. Le comparable le plus direct n'a pas franchi le pas.
+- **Kaamelott** : aucune adaptation RPG d'envergure trouvée. Licence réputée peu exportable.
+- **Ankama** (Dofus, Wakfu) : tactique tour par tour humoristique francophone, réussite commerciale, mais modèle MMO — autre catégorie.
+- **Mario + Rabbids** : ~3 millions d'exemplaires. À retenir comme **plafond du genre « tactique + humour »**, pas comme objectif.
+
+### À vérifier avant toute décision d'investissement
+
+Metacritic PC exact, nombre réel d'avis Steam, et surtout **les chiffres de ventes des deux jeux Naheulbeuk** — introuvables ici. Sans eux, on sait que le genre existe et qu'il est correctement noté ; on ne sait pas s'il gagne de l'argent.
+
+---
+
 ## PIÈCE N°2 — TON & ÉCRITURE
 
 ### Registre
@@ -171,6 +239,67 @@ Une réplique qui tient les trois à la fois n'est pas trois fois plus drôle : 
 
 ---
 
+## PIÈCE N°2-D — RECHERCHE : LES VINGT MÉCANISMES DU NON-SENS ADMINISTRATIF
+
+Relevé documentaire sur le corpus comique français. Ce sont des **structures**, pas des textes : un procédé n'est pas protégeable, une réplique l'est.
+
+### Deux conclusions qui remettent en cause ce document
+
+> **1. Ma règle « jamais de méta » est probablement ce qui rend l'humour plat.**
+>
+> Le GDD interdit en pièce n°2 tout clin d'œil et toute rupture du quatrième mur. Or l'humour rôliste est **méta avant d'être thématique** : il ne porte pas sur le monde fictionnel, il porte sur la *pratique du jeu*. Il empile joueur / personnage / règle / fiction, et chaque décalage entre deux niveaux est une source de comique. En interdisant le décalage de niveaux, j'ai interdit le moteur.
+>
+> **Correction, et elle est subtile.** On ne rétablit pas le clin d'œil au joueur — ça, ça reste banni. On rétablit le **décalage de niveaux à l'intérieur de la fiction** : les personnages traitent les règles de leur propre monde comme des règles de jeu. Ils contestent un arbitrage, invoquent une jurisprudence de table, discutent d'un cas non prévu par le règlement. Vermicule et sa Convention en sont déjà un exemple ; il faut le généraliser au groupe, pas seulement aux institutions.
+
+> **2. L'axe comique a bougé : du guichet vers le management.**
+>
+> L'humour sur le fonctionnaire, dominant des années 1980 aux années 2000, s'essouffle — dématérialisation des démarches, usure des gags, sensibilité accrue. La veine productive aujourd'hui est **l'entreprise** : open space, réunions sans objet, jargon managérial, télétravail, indicateurs.
+>
+> **Conséquence pour le jeu.** Fresnes-les-Tourbes doit moins ressembler à une préfecture qu'à une **PME mal dirigée**. Le seigneur Aymeric n'est pas un préfet, c'est un patron qui a lu un livre sur le leadership. Grzznak n'est pas seulement syndiqué, il est en **conflit de double hiérarchie**. Le camp n'a pas des services, il a des *réunions hebdomadaires*.
+
+### Les vingt mécanismes
+
+| # | Mécanisme | Effet | Observé dans |
+|---|---|---|---|
+| 1 | **La boucle impossible** | A exige B, qui exige A. Aucun agent ne voit la contradiction | Astérix (la maison qui rend fou), Courteline |
+| 2 | **Le renvoi infini** | Chacun est compétent pour rediriger, jamais pour décider | Astérix |
+| 3 | **Le contre-formulaire** | L'usager invente une pièce imaginaire ; le système, incapable d'avouer son ignorance, se détruit à la chercher | Astérix |
+| 4 | **La règle absurde, exécutée gravement** | Le rire vient du sérieux de l'exécutant, pas de la règle | Les Shadoks, Groland |
+| 5 | **L'horaire souverain** | L'urgence vitale s'écrase contre la fermeture du guichet | Les Bidochon, Le Splendid |
+| 6 | **Le zèle qui produit l'inverse** | L'agent applique parfaitement sa mission et cause le dommage qu'elle devait prévenir | Le Splendid, Hero Corp |
+| 7 | **La réunion sans objet** | Convoquée pour décider, elle ne produit qu'une autre réunion | Kaamelott |
+| 8 | **Le décalage registre / enjeu** | L'épique traité en langage de bureau, ou la broutille traitée solennellement | Kaamelott, moteur central |
+| 9 | **L'expertise sans compétence** | Maîtrise parfaite de la nomenclature, nulle du métier | Courteline, Groland |
+| 10 | **La responsabilité liquide** | Personne n'a dit non. Personne n'a dit oui | Courteline |
+| 11 | **Le jargon opaque** | Un vocabulaire qui ne dit rien et interdit la contradiction | humour d'entreprise contemporain |
+| 12 | **L'exception devenue norme** | Le cas particulier engendre une procédure permanente que nul ne sait justifier | Les Shadoks |
+| 13 | **Le sous-fifre tout-puissant** | Le plus petit échelon détient le seul pouvoir réel : bloquer | Astérix, Les Bidochon |
+| 14 | **La double hiérarchie** | Deux autorités, ordres incompatibles, subordonné fautif dans les deux cas | Kaamelott, Hero Corp |
+| 15 | **Le dossier fantôme** | Il circule, s'épaissit, mobilise — son objet n'a jamais existé | Courteline |
+| 16 | **La panne chez l'unique détenteur** | Une seule personne sait. Elle est absente | Astérix |
+| 17 | **La compassion procédurale** | De l'empathie scriptée là où il faudrait une action | Le Splendid |
+| 18 | **L'inertie vertueuse** | Ne rien faire, présenté sincèrement comme la plus haute forme du devoir | Courteline, Groland |
+| 19 | **La logique auto-justifiante** | Un raisonnement faux mais formellement impeccable | Les Shadoks, Allais, 'pataphysique |
+| 20 | **L'escalade réparatrice** | Chaque geste de correction aggrave d'un cran | Le Splendid — structure, pas réplique |
+
+### Trois mécanismes à transformer en règles de jeu
+
+Les mécanismes 3, 14 et 20 ne demandent pas d'être écrits : ils demandent d'être **joués**.
+
+- **N°3 — Le contre-formulaire → capacité de Beuzelin.** Il produit un document qui n'existe pas. L'ennemi administratif doit le traiter : perte de tour, annulation d'un effet, ou ouverture d'une négociation. C'est le meilleur gag du corpus français, et c'est une mécanique complète. *À ajouter à son kit.*
+- **N°14 — La double hiérarchie → structure d'un combat.** Deux ennemis donnent au groupe des ordres contradictoires ; obéir à l'un déclenche la sanction de l'autre. Piste de boss.
+- **N°20 — L'escalade réparatrice → moteur des salles d'événement.** Chaque tentative de résoudre un problème doit pouvoir l'aggraver d'un cran. C'est déjà la structure de la scène de Vermicule ; il faut en faire une règle générale, pas une exception scénaristique.
+
+### L'humour rôliste, et pourquoi il fonctionne
+
+Ses objets récurrents : l'écart entre l'intention du joueur et le résultat du dé ; la friction entre la règle écrite et son interprétation maison ; le joueur qui sabote le scénario préparé ; le meneur qui improvise en masquant sa panique ; les archétypes poussés à la caricature ; et surtout la **logistique prosaïque** — partage du butin, inventaire, ravitaillement — qui remplace l'épique.
+
+Le public rôliste dispose d'un **capital de reconnaissance** : il rit de sa propre table. Le double niveau de lecture est la clé — accessible au néophyte, saturé de signes pour l'initié.
+
+**Convergence à exploiter** : une règle de jeu *est* une bureaucratie. Consultation de tables, arbitrage des cas non prévus, jurisprudence, disputes d'interprétation. Les deux veines que ce projet voulait mélanger n'en font qu'une, et c'est précisément là qu'il doit se tenir.
+
+---
+
 ## PIÈCE N°3 — BOUCLE DE JEU
 
 ### Vue d'ensemble (un run = 25 à 40 minutes)
@@ -269,6 +398,77 @@ Le combat se fige. Les deux personnages les plus remontés échangent deux répl
 | 6 | **Escalade** | Un troisième s'en mêle. Tout le monde +25 Rouspétance, mais le groupe gagne une action supplémentaire ce tour |
 | 7 | **Démission** | Le personnage quitte la formation 2 tours. Revient à PV pleins, avec une note de frais |
 | 8 | **Réconciliation suspecte** | Les deux se soignent de 20 % et deviennent *Complices* : les dégâts reçus sont partagés jusqu'à la fin du combat |
+
+---
+
+## PIÈCE N°4-B — RECHERCHE : CE QUE DARKEST DUNGEON NOUS APPREND
+
+> **Réserve.** Chiffres issus de synthèses de recherche, non vérifiés page par page. Fiables comme ordres de grandeur.
+
+### La correction majeure à apporter à l'Engueulade
+
+Darkest Dungeon : jauge de stress **0 → 200**. À **100**, un test de résolution — **75 % d'Affliction, 25 % de Vertu**. À **200**, crise cardiaque.
+
+**Notre Engueulade n'a qu'une seule saveur : le chaos.** C'est l'erreur. Sans issue heureuse, une jauge qui craque n'est qu'une punition, et le joueur apprend à l'éviter au lieu de la chercher.
+
+> **Décision.** L'Engueulade se scinde en deux issues, avec un ratio asymétrique assumé : **75 % de Dispute, 25 % de Sursaut.**
+>
+> - **La Dispute** — la table d8 actuelle. Le groupe part en vrille.
+> - **Le Sursaut** — rare, et c'est ce qui le rend racontable. Quelqu'un dit la chose juste, au bon moment. Rouspétance de tout le groupe ramenée à 30, un bonus franc pendant trois tours, et une réplique qui n'existe que là. Un joueur qui a vu trois Sursauts en cinquante runs s'en souviendra ; un joueur qui n'en voit jamais trouvera la jauge injuste.
+>
+> La rareté crée l'histoire qu'on raconte. C'est ce que le 25 % de Vertu fait dans Darkest Dungeon, et c'est pour ça que les joueurs en parlent.
+
+### La deuxième correction : la jauge doit retourner le personnage contre le joueur
+
+Dans Darkest Dungeon, un héros affligé **agit contre vous** : il passe son tour, refuse un soin, refuse un bonus, change de rang tout seul, se frappe, stresse l'équipe. Toutes les afflictions coûtent en plus −15 % de résistances et −10 % de PV max.
+
+**Notre Rouspétance ne fait que modifier des chiffres.** C'est tiède. Un personnage qui refuse un soin est plus drôle que n'importe quelle réplique — et la blague, là, est *jouée*, pas écrite.
+
+> **À implémenter.** Au-dessus de 85 de Rouspétance, avant même l'Engueulade, un personnage peut **refuser** : refuser une cible, refuser un soin, refuser d'utiliser sa capacité coûteuse, reculer d'un rang. Un refus par tour au maximum, annoncé par une réplique. C'est le mécanisme 18 du corpus français — l'inertie vertueuse — et c'est gratuit à écrire.
+
+### Le rythme, chiffré
+
+| Donnée | Darkest Dungeon | Ce que ça impose |
+|---|---|---|
+| Durée d'un combat | **4 à 5 tours** | Nos combats visent 3 à 5 tours. Douze tours tuent la comédie |
+| Durée d'une expédition | **10 à 40 min** | Nos runs de 25 à 40 min sont dans la bonne fenêtre |
+| Ordre d'action | vitesse + 1d8 par tour | Notre variance ±2 est trop faible : il faut qu'un plan puisse se défaire |
+| Formation | 4 rangs, contrainte de rang au lancement **et** à la cible | Déjà repris. C'est le vrai moteur tactique, pas les dégâts |
+| Porte de la Mort | à 0 PV, **33 %** de mourir à chaque coup | **Aucun tour n'est neutre.** Il nous manque cet équivalent |
+
+**L'enseignement central : la tension ne vit pas dans la durée du combat, elle vit entre les combats.** Ressources qui se vident, roster consommable, torche qui s'éteint. Ne jamais rallonger un combat pour ajouter de la profondeur — ajouter de la **conséquence**.
+
+### Le narrateur, et pourquoi les joueurs le citent
+
+Wayne June, voix de l'Ancêtre, décédé en janvier 2025 ; Red Hook a refusé de recréer sa voix par IA alors même qu'il leur en avait donné l'autorisation. Volume estimé à plusieurs centaines de lignes.
+
+**Ses déclencheurs : les micro-événements.** Coups critiques portés et subis, mises à mort, morts de héros, ruptures de stress, afflictions, victoires, entrées de donjon. Il intervient plusieurs fois par combat de quatre tours.
+
+Quatre raisons cumulées expliquent qu'on le cite en boucle, et les quatre sont transposables :
+
+1. **Il transforme la statistique en jugement moral.** Un critique n'est pas « +12 dégâts », c'est une phrase qui condamne le joueur d'avoir envoyé des gens mourir.
+2. **Il donne une intention au hasard.** Un échec commenté devient une scène ; un échec silencieux devient une injustice. C'est le levier le plus rentable du jeu entier — et c'est exactement notre problème de raté.
+3. **L'humour noir involontaire.** Des lignes si grandiloquentes qu'elles deviennent drôles quand elles tombent sur un désastre. C'est notre registre, déjà.
+4. **Il est mémétique parce qu'il est répétable.** Les mêmes lignes reviennent, donc on les apprend, donc on les cite.
+
+> **Renversement d'une règle de ce document.** La pièce n°2 impose de se taire plutôt que de se répéter. **C'est faux.** La citation naît de la répétition : on ne retient pas ce qu'on entend une fois. Nouvelle règle : **une réplique doit revenir, mais pas trop tôt.**
+>
+> Budget chiffré : **5 à 8 variantes minimum** par déclencheur fréquent, un temps de latence par ligne plutôt qu'un verrouillage définitif, et **10 à 15 % du pool réservé à des déclencheurs rares** pour récompenser les vétérans.
+
+### L'erreur de Darkest Dungeon II, à ne pas reproduire
+
+DD2 a remplacé le stress par un système de relations : à 10, **80 % de Meltdown**. La plainte dominante des joueurs est la **spirale fermée** — craquage, affinité qui chute, interactions ratées, encore du stress. Perçue comme subie plutôt que pilotable.
+
+**Notre bouton « Vos gueules » est exactement le levier de sortie qui manquait à DD2.** Il est validé par l'échec d'un concurrent. À conserver tel quel, et à ne jamais supprimer pour « simplifier ».
+
+### La réalité commerciale du genre
+
+| | Ventes |
+|---|---|
+| Darkest Dungeon (2016) | 650 k la première semaine, 1 M en 2016, 6,5 M fin 2022, ~16 M unités DLC compris |
+| Darkest Dungeon II (2023) | ~600 k |
+
+Metacritic 84 pour le premier, 81 pour le second. **Le premier a fait dix fois le second.** Un jeu de niche qui trouve son public tient dix ans ; sa suite, mieux financée, n'a pas refait le coup. À méditer avant de parler de suite.
 
 ---
 
