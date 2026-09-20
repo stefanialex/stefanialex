@@ -1,0 +1,23 @@
+[Unit]
+Description=Fin de session Valheim : coche les chantiers mesurables et poste le compte rendu
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=valheim
+Group=valheim
+StateDirectory=valheim-stats
+# Le fichier des chantiers vit dans /etc, que ProtectSystem=strict rend en
+# lecture seule. Sans cette ligne le programme mesure juste, publie son compte
+# rendu, et echoue au moment d'ecrire -- en ayant deja annonce des changements
+# qu'il n'a pas enregistres.
+ReadWritePaths=/etc/valheim
+# Pas besoin du groupe systemd-journal, contrairement a l'oracle : celui-ci lit
+# les cles de boss en base et le reste dans le fichier de monde, jamais le
+# journal.
+ExecStart=/usr/local/bin/fin-session-valheim.py
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes

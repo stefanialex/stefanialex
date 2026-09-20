@@ -1,0 +1,14 @@
+[Unit]
+Description=Fin de session Valheim, chaque nuit
+
+[Timer]
+# Minuit : le groupe joue souvent jusqu'a une heure passee, mais c'est l'heure
+# qu'Alexandre a demandee et elle marque la coupure de journee. Le delai
+# aleatoire evite de tomber en meme temps que la sauvegarde horaire de 00h00,
+# qui lit le meme monde.
+OnCalendar=*-*-* 00:00:00
+RandomizedDelaySec=180
+Persistent=true
+
+[Install]
+WantedBy=timers.target
