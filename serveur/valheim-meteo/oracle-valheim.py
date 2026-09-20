@@ -80,7 +80,39 @@ MURMURES = {
     "StoneTowerRuins10": "des tours qui ne tiennent plus",
     "BearCave": "une tanniere chaude",
     "Runestone_Meadows": "une pierre qui parle",
+    # Les Brumeuses, ajoutees le 2026-09-20 : le groupe y est entre la veille
+    # et l'oracle n'avait aucun mot pour en parler, alors que le serveur avait
+    # deja pose quinze lieux la-bas. Il voyait tout et se taisait.
+    "Mistlands_DvergrTownEntrance1": "un seuil taille par d'autres mains, et ce qui remue derriere",
+    "Mistlands_Excavation1": "une fouille que la brume a reprise",
+    "Mistlands_Excavation2": "une fouille que la brume a reprise",
+    "Mistlands_Giant1": "des os trop grands pour une bete",
+    "Mistlands_GuardTower1_ruined_new2": "une tour de guet que la brume avale",
+    "Mistlands_GuardTower2_new": "une tour de guet que la brume avale",
+    "Mistlands_RoadPost1": "un jalon sur une route que plus personne n'emprunte",
+    "Mistlands_Swords1": "des lames plantees, et personne pour les reprendre",
+    "Mistlands_Viaduct1": "un pont qui ne mene plus nulle part",
+    "Mistlands_Harbour1": "un port sans navire",
+    "Mistlands_RockSpire1": "une aiguille de pierre qui perce la brume",
+    "Mistlands_Statue2": "une statue qui regarde encore",
+    # Le Big Rock Clearing : unique par monde, vingt-deux cailloux de
+    # compagnie autour. Le groupe en avait deja un -- un seul BigRock dans le
+    # monde au 2026-09-20 -- et le croyait rarissime, sur la foi d'une rumeur
+    # de « quatre par monde ». Le lieu etait deja genere : l'oracle pouvait le
+    # dire, il lui manquait le mot.
+    "BigRockClearing": "un cercle de pierres qui vous rendent votre regard",
 }
+
+# Les ruines des Brumeuses se ressemblent et sont nombreuses. On les annonce en
+# grappe, comme les tombes de la Foret Noire : onze indices le meme jour, ce
+# n'est plus un oracle, c'est un plan. L'entree de ville dvergr, elle, sort du
+# lot et garde son indice propre -- c'est par la que passent les mines.
+RUINES_BRUMEUSES = (
+    "Mistlands_Excavation1", "Mistlands_Excavation2", "Mistlands_Giant1",
+    "Mistlands_GuardTower1_ruined_new2", "Mistlands_GuardTower2_new",
+    "Mistlands_RoadPost1", "Mistlands_Swords1", "Mistlands_Viaduct1",
+    "Mistlands_Harbour1", "Mistlands_RockSpire1", "Mistlands_Statue2",
+)
 
 CARDINAUX = [(0, "au nord"), (45, "au nord-est"), (90, "au levant"),
              (135, "au sud-est"), (180, "au sud"), (225, "au sud-ouest"),
@@ -192,7 +224,19 @@ def indices(cx, monde, tous=False):
                      % (len(groupe), ou, pas(d)),
         })
 
-    for nom in ("Vendor_BlackForest", "TrollCave02", "BearCave"):
+    brumes = [p for n in RUINES_BRUMEUSES for p in trouves.get(n, [])]
+    if brumes:
+        proche = min(brumes, key=lambda p: math.hypot(*p))
+        sortie.append({
+            "sujet": "brumeuses",
+            "texte": "Sous la brume, %d ouvrages tiennent encore debout. Le "
+                     "plus proche est a quelque %d pas %s."
+                     % (len(brumes), pas(math.hypot(*proche)),
+                        direction(*proche)),
+        })
+
+    for nom in ("Vendor_BlackForest", "TrollCave02", "BearCave",
+                "Mistlands_DvergrTownEntrance1", "BigRockClearing"):
         if trouves.get(nom):
             proche = min(trouves[nom], key=lambda p: math.hypot(*p))
             sortie.append({
