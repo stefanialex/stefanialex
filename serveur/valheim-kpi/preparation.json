@@ -1,15 +1,13 @@
 {
  "_note": "Verifie le 2026-09-29 sur sources POST-1.0 croisees : wiki weirdgloop (editions du 19 au 28/09/2026), notes de patch officielles Iron Gate recuperees via l'API Steam News, PC Gamer, Game8. valheim.fandom.com etait inaccessible (Cloudflare) et n'a PAS servi. Regle tenue ici : une quantite n'est ecrite que si une source post-1.0 la donne. Les pieces dont la recette n'a pas pu etre verifiee sont citees dans « stuff » mais ABSENTES du calcul de farm -- mieux vaut un manque non chiffre qu'un chiffre invente. C'est ce genre d'invention qui a fait poster « neuf cheveux de roi geant » pour le Sealbreaker.",
  "_alias": "Un materiau peut s'ecrire « A|B » : les deux prefabs sont additionnes. Sert quand le nom d'affichage et le prefab different (Flametal des Ashlands = FlametalNew) ou quand la source est ambigue (Ashwood/Blackwood).",
-
  "paliers": {
-
   "defeated_fader": {
    "biome": "Ashlands",
-   "resume": "Fader, dans les Ashlands. AVANT TOUT : la Reine debloque la Presse d'artisan, qui donne la Plaque ceramique, qui donne le DRAKKAR -- sans lui on ne traverse pas. Le boss s'invoque avec 3 Cloches (9 Fragments de cloche) a la Flamme emeraude. Il lache les Cotes embrasees (ex-« Fader Relic », renomme en 1.0), qui ouvrent tout le Grand Nord.",
+   "resume": "Fader, dans les Ashlands. La presse d'artisan et le DRAKKAR sont deja faits -- mesure du 2026-09-29 : artisan_ext1 pose, et un VikingShip_Ashlands a flot par X 3489 / Z -6190. Le verrou reel est ailleurs : la Forge noire plafonne au NIVEAU 3 (refroidisseur et etau), il lui manque la Decoupeuse a metal, qui seule debloque les armes gemmees. Le boss s'invoque avec 3 Cloches (9 Fragments) a la Flamme emeraude, et lache les Cotes embrasees, qui ouvrent tout le Grand Nord.",
    "obligatoire": [
-    "Vin d'orge de resistance au feu, et pas qu'un peu : la pluie de cendres, la lave et les Charred font TOUS des degats de feu. Recette Plaines (10 Orge + 10 Baies des neiges pour 6 bouteilles) -- vous avez 958 Orge et 815 Baies, donc aucune excuse. Viser 40 bouteilles.",
-    "Drakkar. Le Longship ne suffit pas.",
+    "Vin d'orge de resistance au feu : la pluie de cendres, la lave et les Charred font TOUS des degats de feu. 10 Orge + 10 Baies des neiges pour 6 bouteilles. Cible 40, vous en avez deja plus de cinquante.",
+    "Decoupeuse a metal (Forge noire niveau 4) : sans elle, aucune arme gemmee. C'est le vrai verrou, pas le bateau.",
     "Pioche en metal noir minimum pour les veines de Flametal."
    ],
    "pieges": [
@@ -19,7 +17,6 @@
     "1.0.14 : les Jotun Puffs et les Magecaps NE REPOUSSENT PLUS. Les cueillettes sauvages sont finies -- cultivez-les, sinon la nourriture a Eitr s'arrete."
    ],
    "styles": {
-
     "commun": {
      "resume": "Les stations. Elles ne se multiplient pas par joueur : une seule sert tout le groupe.",
      "stuff": [
@@ -38,7 +35,6 @@
       "FineWood": 6
      }
     },
-
     "melee": {
      "resume": "Armure Flametal et arme lourde. L'armure se monte SANS HESITER : aucune piece d'armure n'entre dans une recette de gemme, donc rien n'y est jamais perdu.",
      "stuff": [
@@ -68,7 +64,6 @@
      },
      "_note_par_joueur": "Set Flametal niveau 1 seulement (16+20+20 Flametal). Pour un set niveau 4 il faut environ 4,5x le metal, soit ~252 Flametal par joueur -- ~1000 pour le groupe, plus les armes. Le chiffre ci-dessus est le PREMIER PALIER atteignable, pas la cible finale."
     },
-
     "archer": {
      "resume": "Set Ask (leger) et Croc de cendre. Le set Ask donne un bonus de groupe +10% de degats perforants et reduit le cout en endurance.",
      "stuff": [
@@ -93,7 +88,6 @@
      },
      "_note_par_joueur": "Croc de cendre niveau 1 uniquement. Le set Ask n'est pas compte : sa recette n'a pas pu etre verifiee sur une source post-1.0."
     },
-
     "mage": {
      "resume": "Set Embla et batons. Tres peu d'armure, +130% de regen d'Eitr. La chaine Eitr des Brumeuses (extracteur de seve, raffinerie) doit continuer a tourner.",
      "stuff": [
@@ -121,7 +115,6 @@
     }
    }
   },
-
   "defeated_fimbulbringer": {
    "biome": "Grand Nord",
    "resume": "Kall Fimbulbringer, huitieme et DERNIER boss : 47 000 PV sur trois reserves (10 000 / 7 000 / 30 000), impossible a etourdir. Sa mort declenche la vraie fin du jeu. L'entree du Grand Nord n'est pas verrouillee par la mer -- pas de mer bouillante -- mais par Fader : ses Cotes embrasees donnent le Bucher eternel, donc les Braises, donc la Pelle a neige (sans laquelle on ne peut RIEN construire au sol) et les Charges de braise.",

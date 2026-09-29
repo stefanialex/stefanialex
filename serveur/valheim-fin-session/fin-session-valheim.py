@@ -219,11 +219,32 @@ def regles(inv, pose, tags, k, joueurs):
         "9 fragments de Sealbreaker": palier(inv["DvergrKeyFragment"], (1, 9)),
         "Reposer un portail dans les Brumeuses":
             "fait" if tags["Myst"] >= 2 else None,
+        # Le palier Ashlands. Mesure du 2026-09-29 : la presse et le drakkar
+        # etaient DEJA faits, et personne ne le savait -- le conseil du soir
+        # repetait « avant tout, le drakkar » a un groupe qui en avait un a
+        # flot depuis un moment. La Forge noire, elle, plafonne au niveau 3.
+        "Presse d'artisan": "fait" if pose["artisan_ext1"] else None,
+        "Drakkar": "fait" if pose["VikingShip_Ashlands"] else None,
+        "Forge noire niveau 4 (Decoupeuse a metal)":
+            "fait" if pose["blackforge_ext3_metalcutter"] else None,
+        "Forge noire niveau 5 (Tailleur de gemmes)":
+            "fait" if pose["blackforge_ext4_gemcutter"] else
+            ("en_cours" if inv["GemstoneRed"] else None),
+        "Vin de resistance au feu": palier(inv["BarleyWine"], (1, 40)),
+        "9 fragments de cloche": palier(inv["BellFragment"], (1, 9)),
     }
 
 
 PREFABS_POSES = ("blackforge", "piece_magetable", "eitrrefinery",
-                 "piece_sapcollector", "piece_preptable")
+                 "piece_sapcollector", "piece_preptable",
+                 # Le palier Ashlands, ajoute le 2026-09-29. Les noms ont ete
+                 # LUS dans la table de prefabs, pas devines : la presse
+                 # d'artisan est « artisan_ext1 » et non « piece_artisanpress »,
+                 # et le drakkar est « VikingShip_Ashlands ». Se tromper de nom
+                 # ne leve aucune erreur -- ca compte simplement zero, pour
+                 # toujours.
+                 "artisan_ext1", "VikingShip_Ashlands",
+                 "blackforge_ext3_metalcutter", "blackforge_ext4_gemcutter")
 
 
 def compte_rendu(monde, source, d, changements, inv, pose, k, joueurs):
