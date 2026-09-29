@@ -101,6 +101,53 @@ MURMURES = {
     # de « quatre par monde ». Le lieu etait deja genere : l'oracle pouvait le
     # dire, il lui manquait le mot.
     "BigRockClearing": "un cercle de pierres qui vous rendent votre regard",
+    # Le Grand Nord, ajoute le 2026-09-29. Le serveur y avait deja pose
+    # vingt-neuf lieux -- l'oracle les voyait tous et n'avait aucun mot pour
+    # eux, exactement comme pour les Brumeuses le 20/09. Ces murmures ne
+    # serviront qu'une fois Fader tombe, mais ils seront prets.
+    "DN_gammeltrollFrac01": "un geant change en pierre, et ce qu'il garde dedans",
+    "DN_gammeltrollFrac02": "un geant change en pierre, et ce qu'il garde dedans",
+    "DN_hut01": "un abri que le gel n'a pas tout a fait pris",
+    "IcePond1": "une eau qui ne bouge plus",
+    "MorkBorg": "une porte qui demande sa clef, et quatorze etages dessous",
+    "AbandonedLogCabin02": "des rondins empiles par des mains parties depuis",
+    "AbandonedLogCabin03": "des rondins empiles par des mains parties depuis",
+    "AbandonedLogCabin04": "des rondins empiles par des mains parties depuis",
+}
+
+# Les cabanes du Grand Nord se ressemblent et sont nombreuses -- trente ici --
+# exactement comme les tombes de la Foret Noire et les ruines des Brumeuses.
+# On les annonce en grappe, sinon l'oracle rend un plan cadastral.
+CABANES_NORD = ("AbandonedLogCabin02", "AbandonedLogCabin03",
+                "AbandonedLogCabin04", "DN_hut01")
+
+# Les POINTS DE RESSOURCE, ajoutes le 2026-09-29 a la demande d'Alexandre.
+# Ils echappent au filtre « deja foule », et c'est volontaire : on ne va pas
+# chez un marchand deux fois pour le decouvrir, mais on retourne dix fois a un
+# geant de pierre. Avoir traverse la zone ne veut pas dire avoir exploite le
+# lieu -- et le serveur ne peut pas distinguer les deux, puisqu'il ne voit ni
+# les sacs ni ce qui a ete casse.
+#
+# Consequence assumee, a ne pas cacher : un gammeltroll DEJA fait sauter sera
+# quand meme rappele. C'est pourquoi ces rappels sont formules comme des
+# rappels -- « vous les connaissez » -- et donnent le NOMBRE plutot que de
+# faire croire a une decouverte.
+# Le troisieme champ est le GENRE, ecrit a la main comme les pluriels du
+# voisin stats-valheim.py et pour la meme raison : « dont le plus proche »
+# contre « dont la plus proche ». Aucune regle mecanique ne devine le genre
+# d'un nom francais, et se tromper sur chaque rappel feminin se voit.
+RESSOURCES = {
+    "DN_gammeltrollFrac01": ("un geant change en pierre", "geants changes en pierre", "m"),
+    "DN_gammeltrollFrac02": ("un geant change en pierre", "geants changes en pierre", "m"),
+    "MorkBorg": ("une porte qui demande sa clef", "portes qui demandent leur clef", "f"),
+    "IcePond1": ("une eau qui ne bouge plus", "eaux qui ne bougent plus", "f"),
+    "Mistlands_DvergrTownEntrance1": ("un seuil taille par d'autres mains",
+                                      "seuils tailles par d'autres mains", "m"),
+    # Trouve le 2026-09-29 par « --muets » : trente-sept epaves posees et pas
+    # un mot pour elles. Trois epaves sur quatre cachent un coffre enterre, et
+    # ce coffre porte presque toujours de quoi payer les poches d'Haldor.
+    "ShipWreck01_DN": ("une coque echouee que la glace retient",
+                       "coques echouees que la glace retient", "f"),
 }
 
 # Les ruines des Brumeuses se ressemblent et sont nombreuses. On les annonce en
@@ -172,6 +219,69 @@ def lieux(depuis):
     return {n: sorted(p) for n, p in trouves.items()}
 
 
+def zones_vues(cx, monde):
+    """Les zones ou un joueur a deja mis les pieds, en coordonnees de zone.
+
+    Le collecteur ecrit un evenement « zone » a chaque zone chargee par un
+    joueur. Une zone fait 64 metres de cote : y avoir ete, c'est etre passe a
+    portee de vue de ce qu'elle contient. C'est la meilleure definition de
+    « trouve » dont on dispose cote serveur, et elle suffit.
+    """
+    vues = set()
+    for (d,) in cx.execute(
+            "SELECT DISTINCT detail FROM evenements "
+            "WHERE type = 'zone' AND monde IS ?", (monde,)):
+        if not d or "," not in d:
+            continue
+        try:
+            zx, zy = (int(v) for v in d.split(",", 1))
+        except ValueError:
+            continue
+        vues.add((zx, zy))
+    return vues
+
+
+def inexplores(trouves, vues):
+    """Les lieux dont le groupe ignore encore l'existence.
+
+    L'en-tete de ce fichier promet depuis le premier jour que l'oracle ne parle
+    pas de ce qui est deja trouve. Jusqu'au 2026-09-29 cette regle n'etait
+    tenue QUE pour les boss, par les cles globales ; tous les autres sujets --
+    marchands, cavernes, entrees dvergr -- etaient annonces des que le serveur
+    les avait poses, trouves ou non. Mesure ce jour-la : les six sujets que
+    l'oracle savait nommer avaient tous ete visites, Haldor et Hildir compris.
+    L'oracle etait donc integralement du bruit, et le disait tous les jours.
+    """
+    reste = {}
+    for nom, points in trouves.items():
+        if nom in RESSOURCES:
+            reste[nom] = points          # on y retourne : jamais filtre
+            continue
+        neufs = [p for p in points
+                 if (int(round(p[0] / ZONE)), int(round(p[1] / ZONE))) not in vues]
+        if neufs:
+            reste[nom] = neufs
+    return reste
+
+
+def muets(trouves):
+    """Les types de lieux que le serveur a poses et dont l'oracle n'a pas le mot.
+
+    Trois fois ce projet a decouvert APRES COUP que l'oracle traversait un
+    biome entier sans rien pouvoir en dire : les Brumeuses le 2026-09-20 (15
+    lieux poses, zero murmure), le Grand Nord le 2026-09-29 (29 lieux), et les
+    Ashlands qui viennent. A chaque fois le programme se taisait sans que rien
+    ne le signale -- le silence ne leve pas d'erreur.
+
+    Cette fonction existe pour que la quatrieme fois se voie tout de suite.
+    Elle ne devine aucun nom : elle dit seulement « voila ce que je vois et que
+    je ne sais pas nommer », et c'est a un humain d'ecrire le murmure.
+    """
+    connus = set(MURMURES) | set(RESSOURCES) | set(RUINES_BRUMEUSES) | set(CABANES_NORD)
+    return sorted(((len(p), n) for n, p in trouves.items() if n not in connus),
+                  reverse=True)
+
+
 def etape(cx, monde):
     """Le prochain boss a abattre, d'apres les cles globales du monde."""
     vaincus = {c for (c,) in cx.execute(
@@ -188,6 +298,10 @@ def indices(cx, monde, tous=False):
         "SELECT min(horodatage) FROM evenements WHERE monde IS ?",
         (monde,)).fetchone()
     trouves = lieux(debut[0] if debut and debut[0] else None)
+    # « --tout » montre ce que l'oracle SAIT ; le mode normal ne garde que
+    # ce qu'il a encore un interet a dire.
+    if not tous:
+        trouves = inexplores(trouves, zones_vues(cx, monde))
     _cle, nom_boss, lieu_boss = etape(cx, monde)
 
     sortie = []
@@ -235,8 +349,38 @@ def indices(cx, monde, tous=False):
                         direction(*proche)),
         })
 
+    nord = [p for n in CABANES_NORD for p in trouves.get(n, [])]
+    if nord:
+        proche = min(nord, key=lambda p: math.hypot(*p))
+        sortie.append({
+            "sujet": "grand_nord",
+            "texte": "Loin au nord, %d abris tiennent encore sous la neige. Le "
+                     "plus proche est a quelque %d pas %s."
+                     % (len(nord), pas(math.hypot(*proche)),
+                        direction(*proche)),
+        })
+
+    # Les rappels de ressource, regroupes par libelle : les deux variantes de
+    # gammeltroll sont le meme sujet et ne doivent pas faire deux indices.
+    groupes = {}
+    for nom, (un, plusieurs, genre) in RESSOURCES.items():
+        for p in trouves.get(nom, []):
+            groupes.setdefault((un, plusieurs, genre), []).append(p)
+    for (un, plusieurs, genre), points in groupes.items():
+        proche = min(points, key=lambda p: math.hypot(*p))
+        d, ou = pas(math.hypot(*proche)), direction(*proche)
+        if len(points) == 1:
+            texte = ("Vous %s connaissez deja : %s vous attend a quelque "
+                     "%d pas %s." % ("la" if genre == "f" else "le", un, d, ou))
+        else:
+            texte = ("Vous les connaissez deja : %d %s, dont %s plus proche a "
+                     "quelque %d pas %s."
+                     % (len(points), plusieurs,
+                        "la" if genre == "f" else "le", d, ou))
+        sortie.append({"sujet": "ressource", "texte": texte})
+
     for nom in ("Vendor_BlackForest", "TrollCave02", "BearCave",
-                "Mistlands_DvergrTownEntrance1", "BigRockClearing"):
+                "BigRockClearing"):
         if trouves.get(nom):
             proche = min(trouves[nom], key=lambda p: math.hypot(*p))
             sortie.append({
@@ -246,12 +390,22 @@ def indices(cx, monde, tous=False):
                             pas(math.hypot(*proche)), direction(*proche)),
             })
 
-    if not trouves:
+    if not sortie:
+        # Deux silences a ne pas confondre. Le monde n'a rien pose : l'oracle
+        # ne sait rien. Le monde a tout pose et le groupe a tout foule : il
+        # sait, et il n'a plus rien d'utile a dire. Le second cas se produit
+        # des qu'un groupe a bien explore -- c'etait deja vrai le 2026-09-29 --
+        # et le confondre avec le premier ferait mentir l'oracle.
+        tout = lieux(debut[0] if debut and debut[0] else None)
         sortie.append({
             "sujet": "rien",
-            "texte": "Le monde ne m'a encore rien dit. Marchez, et je verrai.",
+            "texte": "Vous avez foule tout ce que je sais nommer. Poussez plus "
+                     "loin que vos traces, et j'aurai de nouveau quelque chose "
+                     "a vous dire."
+                     if tout else
+                     "Le monde ne m'a encore rien dit. Marchez, et je verrai.",
         })
-    return sortie if tous else sortie
+    return sortie
 
 
 def annonce(texte):
@@ -315,11 +469,27 @@ def main():
                     help="publie l'indice du jour dans le salon")
     ap.add_argument("--quand-meme", action="store_true",
                     help="publie meme si c'est deja fait aujourd'hui")
+    ap.add_argument("--muets", action="store_true",
+                    help="les lieux poses dont l'oracle n'a pas le mot")
     o = ap.parse_args()
 
     monde = monde_courant()
     cx = sqlite3.connect("file:%s?mode=ro" % BASE, uri=True)
-    tous = indices(cx, monde, tous=True)
+    if o.muets:
+        debut = cx.execute(
+            "SELECT min(horodatage) FROM evenements WHERE monde IS ?",
+            (monde,)).fetchone()
+        m = muets(lieux(debut[0] if debut and debut[0] else None))
+        print("%d types de lieux poses sans murmure :" % len(m))
+        for n, nom in m:
+            print("  %4d  %s" % (n, nom))
+        return 0
+    # « tous=o.tout » et non « tous=True ». Jusqu'au 2026-09-29 cette ligne
+    # passait TOUJOURS True : le filtre « deja foule » existait, mais la
+    # rotation quotidienne piochait dans la liste NON filtree, donc il ne
+    # servait a rien en production. Un test qui appelait indices() en direct ne
+    # pouvait pas le voir -- il faut passer par main() pour que ce bug parle.
+    tous = indices(cx, monde, tous=o.tout)
     if not tous:
         return 0
     if o.tout:

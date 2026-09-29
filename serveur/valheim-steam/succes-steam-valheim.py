@@ -125,6 +125,9 @@ def main():
     noms = libelles(cle)
     maintenant = datetime.now().isoformat(sep=" ", timespec="seconds")
     nouveaux = []
+    # Un seul cri pour un refus qui vaut pour tout le monde : le signaler
+    # quatre fois ne le rend pas plus vrai.
+    refus_signale = False
 
     for sid, pseudo in joueurs:
         # Temps de jeu total, toutes parties confondues. Sert aussi de test de
@@ -154,7 +157,29 @@ def main():
         try:
             d = interroge("/ISteamUserStats/GetPlayerAchievements/v1/",
                           {"key": cle, "steamid": sid, "appid": APP})["playerstats"]
-        except (urllib.error.URLError, OSError, ValueError, KeyError):
+        except urllib.error.HTTPError as e:
+            # Le 403 n'est PAS un probleme de confidentialite, et le confondre
+            # coute des heures. Mesure du 2026-09-29 : les quatre joueurs sont
+            # publics (communityvisibilitystate 3), GetOwnedGames leur repond,
+            # GetSchemaForGame repond aussi -- et GetPlayerAchievements rend 403
+            # pour TOUS les joueurs et TOUS les appid, y compris des jeux que le
+            # compte possede manifestement (7 Days to Die, 2778 h). C'est donc la
+            # CLE qui n'a pas droit a cet appel, pas les profils. Remede : en
+            # reemettre une sur steamcommunity.com/dev/apikey.
+            # Avant, ce cas partait dans un « continue » muet et la table restait
+            # vide sans que rien ne le dise.
+            if e.code == 403 and not refus_signale:
+                print("GetPlayerAchievements refuse (403) pour %s. Les profils "
+                      "sont publics et le reste de l'API repond : c'est la cle "
+                      "qui n'a pas droit a cet appel. En reemettre une sur "
+                      "steamcommunity.com/dev/apikey." % pseudo, file=sys.stderr)
+                refus_signale = True
+            elif e.code != 403:
+                print("%s : succes illisibles (HTTP %d)" % (pseudo, e.code),
+                      file=sys.stderr)
+            continue
+        except (urllib.error.URLError, OSError, ValueError, KeyError) as e:
+            print("%s : succes illisibles (%s)" % (pseudo, e), file=sys.stderr)
             continue
         connus = {c for (c,) in cx.execute(
             "SELECT cle FROM steam_succes WHERE steamid = ?", (sid,))}

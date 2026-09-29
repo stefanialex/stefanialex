@@ -46,7 +46,7 @@ def duree(s):
 # conseils du jour.
 ORDRE_BOSS = ["defeated_eikthyr", "defeated_gdking", "defeated_bonemass",
               "defeated_dragon", "defeated_goblinking", "defeated_queen",
-              "defeated_fader"]
+              "defeated_fader", "defeated_fimbulbringer"]
 
 
 def point_du_soir(d):

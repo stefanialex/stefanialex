@@ -61,6 +61,10 @@ AUTELS = {
     "GoblinKing": "defeated_goblinking",
     "Mistlands_DvergrBossEntrance1": "defeated_queen",   # non verifie
     "FaderLocation": "defeated_fader",                   # non verifie
+    # Repere le 2026-09-28 a 18h03 dans ce monde. La clef est une SUPPOSITION
+    # au meme titre que celle de preparation-valheim.py : le nom reel sortira
+    # dans « nouvelle cle : X » le jour ou Kall tombera.
+    "DN_Bossroom": "defeated_fimbulbringer",             # non verifie
 }
 
 # Les donjons, sous le nom que le serveur leur donne en les peuplant. Le type
@@ -79,6 +83,20 @@ DONJONS = {
     "DG_MeadowsVillage": ("village abandonné", "villages abandonnés"),
     "DG_DvergrTown": ("cité des Dvergrs", "cités des Dvergrs"),
     "DG_DvergrBossEntrance": ("mine infestée", "mines infestées"),
+    # Le boss des Brumeuses lui-meme : c'est la Citadelle, pas une mine. Ce
+    # monde ecrit « DG_DvergrBoss », pas « DG_DvergrBossEntrance » -- la ligne
+    # au-dessus n'a jamais rien apparie ici, et son libelle parait de surcroit
+    # mal attribue (la mine infestee, c'est DG_DvergrTown). Laissee en place
+    # faute d'avoir pu la verifier, mais a reprendre.
+    "DG_DvergrBoss": ("citadelle infestée", "citadelles infestées"),
+    # Le Grand Nord, nomme le 2026-09-29. Huit « DG_NorthVillage » et deux
+    # « DG_MorkHalla » etaient deja poses dans ce monde et s'affichaient
+    # « type inconnu ».
+    "DG_NorthVillage": ("village du Grand Nord", "villages du Grand Nord"),
+    "DG_MorkHalla": ("Mörkhalla", "Mörkhalla"),
+    # « DG_Hole » (5 ici) reste SANS NOM volontairement : aucune source
+    # post-1.0 consultee le 29/09 ne dit ce que c'est. « type inconnu » est
+    # une reponse honnete ; un nom invente ne le serait pas.
 }
 NOM_BOSS = dict(BOSS)
 

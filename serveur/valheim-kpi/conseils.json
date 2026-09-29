@@ -58,13 +58,43 @@
     },
     "defeated_queen": {
       "biome": "Mistlands",
-      "objectif": "Abattre la Reine. Neuf cheveux de roi géant et un fragment de Sealbreaker.",
-      "preparer": "Nourriture a Eitr pour les builds magiques. Misthare supreme, poisson-pain, aspic de traqueur : environ 143 PV, 132 d'endurance et 85 d'Eitr.",
+      "objectif": "Abattre la Reine. Neuf fragments de Sealbreaker, assembles en un Sealbreaker a la Table Galdr, qui ouvre la porte de la Citadelle infestee.",
+      "preparer": "Nourriture a Eitr pour les builds magiques. Misthare supreme, poisson-pain, aspic de traqueur : environ 143 PV, 132 d'endurance et 85 d'Eitr. Wisplight obligatoire pour seulement ATTEINDRE la Citadelle.",
       "conseils": [
-        "La Reine a environ 18 000 PV : c'est un autre ordre de grandeur. Un combat raté coute une soirée entière de préparation.",
-        "Les Mistlands se traversent au Wisplight, sinon vous ne voyez rien a trois mètres.",
-        "Les cristaux et le soft tissue viennent des veines et des chambres Dvergr : repérez-les avant de vous engager."
-      ]
+        "Les fragments sont dans les mines infestees, enfermes dans des vitrines bleues sur socle : il faut BRISER le verre. Ce n'est ni un coffre ni un butin de monstre, et une seule mine n'en contient jamais neuf.",
+        "Le Sealbreaker n'est PAS consomme : on le fabrique une fois et il ouvre toutes les Citadelles. Il passe aussi les portails.",
+        "Il n'y a pas d'autel ni d'offrande pour la premiere Reine : elle est deja vivante et se promene dans le donjon. On ouvre la porte, on entre, le combat commence. Pour la retuer plus tard, trois trophees de Traqueur soldat au Trone de la Ruche, en haut de la Citadelle.",
+        "La Table Galdr coute 5 d'Eitr raffine : il faut donc DEJA un extracteur de seve et une raffinerie d'eitr avant de pouvoir seulement fabriquer le Sealbreaker. C'est une etape tardive des Brumeuses, pas une etape d'entree.",
+        "Trouver la Citadelle passe par un Vegvisir de la Reine, qui se trouve dans les mines infestees : vous la cherchez au meme endroit que les fragments."
+      ],
+      "_verifie": "2026-09-29, sources post-1.0 croisees (wiki weirdgloop 28/09, Game8 21/09). Remplace une recette fausse : « neuf cheveux de roi geant et un fragment de Sealbreaker »."
+    },
+    "defeated_fader": {
+      "biome": "Ashlands",
+      "objectif": "Abattre Fader. Trois Cloches, faites de neuf Fragments de cloche ramasses dans les Forteresses calcinees, sonnees a la Flamme emeraude. Il lache les Cotes embrasees, qui ouvrent tout le Grand Nord.",
+      "preparer": "Vin d'orge de resistance au feu en quantite, armure Flametal, et un DRAKKAR : le Longship ne traverse pas. Tourte piquante, Viande ecrasee, Ragout ardent : environ 300 PV.",
+      "conseils": [
+        "L'armure d'Ashlands se monte sans hesiter. La regle « ne jamais depasser le niveau 1 » ne vaut QUE pour les sept armes gemmables : Slayer, Nidhogg, Splitnir, Croc de cendre, Ripper, Haches Berserkir et Masse Flametal. Une piece d'armure n'entre dans aucune recette de gemme, donc rien n'y est jamais perdu.",
+        "Gemmer n'est pas ameliorer : c'est FABRIQUER une arme differente dont votre arme est un ingredient. Elle est consommee, et la nouvelle nait au niveau 1 comme tout objet fabrique. C'est pour ca qu'on ne peut jamais degemmer ni changer de gemme.",
+        "Le Flametal ne passe pas les portails et pese 12. Montez le haut fourneau et la forge noire dans un avant-poste sur place, et ne rapatriez que des objets finis.",
+        "Les gemmes ne tombent que dans les coffres des Forteresses calcinees, une vingtaine par monde. A quatre, cela fait environ une arme gemmee chacun : repartissez les elements AVANT de convertir. Et reservez une Pierre de sang pour le Tailleur de gemmes.",
+        "Depuis 1.0.14 les Jotun Puffs et les Magecaps ne repoussent plus. Cultivez-les ou la nourriture a Eitr s'arrete.",
+        "La Forge du Potentiel, en Montagne, pousse un objet au-dela du niveau 4 pour une idole. 65% de reussite ; la branche d'echec est CONTESTEE entre les sources (destruction pure, ou retrogradation). Ne misez pas un set qui marche."
+      ],
+      "_verifie": "2026-09-29, sources post-1.0 croisees (notes officielles Iron Gate via API Steam News, wiki weirdgloop, PC Gamer, Game8). Entree creee ce jour : son absence faisait DISPARAITRE le bloc « prochaine etape » du point du soir depuis la mort de la Reine le 28/09."
+    },
+    "defeated_fimbulbringer": {
+      "biome": "Grand Nord",
+      "objectif": "Abattre Kall Fimbulbringer, huitieme et dernier boss. Trois Sangs malveillants au Bol etrange, dans la Prison, atteinte par un Passage des Ases. Sa mort ouvre la vraie fin du jeu.",
+      "preparer": "Hydromel de resistance au givre, pelle a neige, portail en pierre, et equipement d'Ashlands monte a fond. Pain de viande et Soupe de phoque : 110 PV chacun, les meilleures du jeu.",
+      "conseils": [
+        "Kall resiste au Perforant, au Feu, au Givre ET a la Foudre. Vos armes Frostfire et Thunderblood sont donc a moitie efficaces CONTRE LUI. Prenez du contondant ou du tranchant, et laissez les arcs.",
+        "47 000 PV sur trois reserves, et il ne peut jamais etre etourdi. En phase 2 il est invulnerable : on tue sept Aspects des boss precedents, chacun lui otant 1000 PV.",
+        "Les trois meteos gelent, jour et nuit : pas de fenetre sure comme en Montagne. Et le buff de resistance au givre SAUTE des qu'on est mouille.",
+        "Le Bloodgold ne se mine pas. On tue un Gammeltroll, il se petrifie, on fait sauter la statue a la Charge de braise, et le Tissu petrifie se fond au haut fourneau.",
+        "Le Chou frise, l'Avoine et le Poteitr ne poussent PAS au Grand Nord : plantez-les en Prairies ou en Plaines avant de partir."
+      ],
+      "_verifie": "2026-09-29, memes sources."
     }
   },
   "generaux": [
