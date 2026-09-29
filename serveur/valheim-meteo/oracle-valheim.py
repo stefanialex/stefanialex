@@ -101,6 +101,11 @@ MURMURES = {
     # de « quatre par monde ». Le lieu etait deja genere : l'oracle pouvait le
     # dire, il lui manquait le mot.
     "BigRockClearing": "un cercle de pierres qui vous rendent votre regard",
+    # Trouve le 2026-09-29 par « --muets », unique dans ce monde et jamais
+    # annonce. Reste une DECOUVERTE et non un rappel : c'est une marchande, et
+    # se faire repeter l'adresse d'un marchand chez qui on a deja tout achete
+    # est exactement la plainte qui a lance ce chantier.
+    "BogWitch_Camp": "un feu qui brule dans la tourbe, et quelqu'un pour l'entretenir",
     # Le Grand Nord, ajoute le 2026-09-29. Le serveur y avait deja pose
     # vingt-neuf lieux -- l'oracle les voyait tous et n'avait aucun mot pour
     # eux, exactement comme pour les Brumeuses le 20/09. Ces murmures ne
@@ -148,6 +153,40 @@ RESSOURCES = {
     # ce coffre porte presque toujours de quoi payer les poches d'Haldor.
     "ShipWreck01_DN": ("une coque echouee que la glace retient",
                        "coques echouees que la glace retient", "f"),
+    # Le murmure ci-dessus ne couvrait que 37 epaves sur 71 : les trois
+    # « FrozenShip » et « ShipWreck02_DN » en ajoutent 34. Meme libelle, donc
+    # le regroupement par libelle les compte ensemble et n'en fait qu'un indice.
+    "ShipWreck02_DN": ("une coque echouee que la glace retient",
+                       "coques echouees que la glace retient", "f"),
+    "FrozenShip01_DN": ("une coque echouee que la glace retient",
+                        "coques echouees que la glace retient", "f"),
+    "FrozenShip02_DN": ("une coque echouee que la glace retient",
+                        "coques echouees que la glace retient", "f"),
+    "FrozenShip03_DN": ("une coque echouee que la glace retient",
+                        "coques echouees que la glace retient", "f"),
+    # Meme oubli cote Brumeuses : il existe une SECONDE entree de mine.
+    "Mistlands_DvergrTownEntrance2": ("un seuil taille par d'autres mains",
+                                      "seuils tailles par d'autres mains", "m"),
+    # Grand Nord. Le site memorial est le plus utile des trois : trois charbons
+    # a son autel y appellent un Guerrier dechu, qui lache les essences, et
+    # c'est la que se trouve le Vegvisir du dernier boss.
+    "NorthMemorialPlace": ("une pierre ou l'on se souvient des morts",
+                           "pierres ou l'on se souvient des morts", "f"),
+    "NorthVillage": ("un village que le nord a vide",
+                     "villages que le nord a vides", "m"),
+    "TarPit1": ("une mare noire qui remue", "mares noires qui remuent", "f"),
+    "TarPit2": ("une mare noire qui remue", "mares noires qui remuent", "f"),
+    "TarPit3": ("une mare noire qui remue", "mares noires qui remuent", "f"),
+    # La Forge du Potentiel. Classee RESSOURCE et non decouverte, apres coup :
+    # en decouverte elle etait filtree -- le groupe avait traverse sa zone --
+    # donc l'oracle n'en aurait jamais souffle mot, alors que c'est le lieu le
+    # plus utile de la liste. Et ce n'est pas une decouverte : on y RETOURNE, une
+    # fois par idole, et il y a seize idoles. Une seule par monde, et la
+    # premiere approchee fixe l'emplacement pour toujours.
+    # Reserve : l'identification vient du nom du prefab, aucune source
+    # consultee le 29/09 ne la confirme.
+    "AncientUpgradeStation": ("un atelier laisse par de plus anciens",
+                              "ateliers laisses par de plus anciens", "m"),
 }
 
 # Les ruines des Brumeuses se ressemblent et sont nombreuses. On les annonce en
@@ -379,8 +418,8 @@ def indices(cx, monde, tous=False):
                         "la" if genre == "f" else "le", d, ou))
         sortie.append({"sujet": "ressource", "texte": texte})
 
-    for nom in ("Vendor_BlackForest", "TrollCave02", "BearCave",
-                "BigRockClearing"):
+    for nom in ("Vendor_BlackForest", "BogWitch_Camp", "TrollCave02",
+                "BearCave", "BigRockClearing"):
         if trouves.get(nom):
             proche = min(trouves[nom], key=lambda p: math.hypot(*p))
             sortie.append({
