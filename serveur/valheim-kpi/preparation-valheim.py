@@ -208,6 +208,19 @@ def rapport(monde, atteint, prochain, data, stock, joueurs, styles_voulus):
     return out
 
 
+def bloc(titre, items):
+    """Un titre puis une puce par ligne.
+
+    Les trois listes sortaient jointes par des virgules, ce qui faisait un pave
+    illisible des que « stuff » comptait cinq entrees -- et un pave sur Discord
+    est precisement le reproche qui a lance ce chantier. Une puce par ligne
+    coute quelques octets et se lit d'un coup d'oeil.
+    """
+    if not items:
+        return []
+    return ["**%s :**" % titre] + ["  • %s" % i for i in items]
+
+
 def texte(r):
     L = []
     L.append("**Ou vous en etes — %s**" % r["monde"])
@@ -219,21 +232,19 @@ def texte(r):
     if r.get("resume"):
         L.append(r["resume"])
     if r["obligatoire"]:
-        L.append("\n**Non negociable :** " + " · ".join(r["obligatoire"]))
+        L.append("")
+        L += bloc("Non negociable", r["obligatoire"])
     for s in r["styles"]:
         L.append("\n__%s__ — %s" % (s["nom"], s.get("resume") or ""))
-        if s["stuff"]:
-            L.append("  Stuff : " + ", ".join(s["stuff"]))
-        if s["nourriture"]:
-            L.append("  Bouffe : " + ", ".join(s["nourriture"]))
-        if s["hydromels"]:
-            L.append("  Hydromels : " + ", ".join(s["hydromels"]))
+        L += bloc("Stuff", s["stuff"])
+        L += bloc("Bouffe", s["nourriture"])
+        L += bloc("Hydromels", s["hydromels"])
         if s["manque"]:
-            L.append("  **A farmer :** " + " · ".join(
+            L.append("**A farmer :** " + " · ".join(
                 "%s %d" % (m, n) for m, n in sorted(
                     s["manque"].items(), key=lambda kv: -kv[1])))
         else:
-            L.append("  **Rien ne manque en coffre.**")
+            L.append("**Rien ne manque en coffre.**")
     L.append("\n_%s_" % r["reserve"])
     return "\n".join(L)
 
