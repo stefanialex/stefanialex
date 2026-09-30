@@ -139,6 +139,10 @@ Cmnd_Alias SRV_UNITES = \
     /usr/bin/systemctl stop succes-steam-valheim.service, \
     /usr/bin/systemctl restart succes-steam-valheim.service, \
     /usr/bin/systemctl reset-failed succes-steam-valheim.service, \
+    /usr/bin/systemctl start fin-session-valheim.service, \
+    /usr/bin/systemctl stop fin-session-valheim.service, \
+    /usr/bin/systemctl restart fin-session-valheim.service, \
+    /usr/bin/systemctl reset-failed fin-session-valheim.service, \
     /usr/bin/systemctl start guette-valheim-1.0.service, \
     /usr/bin/systemctl stop guette-valheim-1.0.service, \
     /usr/bin/systemctl restart guette-valheim-1.0.service, \
@@ -181,6 +185,9 @@ Cmnd_Alias SRV_MINUTERIES = \
     /usr/bin/systemctl start succes-steam-valheim.timer, \
     /usr/bin/systemctl stop succes-steam-valheim.timer, \
     /usr/bin/systemctl restart succes-steam-valheim.timer, \
+    /usr/bin/systemctl start fin-session-valheim.timer, \
+    /usr/bin/systemctl stop fin-session-valheim.timer, \
+    /usr/bin/systemctl restart fin-session-valheim.timer, \
     /usr/bin/systemctl start guette-valheim-1.0.timer, \
     /usr/bin/systemctl stop guette-valheim-1.0.timer, \
     /usr/bin/systemctl restart guette-valheim-1.0.timer, \
