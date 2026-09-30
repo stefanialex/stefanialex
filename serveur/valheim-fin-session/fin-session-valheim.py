@@ -235,6 +235,57 @@ def regles(inv, pose, tags, k, joueurs):
     }
 
 
+# Ce qu'on montre, et ce qui bloque, AU PALIER EN COURS. Jusqu'au 2026-09-30
+# les deux etaient figes sur les Brumeuses : le soir ou le groupe a tue la Reine,
+# le compte rendu affichait encore un stock de Softtissue et de Sap, et une liste
+# de verrous dont les trois etaient leves depuis des jours. Un rapport qui parle
+# du palier precedent est pire qu'un rapport muet -- il a l'air juste.
+#
+# Le libelle est separe du prefab : le prefab est ce qu'on MESURE, le libelle ce
+# qu'un humain lit. Tous les prefabs ci-dessous ont ete verifies presents dans la
+# table le 2026-09-30 -- « BloodGold » et « FrostCore » portent une majuscule au
+# milieu, et « Ice », « Timberwood », « SealPelt », « PetrifiedTissue » n'existent
+# PAS sous ces noms, donc ils ne sont pas ici. Un prefab mal orthographie
+# afficherait un zero parfaitement credible.
+STOCKS = {
+    "defeated_queen": ("Brumeuses", [
+        ("Carapace", "Carapace"), ("Tissu mou", "Softtissue"),
+        ("Marbre noir", "BlackMarble"), ("Bois d'Yggdrasil", "YggdrasilWood"),
+        ("Seve", "Sap"), ("Eitr", "Eitr"), ("Fragments", "DvergrKeyFragment")]),
+    "defeated_fader": ("Ashlands", [
+        ("Flametal", "FlametalNew"), ("Peau d'asksvin", "AskHide"),
+        ("Os calcine", "CharredBone"), ("Tendon de morgen", "MorgenSinew"),
+        ("Gemmes", "GemstoneRed"), ("Cloches", "BellFragment"),
+        ("Vin de feu", "BarleyWine")]),
+    "defeated_fimbulbringer": ("Grand Nord", [
+        ("Bloodgold", "BloodGold"), ("Frostcore", "FrostCore"),
+        ("Viande d'elan", "MooseMeat"), ("Peau d'elan", "MooseHide"),
+        ("Chou frise", "Kale"), ("Avoine", "Oats"), ("Poteitr", "Poteitr"),
+        ("Resistance givre", "MeadFrostResist")]),
+}
+
+# Un verrou est une chose SANS LAQUELLE le palier ne se franchit pas. Il
+# disparait du rapport des qu'il est leve : une liste ou tout est vert n'apprend
+# rien. « inv » compte dans les coffres, « pose » compte ce qui est bati.
+VERROUS = {
+    "defeated_queen": [
+        ("inv", "Demister", 1, "**Wisplight : 0** — on se bat aveugle dans la brume"),
+        ("inv", "BlackCore", 1, "**BlackCore : 0** — bloque Forge noire, Raffinerie et Table galdr"),
+    ],
+    "defeated_fader": [
+        ("pose", "blackforge_ext3_metalcutter", 1,
+         "**Decoupeuse a metal absente** — sans elle, aucune arme gemmee n'existe"),
+        ("inv", "BarleyWine", 10,
+         "**Vin de resistance au feu trop bas** — la lave et les Charred brulent, c'est obligatoire"),
+    ],
+    "defeated_fimbulbringer": [
+        ("inv", "MeadFrostResist", 10,
+         "**Resistance au givre trop basse** — les trois meteos du Nord gelent, jour et nuit"),
+        ("inv", "Embers", 1,
+         "**Braises : 0** — sans elles, ni pelle a neige ni charge de braise, donc pas de Bloodgold"),
+    ],
+}
+
 PREFABS_POSES = ("blackforge", "piece_magetable", "eitrrefinery",
                  "piece_sapcollector", "piece_preptable",
                  # Le palier Ashlands, ajoute le 2026-09-29. Les noms ont ete
@@ -245,6 +296,11 @@ PREFABS_POSES = ("blackforge", "piece_magetable", "eitrrefinery",
                  # toujours.
                  "artisan_ext1", "VikingShip_Ashlands",
                  "blackforge_ext3_metalcutter", "blackforge_ext4_gemcutter")
+
+
+ORDRE_PALIERS = ["defeated_eikthyr", "defeated_gdking", "defeated_bonemass",
+                 "defeated_dragon", "defeated_goblinking", "defeated_queen",
+                 "defeated_fader", "defeated_fimbulbringer"]
 
 
 def compte_rendu(monde, source, d, changements, inv, pose, k, joueurs):
@@ -259,24 +315,20 @@ def compte_rendu(monde, source, d, changements, inv, pose, k, joueurs):
         lignes.append("_Rien de mesurable n'a change aujourd'hui._")
     lignes += ["", "**Chantiers : %d/%d faits.**" % (faits, total), ""]
 
-    verrous = []
-    if not inv["Demister"]:
-        verrous.append("**Wisp/Wisplight : 0** — on se bat aveugle dans la brume")
-    if not inv["BlackCore"]:
-        verrous.append("**BlackCore : 0** — bloque Forge noire, Raffinerie et Table galdr")
-    if "defeated_goblinking" not in k:
-        verrous.append("**Yagluth vivant** — le palier est saute")
+    prochain = next((c for c in ORDRE_PALIERS if c not in k), None)
+
+    verrous = ["• " + t for ou, quoi, seuil, t in VERROUS.get(prochain, [])
+               if (inv[quoi] if ou == "inv" else pose.get(quoi, 0)) < seuil]
     if verrous:
         lignes.append("**Verrous :**")
-        lignes += ["• " + v for v in verrous]
+        lignes += verrous
         lignes.append("")
 
-    stock = [("Carapace", inv["Carapace"]), ("Softtissue", inv["Softtissue"]),
-             ("BlackMarble", inv["BlackMarble"]), ("YggdrasilWood", inv["YggdrasilWood"]),
-             ("Sap", inv["Sap"]), ("Eitr", inv["Eitr"]),
-             ("Fragments", inv["DvergrKeyFragment"])]
-    lignes.append("**Stock Brumeuses :** " + " · ".join("%s %d" % s for s in stock))
-    lignes.append("")
+    biome, quoi = STOCKS.get(prochain, (None, []))
+    if quoi:
+        lignes.append("**Stock %s :** " % biome + " · ".join(
+            "%s %d" % (libelle, inv[prefab]) for libelle, prefab in quoi))
+        lignes.append("")
     lignes.append("_Mesure sur %s. Les sacs des joueurs ne sont pas visibles "
                   "d'ici : un chantier peut etre fait sans que je le voie._" % source)
     return "\n".join(lignes)
