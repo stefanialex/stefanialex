@@ -79,6 +79,28 @@ def annonce(texte):
         print("annonce non partie : %s" % e, file=sys.stderr)
 
 
+def cle_du_joueur(sid, defaut):
+    """La clef a employer pour CE joueur.
+
+    Mesure du 2026-09-30, apres trois hypotheses fausses : « GetPlayerAchievements »
+    ne repond QUE pour le compte proprietaire de la clef. Preuve : avec la clef
+    d'alxlelapin, Lapnewv rend OK sur Valheim, 7 Days to Die et SCUM, tandis que
+    les trois autres joueurs prennent 403 sur TOUS leurs jeux. Ce n'est pas une
+    question de confidentialite -- le temoin « profil public connu » echouait
+    deja, et c'est ce qui aurait du me mettre sur la voie au lieu de faire
+    changer les reglages de quatre personnes.
+
+    Le remede est donc une clef PAR JOUEUR, declaree dans le meme fichier :
+
+        CLE=<clef de repli, celle du proprietaire>
+        CLE_76561198076795149=<clef de ce joueur>
+
+    Sans ligne dediee, on retombe sur CLE : le programme reste utilisable avec
+    une seule clef, il ne verra simplement que son proprietaire.
+    """
+    return valeur(CONF, "CLE_%s" % sid) or defaut
+
+
 def libelles(cle):
     """Nom lisible de chaque succes, tel que le jeu le declare.
 
@@ -156,7 +178,8 @@ def main():
             continue
         try:
             d = interroge("/ISteamUserStats/GetPlayerAchievements/v1/",
-                          {"key": cle, "steamid": sid, "appid": APP})["playerstats"]
+                          {"key": cle_du_joueur(sid, cle), "steamid": sid,
+                           "appid": APP})["playerstats"]
         except urllib.error.HTTPError as e:
             # Le 403 n'est PAS un probleme de confidentialite, et le confondre
             # coute des heures. Mesure du 2026-09-29 : les quatre joueurs sont
@@ -168,12 +191,12 @@ def main():
             # reemettre une sur steamcommunity.com/dev/apikey.
             # Avant, ce cas partait dans un « continue » muet et la table restait
             # vide sans que rien ne le dise.
-            if e.code == 403 and not refus_signale:
-                print("GetPlayerAchievements refuse (403) pour %s. Les profils "
-                      "sont publics et le reste de l'API repond : c'est la cle "
-                      "qui n'a pas droit a cet appel. En reemettre une sur "
-                      "steamcommunity.com/dev/apikey." % pseudo, file=sys.stderr)
-                refus_signale = True
+            if e.code == 403:
+                print("succes illisibles pour %s : l'appel ne repond que pour le "
+                      "PROPRIETAIRE de la clef employee. Ajouter « CLE_%s=... » "
+                      "dans %s, avec une clef generee depuis SON compte sur "
+                      "steamcommunity.com/dev/apikey."
+                      % (pseudo, sid, CONF), file=sys.stderr)
             elif e.code != 403:
                 print("%s : succes illisibles (HTTP %d)" % (pseudo, e.code),
                       file=sys.stderr)
