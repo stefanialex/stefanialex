@@ -7,10 +7,13 @@ lui-meme et appelle stats-valheim.py --json, pour qu'il n'existe qu'une seule
 definition de chaque indicateur.
 """
 
+import collections
 import datetime
+import glob
 import json
 import os
 import sqlite3
+import struct
 import subprocess
 import sys
 import urllib.error
@@ -256,6 +259,115 @@ def champ_terrain(d):
     return {"name": "🧭  Terrain", "inline": False, "value": "\n".join(lignes)[:1024]}
 
 
+def hash_stable(s):
+    """GetStableHashCode de Valheim : la cle des prefabs et des champs de ZDO."""
+    a = b = 5381
+    for i, c in enumerate(s):
+        if i % 2 == 0:
+            a = ((a << 5) + a ^ ord(c)) & 0xFFFFFFFF
+        else:
+            b = ((b << 5) + b ^ ord(c)) & 0xFFFFFFFF
+    v = (a + b * 1566083941) & 0xFFFFFFFF
+    return v - (1 << 32) if v >= 1 << 31 else v
+
+
+PORTAILS = [struct.pack("<i", hash_stable(n)) for n in ("portal_wood", "portal_stone")]
+CLE_TAG = struct.pack("<i", hash_stable("tag"))
+GROUPE_M = 50  # deux portails a moins de 50 m sont presentes ensemble
+
+
+def portails(monde):
+    """Les portails poses : [(etiquette, x, z)].
+
+    En 1.0 tous les portails vivent dans le seul chunk 00_01__0_*. Dans un ZDO
+    la position est les 12 octets qui PRECEDENT le hash du prefab, et
+    l'etiquette suit le hash de la cle « tag », en chaine a prefixe 7 bits.
+    Une position hors du monde trahit un mauvais alignement : on se tait
+    plutot que de publier des coordonnees fausses.
+    """
+    chunks = glob.glob(os.path.join(MONDES, monde, "00_01__0_*.chunk"))
+    if len(chunks) != 1:
+        return None
+    try:
+        with open(chunks[0], "rb") as f:
+            o = f.read()
+    except OSError:
+        return None
+    reperes = sorted(i for h in PORTAILS for i in _occurrences(o, h))
+    res = []
+    for j, i in enumerate(reperes):
+        if i < 12:
+            return None
+        x, y, z = struct.unpack("<3f", o[i - 12:i])
+        if not (abs(x) < 10500 and abs(z) < 10500 and -50 < y < 1000):
+            return None
+        fin = reperes[j + 1] if j + 1 < len(reperes) else len(o)
+        t = o.find(CLE_TAG, i, fin)
+        tag = ""
+        if t >= 0:
+            n = o[t + 4]
+            if n < 128:
+                tag = o[t + 5:t + 5 + n].decode("utf-8", "replace")
+        res.append((tag, x, z))
+    return res
+
+
+def _occurrences(o, motif):
+    i = o.find(motif)
+    while i >= 0:
+        yield i
+        i = o.find(motif, i + 1)
+
+
+def champ_portails(d):
+    """Les portails sans jumeau, regroupes quand ils sont poses cote a cote.
+
+    Une etiquette qui n'apparait qu'une fois mene nulle part ; trois fois ou
+    plus, le jeu en relie deux au hasard. Les portails sans etiquette se
+    relient entre eux comme une etiquette vide.
+    """
+    if not d.get("monde"):
+        return None
+    tous = portails(d["monde"])
+    if not tous:
+        return None
+    compte = collections.Counter(t for t, _, _ in tous)
+    seuls = [p for p in tous if compte[p[0]] != 2 and p[0]]
+    vides = [p for p in tous if not p[0]]
+    if not seuls and len(vides) in (0, 2):
+        return None
+
+    groupes = []
+    for p in sorted(seuls, key=lambda p: (-p[2], p[1])):
+        for g in groupes:
+            if any((p[1] - q[1]) ** 2 + (p[2] - q[2]) ** 2 < GROUPE_M ** 2 for q in g):
+                g.append(p)
+                break
+        else:
+            groupes.append([p])
+
+    def nom(p):
+        return "`%s`%s" % (p[0], " ×%d" % compte[p[0]] if compte[p[0]] > 2 else "")
+
+    lignes, isoles = [], []
+    for g in groupes:
+        if len(g) > 1:
+            cx = sum(p[1] for p in g) / len(g)
+            cz = sum(p[2] for p in g) / len(g)
+            lignes.append("📍 (%d, %d) : %s" % (cx, cz, " ".join(nom(p) for p in g)))
+        else:
+            isoles.append("%s (%d, %d)" % (nom(g[0]), g[0][1], g[0][2]))
+    lignes.append(" · ".join(isoles))
+    if vides and len(vides) != 2:
+        lignes.append("+ %d sans étiquette" % len(vides))
+    valeur = "\n".join(l for l in lignes if l)
+    if len(valeur) > 1024:
+        valeur = valeur[:valeur.rfind(" · ", 0, 1000)] + " · …"
+    return {"name": "🌀  Portails orphelins — %d sur %d  (x, z ; nord = +z)"
+                    % (len(seuls), len(tous)),
+            "inline": False, "value": valeur}
+
+
 def bilan(d):
     """Construit l'embed du bilan.
 
@@ -329,6 +441,10 @@ def bilan(d):
     tr = champ_terrain(d)
     if tr:
         champs.append(tr)
+
+    po = champ_portails(d)
+    if po:
+        champs.append(po)
 
     mt = champ_meteo(d)
     if mt:
